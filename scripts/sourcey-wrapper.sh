@@ -56,6 +56,9 @@ if [[ "${1:-}" == "build" ]]; then
 
     (
       cd "$config_dir"
+      if [[ "$config_file" == "sourcey.config.ts" ]]; then
+        exec npx -y sourcey "${normalized[@]}"
+      fi
       exec npx -y sourcey "${normalized[@]:0:1}" --config "$config_file" "${normalized[@]:1}"
     )
   fi
