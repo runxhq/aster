@@ -1,0 +1,25 @@
+name: Improvement
+description: Propose a bounded improvement for automaton or one of its runx lanes.
+title: "[improvement] "
+labels:
+  - improvement
+body:
+  - type: textarea
+    id: objective
+    attributes:
+      label: Objective
+      description: What should change?
+      placeholder: Improve the repo story so runx can draft clearer operator updates.
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: What repo context, evidence, or receipts should the run use?
+  - type: textarea
+    id: safety
+    attributes:
+      label: Safety Notes
+      description: What should stay approval-gated or out of scope?
+
