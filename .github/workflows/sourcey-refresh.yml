@@ -20,6 +20,7 @@ jobs:
       GH_TOKEN: ${{ github.token }}
       RUNX_CALLER_MODEL: ${{ vars.RUNX_CALLER_MODEL || 'gpt-5.4' }}
       RUNX_CALLER_REASONING_EFFORT: ${{ vars.RUNX_CALLER_REASONING_EFFORT || 'xhigh' }}
+      RUNX_CALLER_MAX_ATTEMPTS: ${{ vars.RUNX_CALLER_MAX_ATTEMPTS || '3' }}
     steps:
       - name: Check lane prerequisites
         id: preflight
@@ -79,6 +80,7 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
           mkdir -p .artifacts/sourcey-refresh
+          SOURCEY_BIN="$(command -v sourcey)"
           node scripts/runx-agent-bridge.mjs \
             --runx-root "$GITHUB_WORKSPACE/runx" \
             --receipt-dir "$GITHUB_WORKSPACE/.artifacts/sourcey-refresh/receipts" \
@@ -91,7 +93,8 @@ jobs:
             --brand_name "automaton" \
             --homepage_url "https://github.com/auscaster/automaton" \
             --docs_inputs '{"mode":"config","config":"docs/sourcey.config.ts"}' \
-            --output_dir "$GITHUB_WORKSPACE/.sourcey/runx-docs"
+            --output_dir "$GITHUB_WORKSPACE/.sourcey/runx-docs" \
+            --sourcey_bin "$SOURCEY_BIN"
 
       - name: Validate repo after sourcey refresh
         if: ${{ steps.preflight.outputs.enabled == 'true' }}

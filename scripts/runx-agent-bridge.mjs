@@ -233,6 +233,7 @@ async function resolveCognitiveWork({ provider, model, reasoningEffort, request,
   const requestId = sanitizeTraceName(request.id);
   const expectedOutputs = request.work.envelope.expected_outputs ?? {};
   let previousFailure;
+  let lastTransportError;
   const maxAttempts = Number(process.env.RUNX_CALLER_MAX_ATTEMPTS ?? "2");
 
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
@@ -249,15 +250,38 @@ async function resolveCognitiveWork({ provider, model, reasoningEffort, request,
       },
     };
 
-    const response = await fetch("https://api.openai.com/v1/responses", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-        "X-Client-Request-Id": `${requestId}-${attempt}`.slice(0, 128),
-      },
-      body: JSON.stringify(payload),
-    });
+    let response;
+    try {
+      response = await fetch("https://api.openai.com/v1/responses", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+          "X-Client-Request-Id": `${requestId}-${attempt}`.slice(0, 128),
+        },
+        body: JSON.stringify(payload),
+      });
+    } catch (error) {
+      lastTransportError = error;
+      await writeFile(
+        path.join(traceDir, `${requestId}-attempt-${attempt}.json`),
+        `${JSON.stringify(
+          {
+            request: payload,
+            response: null,
+            raw_response: null,
+            transport_error: serializeError(error),
+          },
+          null,
+          2,
+        )}\n`,
+      );
+      if (attempt < maxAttempts && isRetryableTransportError(error)) {
+        await sleep(backoffDelayMs(attempt));
+        continue;
+      }
+      throw error;
+    }
 
     const raw = await response.text();
     const parsed = safeJsonParse(raw);
@@ -291,6 +315,10 @@ async function resolveCognitiveWork({ provider, model, reasoningEffort, request,
     }
 
     previousFailure = validationError;
+  }
+
+  if (lastTransportError && !previousFailure) {
+    throw lastTransportError;
   }
 
   throw new Error(
@@ -446,6 +474,41 @@ function splitCsv(value) {
 
 function sanitizeTraceName(value) {
   return value.replace(/[^a-zA-Z0-9_.-]+/g, "_");
+}
+
+function isRetryableTransportError(error) {
+  const code = String(error?.cause?.code ?? error?.code ?? "");
+  return [
+    "UND_ERR_HEADERS_TIMEOUT",
+    "UND_ERR_BODY_TIMEOUT",
+    "UND_ERR_CONNECT_TIMEOUT",
+    "ECONNRESET",
+    "ECONNREFUSED",
+    "ETIMEDOUT",
+  ].includes(code);
+}
+
+function serializeError(error) {
+  return {
+    name: error?.name ?? "Error",
+    message: error?.message ?? String(error),
+    code: error?.code ?? null,
+    cause: error?.cause
+      ? {
+          name: error.cause.name ?? "Error",
+          message: error.cause.message ?? String(error.cause),
+          code: error.cause.code ?? null,
+        }
+      : null,
+  };
+}
+
+function backoffDelayMs(attempt) {
+  return 1000 * attempt;
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 await main();

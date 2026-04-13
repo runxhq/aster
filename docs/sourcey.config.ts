@@ -22,7 +22,7 @@ export default {
         groups: [
           {
             group: "Start",
-            pages: ["introduction", "dogfood", "evolution"],
+            pages: ["introduction", "philosophy", "dogfood", "evolution"],
           },
           {
             group: "Operate",
@@ -58,6 +58,6 @@ export default {
     ],
   },
   search: {
-    featured: ["introduction", "evolution", "flows"],
+    featured: ["introduction", "philosophy", "evolution"],
   },
 };

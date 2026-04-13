@@ -9,6 +9,13 @@ description: The intended evolutionary path for automaton as a governed self-imp
 
 It should evolve through stages that are easy to inspect and hard to fake.
 
+Each stage should preserve the same doctrine:
+
+- keep actions bounded
+- keep approvals visible
+- keep repo identity honest
+- turn repeated work into durable skill and docs improvements
+
 ## Stage 1: Observable
 
 At the first stage, `automaton` proves that the system can observe itself and
@@ -45,6 +52,10 @@ Signals at this stage:
 - recurring failures become concrete backlog items
 - the repo becomes easier for future runs to understand
 
+This stage matters because self-improvement is where most systems become vague.
+`automaton` should do the opposite: the more it changes itself, the more
+inspectable its reasoning trail should become.
+
 ## Stage 4: Skill-Accreting
 
 At the fourth stage, repeated operator work stops living only in comments and
@@ -56,6 +67,10 @@ Signals at this stage:
 - `objective-to-skill` produces proposal PRs
 - proposals reference concrete receipts and repeated operator needs
 - the system gets more capable without skipping governance
+
+This is the real compounding layer. A healthy `automaton` should not only solve
+tasks. It should convert repeated classes of work into clearer future
+capability.
 
 ## Stage 5: Ecosystem-Useful
 
@@ -79,3 +94,10 @@ Right now `automaton` is between Stage 1 and Stage 2:
 
 That is the right posture. The repo should describe the current stage honestly
 while making the next stage concrete.
+
+The next pass should move the repo deeper into Stage 2 and early Stage 3:
+
+- make issue and PR loops reliable under real load
+- keep Sourcey docs aligned with the repo's real behavior
+- use repeated failures to harden skills rather than only patch workflows
+- let new proposals emerge from recurring evidence, not aspirational wishlists

@@ -1,3 +1,8 @@
+---
+title: Operating Model
+description: The governance doctrine that determines how automaton routes work, applies changes, and learns over time.
+---
+
 # Operating Model
 
 `automaton` is the public repo that `runx` should improve gradually over time.
@@ -9,6 +14,13 @@ Another rule is just as important: triage before execution.
 Issues should not jump straight into mutation. They should first become a
 public triage artifact with a suggested reply, a rationale, and one explicit
 next lane.
+
+A third rule is what keeps the repo credible over time: capability should grow
+by becoming more explicit.
+
+If the system needs more sophistication, that should show up as better docs,
+sharper skill context, stronger typed packets, and clearer approvals, not as
+more hidden magic.
 
 ## Phases
 
@@ -41,6 +53,10 @@ That proposal layer now has explicit front doors:
 - `objective-to-skill` for new capability proposals
 - `sourcey` for docs-site regeneration
 
+This proposal phase is where `automaton` defends itself against vague
+automation. If a task cannot be expressed as a bounded proposal with a clear
+artifact, the repo should not pretend it is ready for automatic execution.
+
 ### 3. Approve
 
 Public or mutating work stays gated:
@@ -57,6 +73,9 @@ In practice, `automaton` uses three approval shapes:
 3. PR review: the generated branch still lands through normal GitHub review
 
 This repo exists to prove governed automation, not to bypass it.
+
+Approval should therefore remain meaningful. The system should not dilute human
+review into a ceremonial checkbox after the fact.
 
 ### 4. Apply
 
@@ -78,6 +97,10 @@ That progression should be gradual:
 - `pr-triage` comments on open PRs with a runx-authored maintainer response
 - `skill-learning` turns a skill proposal issue into a concrete skill-design PR
 
+The key test at this phase is not only "did the run finish." The real test is
+"did the repo end up with a public artifact that a maintainer would actually
+want to inspect and use."
+
 ## Safety Defaults
 
 - one run should end in a bounded artifact
@@ -87,6 +110,8 @@ That progression should be gradual:
 - approvals should remain first-class and human-visible
 - repo identity docs should describe the real current stage, not an aspirational
   future as if it already exists
+- repeated failure modes should feed skill or context hardening, not endless
+  blind retries
 
 ## Missing Pieces
 

@@ -8,6 +8,18 @@ description: Why automaton exists as a public dogfood surface and how that loop 
 `automaton` exists so `runx` can dogfood itself on a real public target instead
 of a private benchmark or a staged demo.
 
+The repo matters because it forces the system to confront real operating
+conditions:
+
+- incomplete issue descriptions
+- ambiguous routing decisions
+- repo context that is useful but never perfect
+- public artifacts that can be inspected by anyone
+
+That pressure is the point. Dogfooding is not only about proving that a lane
+can succeed. It is about exposing where skill context is thin, where research
+is under-specified, and where governance needs to be sharper.
+
 ## The loop
 
 1. a real issue, PR, or schedule trigger enters the repo
@@ -40,3 +52,8 @@ The dogfood story should grow in layers:
 
 That last point matters most. `automaton` is not only a destination for `runx`
 workflows. It is the public record of how those workflows become trustworthy.
+
+The dogfood loop should therefore improve two things at once:
+
+- the `automaton` repo itself
+- the quality of the `runx` skills and flows acting on it

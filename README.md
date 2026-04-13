@@ -5,6 +5,7 @@
 The docs in this repo are about `automaton` itself:
 
 - what `automaton` is trying to become
+- the philosophy that governs how it should behave
 - how it should evolve under governance
 - which live lanes are real today
 - what evidence each lane should emit
@@ -34,6 +35,13 @@ That means the repo should accumulate a visible evolutionary trail:
 - PRs that receive operator-grade comments
 - new skills that begin as proposals before they become automation
 - docs that explain the current system honestly, including its gaps
+
+The governing philosophy is:
+
+- legibility over spectacle
+- bounded action over vague autonomy
+- receipts over claims
+- governed evolution over hidden self-modification
 
 ## Live Lanes
 
@@ -72,6 +80,8 @@ the draft-first observability lanes continue to run.
 
 - [docs/introduction.md](./docs/introduction.md): what `automaton` is trying to
   prove
+- [docs/philosophy.md](./docs/philosophy.md): the doctrine behind the repo's
+  behavior and safety boundaries
 - [docs/evolution.md](./docs/evolution.md): the intended evolutionary path
 - [docs/operating-model.md](./docs/operating-model.md): the governance model
   for gradual self-improvement
