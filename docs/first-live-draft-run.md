@@ -39,9 +39,8 @@ This repo has already been exercised as a real `runx` target in draft mode.
 
 ## What Comes Next
 
-- add a scafld bootstrap path so `issue-to-pr` and governed patch lanes can run
-  directly here
+- add a scafld bootstrap path so `issue-supervisor` can graduate from
+  comment-first triage into real `issue-to-pr` worker runs directly here
 - connect live issue intake for `open-source-triage`
 - allow selected runs to continue past the first caller boundary when an agent
   or answer file is available
-

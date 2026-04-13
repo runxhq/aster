@@ -36,7 +36,8 @@ responding to inbound work.
 Signals at this stage:
 
 - issues receive triage replies
-- bounded issues escalate into `issue-to-pr`
+- approved bounded issues escalate into one or more repo-scoped
+  `issue-to-pr` workers through `issue-supervisor`
 - PRs receive review comments through `pr-triage`
 - the repo shows real input-to-output loops
 
@@ -89,7 +90,8 @@ Right now `automaton` is between Stage 1 and Stage 2:
 
 - the live repo and docs surface exist
 - hosted lanes are real
-- issue triage, issue-to-PR, PR triage, and skill learning are being exercised
+- issue supervision, issue-to-PR workers, PR triage, and skill learning are
+  being exercised
 - the evolutionary story is now explicit instead of implied
 
 That is the right posture. The repo should describe the current stage honestly

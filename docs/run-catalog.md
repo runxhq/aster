@@ -13,16 +13,19 @@ This is the live run catalog for `automaton`.
 - approvals: `sourcey.discovery.approval`
 - output: docs-source diff, receipts, uploaded workflow artifact, draft PR
 
-### `issue-to-pr`
+### `issue-supervisor`
 
-- trigger: GitHub issues whose title begins with `[issue-to-pr]`
+- trigger: GitHub issues except `[skill]` proposals
 - command chain:
   1. `support-triage`
-  2. `issue-to-pr`
-  3. draft PR publication
-- purpose: convert a bounded issue into a governed scafld lane and a draft PR
-- output: archived scafld spec, changed repo files, receipts, draft PR, issue
-  backlink comment
+  2. `issue-supervisor`
+  3. optional `objective-decompose`
+  4. optional `issue-to-pr` worker fanout
+  5. draft PR publication per worker
+- purpose: make issue routing public before mutation and start one or more
+  bounded workers only after the supervisor gate approves build
+- output: triage comment, supervisor decision artifact, optional archived scafld
+  specs, changed repo files, receipts, draft PRs, issue backlink comments
 
 ### `pr-triage`
 

@@ -14,6 +14,7 @@ export async function main(argv = process.argv.slice(2)) {
 
 export function prepareIssueSupervisorDecision(report) {
   const triage = extractTriageReport(report);
+  const changeSet = extractChangeSet(report);
   const recommendedLane = firstString(triage.recommended_lane) ?? "manual-triage";
   const commenceDecision = normalizeEnum(
     triage.commence_decision,
@@ -23,14 +24,19 @@ export function prepareIssueSupervisorDecision(report) {
   const actionDecision = normalizeEnum(
     triage.action_decision,
     defaultActionDecision({ commenceDecision, recommendedLane }),
-    ["proceed_to_build", "request_review", "stop"],
+    ["proceed_to_build", "proceed_to_plan", "request_review", "stop"],
   );
   const reviewTarget = normalizeEnum(
     triage.review_target,
     actionDecision === "request_review" ? "issue" : "none",
     ["issue", "draft_pr", "none"],
   );
+  const workspaceChangePlanRequest = collectWorkspaceChangePlanRequest(triage, changeSet);
   const proposedWorkerRequests = collectProposedWorkerRequests(triage);
+  const shouldStartPlanner =
+    commenceDecision === "approve"
+    && actionDecision === "proceed_to_plan"
+    && Boolean(workspaceChangePlanRequest);
   const shouldStartWorker =
     commenceDecision === "approve"
     && actionDecision === "proceed_to_build"
@@ -42,12 +48,15 @@ export function prepareIssueSupervisorDecision(report) {
     actionDecision,
     recommendedLane,
     reviewTarget,
+    shouldStartPlanner,
     workerCount: workerRequests.length,
   });
 
   return {
-    mode: workerRequests.length > 0 ? "issue-to-pr" : "comment",
+    mode: workerRequests.length > 0 ? "issue-to-pr" : shouldStartPlanner ? "plan" : "comment",
     triage_report: triage,
+    change_set: changeSet,
+    workspace_change_plan_request: workspaceChangePlanRequest,
     issue_to_pr_request: workerRequests[0]?.issue_to_pr_request,
     comment_body: commentBody,
     supervisor_decision: {
@@ -56,7 +65,9 @@ export function prepareIssueSupervisorDecision(report) {
       recommended_lane: recommendedLane,
       review_target: reviewTarget,
       should_post_comment: commentBody.length > 0,
+      should_start_planner: shouldStartPlanner,
       should_start_worker: workerRequests.length > 0,
+      workspace_change_plan_request: workspaceChangePlanRequest,
       worker_requests: workerRequests,
     },
   };
@@ -68,6 +79,7 @@ export function buildSupervisorComment({
   actionDecision,
   recommendedLane,
   reviewTarget,
+  shouldStartPlanner = false,
   workerCount = 0,
 }) {
   const lines = [
@@ -83,6 +95,9 @@ export function buildSupervisorComment({
   }
   if (workerCount > 0) {
     lines.push(`- Worker fanout: \`${workerCount}\``);
+  }
+  if (shouldStartPlanner) {
+    lines.push("- Planning lane: `objective-decompose`");
   }
 
   const narrative = firstString(
@@ -119,20 +134,42 @@ function extractTriageReport(report) {
   if (asRecord(report)?.triage_report) {
     return asRecord(report.triage_report) ?? {};
   }
+  const payload = extractExecutionPayload(report);
+  if (payload && payload.triage_report) {
+    return asRecord(payload.triage_report) ?? {};
+  }
+  return {};
+}
+
+function extractChangeSet(report) {
+  if (asRecord(report)?.change_set) {
+    return asRecord(report.change_set);
+  }
+  const payload = extractExecutionPayload(report);
+  if (payload && payload.change_set) {
+    return asRecord(payload.change_set);
+  }
+  return undefined;
+}
+
+function extractExecutionPayload(report) {
   const stdout = firstString(asRecord(report)?.execution?.stdout);
   if (!stdout) {
-    return {};
+    return undefined;
   }
   try {
-    return asRecord(JSON.parse(stdout)?.triage_report) ?? {};
+    return asRecord(JSON.parse(stdout));
   } catch {
-    return {};
+    return undefined;
   }
 }
 
 function defaultActionDecision({ commenceDecision, recommendedLane }) {
   if (commenceDecision !== "approve") {
     return "stop";
+  }
+  if (recommendedLane === "objective-decompose") {
+    return "proceed_to_plan";
   }
   if (recommendedLane === "issue-to-pr" || recommendedLane === "multi-repo-issue-to-pr") {
     return "proceed_to_build";
@@ -175,6 +212,57 @@ function collectProposedWorkerRequests(triage) {
   }
 
   return [];
+}
+
+function collectWorkspaceChangePlanRequest(triage, changeSet) {
+  const explicit = asRecord(triage.workspace_change_plan_request);
+  if (explicit) {
+    return normalizeWorkspaceChangePlanRequest(explicit, changeSet);
+  }
+
+  const compatibility = asRecord(triage.objective_request);
+  if (!compatibility) {
+    return undefined;
+  }
+
+  return normalizeWorkspaceChangePlanRequest(
+    {
+      change_set_id: firstString(changeSet?.change_set_id),
+      objective: firstString(compatibility.objective),
+      project_context: firstString(compatibility.project_context),
+      target_surfaces: Array.isArray(changeSet?.target_surfaces) ? changeSet.target_surfaces : undefined,
+      shared_invariants: Array.isArray(changeSet?.shared_invariants) ? changeSet.shared_invariants : undefined,
+      success_criteria: Array.isArray(changeSet?.success_criteria) ? changeSet.success_criteria : undefined,
+    },
+    changeSet,
+  );
+}
+
+function normalizeWorkspaceChangePlanRequest(value, changeSet) {
+  const record = asRecord(value);
+  if (!record) {
+    return undefined;
+  }
+  return {
+    change_set_id: firstString(record.change_set_id) ?? firstString(changeSet?.change_set_id),
+    objective: firstString(record.objective),
+    project_context: firstString(record.project_context),
+    target_surfaces: Array.isArray(record.target_surfaces)
+      ? record.target_surfaces
+      : Array.isArray(changeSet?.target_surfaces)
+        ? changeSet.target_surfaces
+        : [],
+    shared_invariants: Array.isArray(record.shared_invariants)
+      ? record.shared_invariants
+      : Array.isArray(changeSet?.shared_invariants)
+        ? changeSet.shared_invariants
+        : [],
+    success_criteria: Array.isArray(record.success_criteria)
+      ? record.success_criteria
+      : Array.isArray(changeSet?.success_criteria)
+        ? changeSet.success_criteria
+        : [],
+  };
 }
 
 function normalizeWorkerRequest(value) {

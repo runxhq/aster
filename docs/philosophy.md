@@ -110,7 +110,8 @@ The philosophy is only real if it changes repo behavior.
 That is why the current live lanes map directly to the doctrine:
 
 - `support-triage` makes issue routing public before mutation
-- `issue-to-pr` converts bounded work into reviewable draft PRs
+- `issue-supervisor` decides whether planning or a worker may start at all
+- `issue-to-pr` converts bounded approved work into reviewable draft PRs
 - `github-triage` makes PR review guidance visible and attributable
 - `sourcey` keeps the repo's public explanation aligned with the live system
 - `objective-to-skill` turns repeated needs into governed capability proposals

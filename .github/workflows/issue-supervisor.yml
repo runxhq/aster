@@ -104,12 +104,25 @@ jobs:
             --source_id "${{ github.event.issue.number }}" \
             --source_url "$ISSUE_URL" \
             --product_context "automaton public dogfood repository" \
-            --operator_context "Act as the issue supervisor commencement gate. Always draft a user-facing triage comment. Approve issue-to-pr only when the work is bounded to one repo-scoped governed PR. Use action_decision=request_review when the issue needs discussion or decomposition before mutation."
+            --operator_context "Act as the issue supervisor commencement gate. Always draft a user-facing triage comment. Approve issue-to-pr only when the work is bounded to one repo-scoped governed PR. Use action_decision=proceed_to_plan when objective-decompose should freeze a shared plan before mutation. Use action_decision=request_review when the issue needs discussion before planning or mutation."
           node scripts/prepare-issue-supervisor-decision.mjs \
             --input "$GITHUB_WORKSPACE/.artifacts/issue-supervisor/triage-result.json" \
             --output "$GITHUB_WORKSPACE/.artifacts/issue-supervisor/supervisor-decision.json"
           jq -r '.comment_body' "$GITHUB_WORKSPACE/.artifacts/issue-supervisor/supervisor-decision.json" \
             > "$GITHUB_WORKSPACE/.artifacts/issue-supervisor/supervisor-comment.md"
+          if [ "$(jq -r '.supervisor_decision.should_start_planner' "$GITHUB_WORKSPACE/.artifacts/issue-supervisor/supervisor-decision.json")" = "true" ]; then
+            node scripts/run-issue-supervisor-plan.mjs \
+              --decision "$GITHUB_WORKSPACE/.artifacts/issue-supervisor/supervisor-decision.json" \
+              --runx-root "$GITHUB_WORKSPACE/.runx/runx" \
+              --receipt-dir "$GITHUB_WORKSPACE/.artifacts/issue-supervisor/plan-receipts" \
+              --trace-dir "$GITHUB_WORKSPACE/.artifacts/issue-supervisor/plan-provider-trace" \
+              --output "$GITHUB_WORKSPACE/.artifacts/issue-supervisor/plan-result.json" \
+              --comment-output "$GITHUB_WORKSPACE/.artifacts/issue-supervisor/plan-comment.md"
+            if [ -f "$GITHUB_WORKSPACE/.artifacts/issue-supervisor/plan-comment.md" ]; then
+              printf '\n\n' >> "$GITHUB_WORKSPACE/.artifacts/issue-supervisor/supervisor-comment.md"
+              cat "$GITHUB_WORKSPACE/.artifacts/issue-supervisor/plan-comment.md" >> "$GITHUB_WORKSPACE/.artifacts/issue-supervisor/supervisor-comment.md"
+            fi
+          fi
           if [ "$(jq -r '.supervisor_decision.should_start_worker' "$GITHUB_WORKSPACE/.artifacts/issue-supervisor/supervisor-decision.json")" != "true" ]; then
             exit 0
           fi

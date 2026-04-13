@@ -74,6 +74,60 @@ test("prepareIssueSupervisorDecision holds at a review comment when mutation sho
   assert.match(decision.comment_body, /Operator notes:/);
 });
 
+test("prepareIssueSupervisorDecision starts a planning lane for objective-decompose before any worker starts", () => {
+  const decision = prepareIssueSupervisorDecision({
+    execution: {
+      stdout: JSON.stringify({
+        triage_report: {
+          category: "feature_request",
+          severity: "high",
+          summary: "Abandoned cart recovery spans api and app.",
+          suggested_reply: "runx is opening a shared planning lane before any repo worker starts.",
+          recommended_lane: "objective-decompose",
+          rationale: "The work crosses repo boundaries and needs one frozen plan first.",
+          needs_human: false,
+          commence_decision: "approve",
+          action_decision: "proceed_to_plan",
+          operator_notes: ["Freeze the backend-facing contract before downstream repo workers run."],
+          workspace_change_plan_request: {
+            change_set_id: "change-set-204",
+            objective: "Roll out abandoned cart recovery",
+            project_context: "automaton workspace repo",
+            target_surfaces: [
+              { surface: "automaton/api", kind: "repo", mutating: true, rationale: "Backend semantics change first." },
+              { surface: "automaton/app", kind: "repo", mutating: true, rationale: "The UI must consume the frozen contract." },
+            ],
+            shared_invariants: ["Keep the rollout approval-gated."],
+            success_criteria: ["One phased plan exists before mutation begins."],
+          },
+        },
+        change_set: {
+          change_set_id: "change-set-204",
+          source: { type: "github_issue", id: "204" },
+          summary: "Roll out abandoned cart recovery.",
+          category: "feature_request",
+          severity: "high",
+          recommended_lane: "objective-decompose",
+          commence_decision: "approve",
+          action_decision: "proceed_to_plan",
+          target_surfaces: [
+            { surface: "automaton/api", kind: "repo", mutating: true, rationale: "Backend semantics change first." },
+            { surface: "automaton/app", kind: "repo", mutating: true, rationale: "The UI must consume the frozen contract." },
+          ],
+          shared_invariants: ["Keep the rollout approval-gated."],
+          success_criteria: ["One phased plan exists before mutation begins."],
+        },
+      }),
+    },
+  });
+
+  assert.equal(decision.mode, "plan");
+  assert.equal(decision.supervisor_decision.should_start_planner, true);
+  assert.equal(decision.supervisor_decision.should_start_worker, false);
+  assert.equal(decision.workspace_change_plan_request.change_set_id, "change-set-204");
+  assert.match(decision.comment_body, /Planning lane: `objective-decompose`/);
+});
+
 test("prepareIssueSupervisorDecision stops non-mutating reply-only requests without inventing a worker", () => {
   const decision = prepareIssueSupervisorDecision({
     execution: {

@@ -16,15 +16,18 @@ Runs the `runx` `sourcey` skill against this repo, auto-approves the bounded
 docs plan, validates the resulting docs source with a fresh Sourcey build, and
 opens a draft PR.
 
-## `issue-to-pr`
+## `issue-supervisor`
 
 Listens for every normal issue except `[skill]` proposals. The workflow:
 
 1. runs `support-triage`
-2. posts the triage reply back to the issue
-3. passes bounded requests into `issue-to-pr`
-4. lets scafld carry the spec, audit, review, and archive lifecycle
-5. opens a draft PR from the resulting branch
+2. prepares one explicit supervisor decision from the triage output
+3. optionally runs `objective-decompose` when triage approves a planning lane
+4. posts the supervisor comment back to the issue
+5. starts one or more isolated `issue-to-pr` workers only when triage
+   explicitly approves build
+6. lets scafld carry the spec, audit, review, and archive lifecycle
+7. opens one draft PR per approved worker branch
 
 ## `pr-triage`
 

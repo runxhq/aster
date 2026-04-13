@@ -10,13 +10,17 @@ description: Secrets, approvals, artifacts, and what still needs hardening.
 - `OPENAI_API_KEY`: external caller for `runx` `agent-step` requests
 - `RUNX_CALLER_MODEL` (optional repo variable): pinned model snapshot for the
   hosted bridge
+- `RUNX_WORKSPACE_PAT` (optional secret): broader GitHub token for cross-repo
+  worker checkouts and draft PR publication
 
 ## Approval policy
 
 Approvals stay explicit:
 
 - Sourcey authoring auto-approves only `sourcey.discovery.approval`
-- Issue-to-PR stays bounded by the issue template plus scafld review
+- Issue supervision comments first; `objective-decompose` may run when the
+  supervisor gate approves planning, and one or more repo-scoped `issue-to-pr`
+  workers start only after the supervisor gate approves build
 - PR triage writes comments only through the dedicated workflow
 - Skill-learning opens draft PRs only
 

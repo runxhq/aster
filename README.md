@@ -49,8 +49,10 @@ The governing philosophy is:
 
 - `sourcey-refresh`: `runx sourcey` authors and revises the Sourcey docs source
   bundle, then opens a draft PR
-- `issue-to-pr`: a normal GitHub issue runs through `support-triage`; bounded
-  issues escalate into `issue-to-pr` and open a draft PR
+- `issue-supervisor`: a normal GitHub issue runs through `support-triage`; the
+  supervisor posts a public triage comment, can run `objective-decompose` when
+  the gate approves planning, and only then starts one or more repo-scoped
+  `issue-to-pr` workers when the gate approves build
 - `pr-triage`: a live PR snapshot runs through `github-triage`, then the
   workflow posts a maintainer comment back onto the PR
 - `skill-learning`: a skill proposal issue runs through
@@ -70,8 +72,9 @@ Two supporting lanes stay valuable even when the external caller is offline:
 - `RUNX_CALLER_MODEL` (optional): pinned model override for the hosted bridge
 - `RUNX_REF` (repo variable): optional `runx` branch or tag for hosted
   checkouts; defaults to `main`
-- `RUNX_WORKSPACE_PAT` (legacy): only needed if the workflow checks out a
-  private runx ref; public `auscaster/runx` checkouts do not require it
+- `RUNX_WORKSPACE_PAT` (optional): broader GitHub token for cross-repo worker
+  checkouts and draft PR publication. The repo-scoped `github.token` is enough
+  for same-repo workers; fanout into other repos needs broader access.
 
 Without `OPENAI_API_KEY`, the mutation-capable lanes stay intentionally idle and
 the draft-first observability lanes continue to run.
@@ -93,6 +96,15 @@ the draft-first observability lanes continue to run.
   public docs site
 - [scripts/runx-agent-bridge.mjs](./scripts/runx-agent-bridge.mjs): external
   caller that answers `runx` `agent-step` requests without internal shortcuts
+- [scripts/prepare-issue-supervisor-decision.mjs](./scripts/prepare-issue-supervisor-decision.mjs):
+  converts a `support-triage` result into one explicit supervisor decision plus
+  optional planning and worker requests
+- [scripts/run-issue-supervisor-plan.mjs](./scripts/run-issue-supervisor-plan.mjs):
+  runs `objective-decompose` when the supervisor approves planning and appends a
+  phased plan summary to the issue comment
+- [scripts/run-issue-supervisor-workers.mjs](./scripts/run-issue-supervisor-workers.mjs):
+  executes one or more isolated `issue-to-pr` workers and publishes the
+  resulting draft PRs
 - [scripts/publish-runx-pr.mjs](./scripts/publish-runx-pr.mjs): reusable draft
   PR publisher for generated repo changes
 

@@ -7,8 +7,8 @@ content runs.
 
 - the Sourcey site should publish a machine-readable run catalog and receipt map
 - PR triage should evolve from one comment into structured review-check output
-- issue-to-pr should learn to classify `reply-only` and `manual-triage`
-  requests without opening empty PRs
+- issue-supervisor should enforce dependency edges from `objective-decompose`
+  when a phased plan contains ordered repo workers
 - skill-learning should upgrade from proposal docs to bounded runx skill PRs
 - draft-only dogfood runs should roll up into one concise operator dashboard
 - workflow receipts should eventually land in a persistent, queryable store
