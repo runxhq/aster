@@ -18,16 +18,16 @@ concurrency:
 
 jobs:
   pr-triage:
-    if: ${{ github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
     env:
-      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       RUNX_CALLER_MODEL: ${{ vars.RUNX_CALLER_MODEL || 'gpt-4o-2024-08-06' }}
     steps:
       - name: Check lane prerequisites
         id: preflight
+        env:
+          HAS_OPENAI_KEY: ${{ secrets.OPENAI_API_KEY != '' }}
         run: |
-          if [ -z "${OPENAI_API_KEY}" ]; then
+          if [ "${HAS_OPENAI_KEY}" != "true" ]; then
             echo "enabled=false" >> "$GITHUB_OUTPUT"
             echo "OPENAI_API_KEY not configured; skipping pr-triage."
           else
@@ -73,6 +73,8 @@ jobs:
 
       - name: Run github-triage on PR snapshot
         if: ${{ steps.preflight.outputs.enabled == 'true' }}
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
           node scripts/runx-agent-bridge.mjs \
             --runx-root "$GITHUB_WORKSPACE/runx" \

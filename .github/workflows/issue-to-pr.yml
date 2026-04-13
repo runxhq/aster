@@ -21,13 +21,14 @@ jobs:
     if: ${{ startsWith(github.event.issue.title, '[issue-to-pr]') }}
     runs-on: ubuntu-latest
     env:
-      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       RUNX_CALLER_MODEL: ${{ vars.RUNX_CALLER_MODEL || 'gpt-4o-2024-08-06' }}
     steps:
       - name: Check lane prerequisites
         id: preflight
+        env:
+          HAS_OPENAI_KEY: ${{ secrets.OPENAI_API_KEY != '' }}
         run: |
-          if [ -z "${OPENAI_API_KEY}" ]; then
+          if [ "${HAS_OPENAI_KEY}" != "true" ]; then
             echo "enabled=false" >> "$GITHUB_OUTPUT"
             echo "OPENAI_API_KEY not configured; skipping issue-to-pr."
           else
@@ -78,6 +79,8 @@ jobs:
 
       - name: Run issue-to-pr lane
         if: ${{ steps.preflight.outputs.enabled == 'true' }}
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
           mkdir -p .artifacts/issue-to-pr
           ISSUE_URL="${{ github.event.issue.html_url }}"
