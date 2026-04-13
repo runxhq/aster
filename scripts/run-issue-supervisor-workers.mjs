@@ -94,7 +94,7 @@ async function runWorker({ options, workerRequest, index }) {
     const skillPath = resolveRunxSkillPath(options.runxRoot, "issue-to-pr");
     const repoSnapshot = buildRepoSnapshot(workDir, targetRepo);
     await writeFile(path.join(artifactDir, "repo-snapshot.json"), `${JSON.stringify(repoSnapshot, null, 2)}\n`);
-    run(process.execPath, [
+    const bridgeArgs = [
       path.join(repoRoot, "scripts", "runx-agent-bridge.mjs"),
       "--runx-root",
       path.resolve(options.runxRoot),
@@ -106,7 +106,8 @@ async function runWorker({ options, workerRequest, index }) {
       traceDir,
       "--output",
       resultPath,
-      "--",
+    ];
+    const startRunxArgs = [
       "skill",
       skillPath,
       "--fixture",
@@ -137,7 +138,14 @@ async function runWorker({ options, workerRequest, index }) {
       firstString(issueToPrRequest.phase) ?? "phase1",
       "--scafld_bin",
       options.scafldBin,
-    ]);
+    ];
+
+    await runRunxBridgeWithRetry({
+      bridgeArgs,
+      startRunxArgs,
+      resultPath,
+      cwd: workDir,
+    });
 
     const validationCommands = resolveValidationCommands({
       defaultRepo: options.defaultRepo,
@@ -504,6 +512,29 @@ function run(command, args, options = {}) {
   }).trim();
 }
 
+async function runRunxBridgeWithRetry({ bridgeArgs, startRunxArgs, resultPath, cwd }) {
+  const maxAttempts = Number(process.env.RUNX_BRIDGE_MAX_ATTEMPTS ?? "3");
+  let runxArgs = [...startRunxArgs];
+  let lastError;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      run(process.execPath, [...bridgeArgs, "--", ...runxArgs], { cwd });
+      return;
+    } catch (error) {
+      lastError = error;
+      if (!isRetryableBridgeFailure(error) || attempt === maxAttempts) {
+        throw error;
+      }
+
+      const resumedRunId = readBridgeRunId(resultPath);
+      runxArgs = resumedRunId ? ["resume", resumedRunId] : [...startRunxArgs];
+    }
+  }
+
+  throw lastError;
+}
+
 function requireValue(argv, index, flag) {
   const value = argv[index];
   if (!value) {
@@ -541,8 +572,29 @@ export function sanitizeIssueBody(value) {
     .trim();
 }
 
+export function isRetryableBridgeFailure(error) {
+  const text = [error?.message, error?.stdout, error?.stderr]
+    .filter((value) => typeof value === "string" && value.length > 0)
+    .join("\n");
+
+  return /(ECONNRESET|ETIMEDOUT|UND_ERR_HEADERS_TIMEOUT|UND_ERR_BODY_TIMEOUT|UND_ERR_CONNECT_TIMEOUT|ECONNREFUSED)/.test(text);
+}
+
 function slug(value) {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 48);
+}
+
+function readBridgeRunId(resultPath) {
+  if (!existsSync(resultPath)) {
+    return undefined;
+  }
+
+  try {
+    const parsed = JSON.parse(readFileSync(resultPath, "utf8"));
+    return firstString(parsed?.run_id);
+  } catch {
+    return undefined;
+  }
 }
 
 function serializeError(error) {
