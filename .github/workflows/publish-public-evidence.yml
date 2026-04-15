@@ -1,0 +1,64 @@
+name: publish-public-evidence
+
+on:
+  workflow_run:
+    workflows:
+      - issue-supervisor
+      - pr-triage
+      - runx-dogfood
+      - skill-learning
+      - sourcey-refresh
+    types:
+      - completed
+  workflow_dispatch:
+    inputs:
+      workflow_name:
+        description: "Workflow name to report"
+        required: true
+        type: string
+      status:
+        description: "Conclusion status"
+        required: true
+        type: choice
+        options:
+          - success
+          - failure
+          - cancelled
+      run_id:
+        description: "Optional workflow run id"
+        required: false
+        type: string
+      summary:
+        description: "Optional summary"
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  publish:
+    if: >-
+      ${{
+        github.event_name == 'workflow_dispatch' ||
+        github.event.workflow_run.conclusion == 'success' ||
+        github.event.workflow_run.conclusion == 'failure' ||
+        github.event.workflow_run.conclusion == 'cancelled' ||
+        github.event.workflow_run.conclusion == 'timed_out'
+      }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Publish automaton evidence
+        uses: auscaster/runx-workspace/.github/actions/publish-public-evidence@main
+        with:
+          api_base_url: ${{ vars.RUNX_PUBLIC_EVIDENCE_API_BASE_URL || 'https://api.runx.ai' }}
+          token: ${{ secrets.RUNX_PUBLIC_EVIDENCE_TOKEN }}
+          kind: automaton_run
+          status: ${{ github.event_name == 'workflow_dispatch' && inputs.status || (github.event.workflow_run.conclusion == 'timed_out' && 'failure') || github.event.workflow_run.conclusion }}
+          title: ${{ github.event_name == 'workflow_dispatch' && format('{0} · {1}', inputs.workflow_name, github.repository) || format('{0} · {1}', github.event.workflow_run.name, github.repository) }}
+          summary: ${{ github.event_name == 'workflow_dispatch' && inputs.summary || format('workflow completed with status {0}', github.event_name == 'workflow_dispatch' && inputs.status || github.event.workflow_run.conclusion) }}
+          source: github-actions
+          run_id: ${{ github.event_name == 'workflow_dispatch' && inputs.run_id || github.event.workflow_run.id }}
