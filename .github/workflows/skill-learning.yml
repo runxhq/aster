@@ -62,7 +62,7 @@ jobs:
         env:
           RUNX_REPOSITORY_TOKEN: ${{ secrets.RUNX_REPOSITORY_PAT != '' && secrets.RUNX_REPOSITORY_PAT || secrets.RUNX_WORKSPACE_PAT != '' && secrets.RUNX_WORKSPACE_PAT || github.token }}
         run: |
-          git -C .runx/runx config url."https://x-access-token:${RUNX_REPOSITORY_TOKEN}@github.com/".insteadOf "git@github.com:"
+          git -C .runx/runx config -f .gitmodules submodule.oss.url "https://x-access-token:${RUNX_REPOSITORY_TOKEN}@github.com/auscaster/runx.git"
           git -C .runx/runx submodule sync -- oss
           git -C .runx/runx submodule update --init --depth 1 oss
 
