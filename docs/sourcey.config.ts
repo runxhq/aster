@@ -1,6 +1,6 @@
 export default {
   name: "automaton",
-  repo: "https://github.com/auscaster/automaton",
+  repo: "https://github.com/nilstate/automaton",
   editBranch: "main",
   editBasePath: "docs",
   theme: {
@@ -40,20 +40,20 @@ export default {
     links: [
       {
         type: "github",
-        href: "https://github.com/auscaster/automaton",
+        href: "https://github.com/nilstate/automaton",
       },
     ],
     primary: {
       type: "button",
       label: "View Repo",
-      href: "https://github.com/auscaster/automaton",
+      href: "https://github.com/nilstate/automaton",
     },
   },
   footer: {
     links: [
       {
         type: "github",
-        href: "https://github.com/auscaster/automaton",
+        href: "https://github.com/nilstate/automaton",
       },
     ],
   },

@@ -51,7 +51,7 @@ test("isRetryableBridgeFailure ignores non-transport failures", () => {
 
 test("buildInlineRepoSnapshot keeps the prompt payload compact", () => {
   const snapshot = buildInlineRepoSnapshot({
-    target_repo: "auscaster/automaton",
+    target_repo: "nilstate/automaton",
     git: { branch: null, head: "abc123" },
     top_level_entries: Array.from({ length: 20 }, (_, index) => ({
       name: `entry-${index}`,
