@@ -32,7 +32,7 @@ export function prepareIssueSupervisorDecision(report) {
     ["issue", "draft_pr", "none"],
   );
   const workspaceChangePlanRequest = collectWorkspaceChangePlanRequest(triage, changeSet);
-  const proposedWorkerRequests = collectProposedWorkerRequests(triage);
+  const proposedWorkerRequests = collectProposedWorkerRequests(triage, changeSet);
   const shouldStartPlanner =
     commenceDecision === "approve"
     && actionDecision === "proceed_to_plan"
@@ -42,12 +42,14 @@ export function prepareIssueSupervisorDecision(report) {
     && actionDecision === "proceed_to_build"
     && proposedWorkerRequests.length > 0;
   const workerRequests = shouldStartWorker ? proposedWorkerRequests : [];
+  const commentTarget = resolveCommentTarget(reviewTarget);
   const commentBody = buildSupervisorComment({
     triage,
     commenceDecision,
     actionDecision,
     recommendedLane,
     reviewTarget,
+    commentTarget,
     shouldStartPlanner,
     workerCount: workerRequests.length,
   });
@@ -64,6 +66,7 @@ export function prepareIssueSupervisorDecision(report) {
       action_decision: actionDecision,
       recommended_lane: recommendedLane,
       review_target: reviewTarget,
+      comment_target: commentTarget,
       should_post_comment: commentBody.length > 0,
       should_start_planner: shouldStartPlanner,
       should_start_worker: workerRequests.length > 0,
@@ -79,6 +82,7 @@ export function buildSupervisorComment({
   actionDecision,
   recommendedLane,
   reviewTarget,
+  commentTarget,
   shouldStartPlanner = false,
   workerCount = 0,
 }) {
@@ -92,6 +96,10 @@ export function buildSupervisorComment({
 
   if (reviewTarget !== "none") {
     lines.push(`- Review target: \`${reviewTarget}\``);
+  }
+  if (commentTarget !== "none" && commentTarget !== reviewTarget) {
+    lines.push(`- Comment surface: \`${commentTarget}\``);
+    lines.push("- Draft PR review was requested, but no draft PR exists yet, so the supervisor comment is posted on the issue first.");
   }
   if (workerCount > 0) {
     lines.push(`- Worker fanout: \`${workerCount}\``);
@@ -180,7 +188,17 @@ function defaultActionDecision({ commenceDecision, recommendedLane }) {
   return "request_review";
 }
 
-function collectProposedWorkerRequests(triage) {
+function resolveCommentTarget(reviewTarget) {
+  if (reviewTarget === "issue") {
+    return "issue";
+  }
+  if (reviewTarget === "draft_pr") {
+    return "issue";
+  }
+  return "none";
+}
+
+function collectProposedWorkerRequests(triage, changeSet) {
   const explicitRequests = Array.isArray(triage.worker_requests)
     ? triage.worker_requests
     : [];
@@ -211,7 +229,39 @@ function collectProposedWorkerRequests(triage) {
     ];
   }
 
+  const derived = buildFallbackIssueToPrRequest(triage, changeSet);
+  if (derived) {
+    return [
+      {
+        worker: "issue-to-pr",
+        issue_to_pr_request: derived,
+      },
+    ];
+  }
+
   return [];
+}
+
+function buildFallbackIssueToPrRequest(triage, changeSet) {
+  const recommendedLane = firstString(triage?.recommended_lane);
+  if (recommendedLane !== "issue-to-pr" && recommendedLane !== "multi-repo-issue-to-pr") {
+    return undefined;
+  }
+
+  const source = asRecord(changeSet?.source);
+  const sourceId = firstString(source?.id);
+  const issueTitle = firstString(triage?.summary) ?? firstString(changeSet?.summary);
+  if (!sourceId || !issueTitle) {
+    return undefined;
+  }
+
+  return {
+    task_id: `issue-${sourceId}`,
+    issue_title: issueTitle,
+    source: firstString(source?.type) ?? "github_issue",
+    source_id: sourceId,
+    source_url: firstString(source?.url),
+  };
 }
 
 function collectWorkspaceChangePlanRequest(triage, changeSet) {

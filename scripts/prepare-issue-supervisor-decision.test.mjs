@@ -41,6 +41,43 @@ test("prepareIssueSupervisorDecision starts an issue-to-pr worker only after tri
   assert.match(decision.comment_body, /Worker fanout: `1`/);
 });
 
+test("prepareIssueSupervisorDecision derives a single worker request when triage omits issue_to_pr_request", () => {
+  const decision = prepareIssueSupervisorDecision({
+    execution: {
+      stdout: JSON.stringify({
+        triage_report: {
+          category: "bug",
+          severity: "medium",
+          summary: "README command drift",
+          suggested_reply: "This is bounded enough for one draft PR.",
+          recommended_lane: "issue-to-pr",
+          rationale: "One repo, one low-risk change.",
+          needs_human: false,
+          commence_decision: "approve",
+          action_decision: "proceed_to_build",
+          operator_notes: [],
+        },
+        change_set: {
+          change_set_id: "change-set-101",
+          source: {
+            type: "github_issue",
+            id: "101",
+            url: "https://github.com/example/repo/issues/101",
+          },
+          summary: "README still references bug-to-pr",
+        },
+      }),
+    },
+  });
+
+  assert.equal(decision.mode, "issue-to-pr");
+  assert.equal(decision.supervisor_decision.should_start_worker, true);
+  assert.equal(decision.supervisor_decision.worker_requests.length, 1);
+  assert.equal(decision.issue_to_pr_request.task_id, "issue-101");
+  assert.equal(decision.issue_to_pr_request.issue_title, "README command drift");
+  assert.equal(decision.issue_to_pr_request.source_id, "101");
+});
+
 test("prepareIssueSupervisorDecision holds at a review comment when mutation should not start yet", () => {
   const decision = prepareIssueSupervisorDecision({
     execution: {
@@ -70,8 +107,37 @@ test("prepareIssueSupervisorDecision holds at a review comment when mutation sho
   assert.equal(decision.mode, "comment");
   assert.equal(decision.supervisor_decision.should_start_worker, false);
   assert.equal(decision.supervisor_decision.review_target, "issue");
+  assert.equal(decision.supervisor_decision.comment_target, "issue");
   assert.match(decision.comment_body, /runx is holding mutation until the scope is decomposed\./);
   assert.match(decision.comment_body, /Operator notes:/);
+});
+
+test("prepareIssueSupervisorDecision falls back to an issue comment when draft PR review is requested before publish", () => {
+  const decision = prepareIssueSupervisorDecision({
+    execution: {
+      stdout: JSON.stringify({
+        triage_report: {
+          category: "docs",
+          severity: "medium",
+          summary: "Need maintainer confirmation before opening a worker.",
+          suggested_reply: "Please confirm whether this should land as a docs-only fix.",
+          recommended_lane: "manual-triage",
+          rationale: "The target surface is still unclear.",
+          needs_human: false,
+          commence_decision: "approve",
+          action_decision: "request_review",
+          review_target: "draft_pr",
+          review_comment: "Please confirm the exact repo before runx opens a worker.",
+          operator_notes: [],
+        },
+      }),
+    },
+  });
+
+  assert.equal(decision.supervisor_decision.review_target, "draft_pr");
+  assert.equal(decision.supervisor_decision.comment_target, "issue");
+  assert.match(decision.comment_body, /Comment surface: `issue`/);
+  assert.match(decision.comment_body, /no draft PR exists yet/i);
 });
 
 test("prepareIssueSupervisorDecision starts a planning lane for objective-decompose before any worker starts", () => {
