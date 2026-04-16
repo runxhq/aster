@@ -1,0 +1,176 @@
+spec_version: "1.1"
+task_id: "automaton-public-face-and-self-documentation"
+created: "2026-04-16T12:00:00Z"
+updated: "2026-04-16T12:00:00Z"
+status: "draft"
+
+task:
+  title: "Define automaton public face and self-documentation surfaces"
+  summary: >
+    Plan the separate automaton.runx.ai site and the self-documentation system
+    that feeds it. The target face is site/. Working docs may remain in the
+    repo, but Sourcey is not part of the intended public architecture. The site
+    belongs to automaton, pulls only selected generic live data from runx, and
+    must never masquerade derived operator narrative as canonical receipts.
+  size: "medium"
+  risk_level: "medium"
+  context:
+    packages:
+      - "docs"
+      - ".artifacts"
+      - "site"
+      - "doctrine"
+      - "state"
+      - "history"
+      - "reflections"
+      - "../runx/docs"
+    related_docs:
+      - "docs/architecture.md"
+      - "docs/introduction.md"
+      - "docs/operating-model.md"
+      - "../runx/docs/public-website-data.md"
+    invariants:
+      - "automaton_site_is_separate"
+      - "runx_receipts_remain_canonical"
+      - "public_narrative_never_overclaims"
+  objectives:
+    - "Define the route surface for automaton.runx.ai."
+    - "Define which repo-owned content categories feed the site."
+    - "Define the migration from docs/ plus Sourcey to site/."
+    - "Define which live data is linked from runx rather than copied."
+    - "Define append-only self-documentation rules."
+    - "Define the route contract and rendering contract for the public site."
+  touchpoints:
+    - area: "site"
+      description: "Separate automaton public face."
+    - area: "repo content"
+      description: "Doctrine, state, history, reflections, and the current docs shape."
+    - area: "receipt links"
+      description: "Canonical receipts stay on runx surfaces."
+  scope:
+    in_scope:
+      - "Site route plan"
+      - "Repo content ownership"
+      - "Working-docs to site migration"
+      - "Public narrative policy"
+      - "Self-documentation update rules"
+    out_of_scope:
+      - "Implementing Astro components"
+      - "Deploying the site"
+      - "Design system implementation"
+  dependencies:
+    - "automaton-operator-architecture"
+  acceptance:
+    validation_profile: "standard"
+    definition_of_done:
+      - id: "dod1"
+        description: "The architecture plan names the separate public face and its content sources."
+        status: "pending"
+      - id: "dod2"
+        description: "The plan distinguishes canonical receipts from public narrative."
+        status: "pending"
+      - id: "dod3"
+        description: "The target repo shape for doctrine, state, history, reflections, and site is documented."
+        status: "pending"
+      - id: "dod4"
+        description: "The spec explains that working docs may remain, but site/ is the intended public face."
+        status: "pending"
+      - id: "dod5"
+        description: "The spec defines the stable public route contract and rendering sources."
+        status: "pending"
+    validation:
+      - id: "v1"
+        type: "documentation"
+        description: "Architecture page contains public face, route contract, working-docs migration, and repo shape sections."
+        command: "rg -n \"Public Face|Sourcey is optional tooling|site/ is the intended public face|Site Information Architecture|Repo Shape|automaton.runx.ai|doctrine/|state/|history/|reflections/|site/\" docs/architecture.md"
+        expected: "site and repo shape sections present"
+      - id: "v2"
+        type: "documentation"
+        description: "Introduction and README expose the architecture plan."
+        command: "rg -n \"architecture\" README.md docs/introduction.md docs/sourcey.config.ts"
+        expected: "architecture is linked from repo entry points"
+
+planning_log:
+  - timestamp: "2026-04-16T12:00:00Z"
+    actor: "codex"
+    summary: >
+      Created after the boundary reset so the separate public face can be
+      planned cleanly without turning runx.ai into an automaton product shell.
+
+phases:
+  - id: "phase1"
+    name: "Site Boundary"
+    objective: "Define why automaton.runx.ai is separate and what it links back to on runx."
+    changes:
+      - file: "docs/architecture.md"
+        action: "update"
+        content_spec: |
+          Add the public face section describing the separate site, the current
+          working-docs surface, the target site/ face, and the rule that
+          canonical receipts remain on runx surfaces.
+    acceptance_criteria:
+      - id: "ac1_1"
+        type: "documentation"
+        description: "Public face and migration section is present."
+        command: "rg -n \"Public Face|site/ is the intended public face|Sourcey is optional tooling\" docs/architecture.md"
+        expected: "public face boundary present"
+    status: "pending"
+  - id: "phase2"
+    name: "Self-Documentation Sources"
+    objective: "Define which repo-owned materials feed the site."
+    dependencies: ["phase1"]
+    changes:
+      - file: "docs/architecture.md"
+        action: "update"
+        content_spec: |
+          Add the repo shape and explain what doctrine, state, history,
+          reflections, site, docs, and .artifacts mean.
+    acceptance_criteria:
+      - id: "ac2_1"
+        type: "documentation"
+        description: "Repo shape section is present."
+        command: "rg -n \"Repo Shape|doctrine/|state/|history/|reflections/|site/|\\.artifacts/|docs/\" docs/architecture.md"
+        expected: "repo shape section present"
+    status: "pending"
+  - id: "phase3"
+    name: "Narrative Policy"
+    objective: "Define what counts as canonical proof versus public narrative."
+    dependencies: ["phase1"]
+    changes:
+      - file: "docs/architecture.md"
+        action: "update"
+        content_spec: |
+          Add the canonical-vs-derived-vs-public table and the rule that
+          derived narrative links back to receipts instead of replacing them.
+    acceptance_criteria:
+      - id: "ac3_1"
+        type: "documentation"
+        description: "Canonical-vs-public rules are present."
+        command: "rg -n \"Canonical, Derived, Public|Canonical receipts and generic run evidence\" docs/architecture.md"
+        expected: "narrative policy present"
+    status: "pending"
+  - id: "phase4"
+    name: "Route And Rendering Contract"
+    objective: "Define the stable public route contract and what each page is allowed to render from."
+    dependencies: ["phase1"]
+    changes:
+      - file: "docs/architecture.md"
+        action: "update"
+        content_spec: |
+          Add a site information architecture section with routes, allowed
+          content sources, and receipt/snapshot linkage rules.
+    acceptance_criteria:
+      - id: "ac4_1"
+        type: "documentation"
+        description: "Site information architecture is present."
+        command: "rg -n \"Site Information Architecture|/priorities|/history|/capabilities|/reflections|/targets/\\[slug\\]\" docs/architecture.md"
+        expected: "site route contract present"
+    status: "pending"
+
+rollback:
+  strategy: "per_phase"
+  commands:
+    phase1: "git checkout HEAD -- docs/architecture.md"
+    phase2: "git checkout HEAD -- docs/architecture.md"
+    phase3: "git checkout HEAD -- docs/architecture.md"
+    phase4: "git checkout HEAD -- docs/architecture.md"

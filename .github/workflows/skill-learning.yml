@@ -87,8 +87,16 @@ jobs:
           ISSUE_BODY: ${{ github.event.issue.body }}
         run: |
           mkdir -p .artifacts/skill-learning
-          node scripts/runx-agent-bridge.mjs \
+          node scripts/automaton-core.mjs \
+            --lane skill-learning \
             --runx-root "$GITHUB_WORKSPACE/.runx/runx" \
+            --artifact-root "$GITHUB_WORKSPACE/.artifacts/skill-learning" \
+            --subject-kind github_issue \
+            --subject-locator "${{ github.repository }}#issue/${{ github.event.issue.number }}" \
+            --repo "${{ github.repository }}" \
+            --target-repo "${{ github.repository }}" \
+            --issue-number "${{ github.event.issue.number }}" \
+            --issue-url "${{ github.event.issue.html_url }}" \
             --receipt-dir "$GITHUB_WORKSPACE/.artifacts/skill-learning/receipts" \
             --trace-dir "$GITHUB_WORKSPACE/.artifacts/skill-learning/provider-trace" \
             --output "$GITHUB_WORKSPACE/.artifacts/skill-learning/result.json" \
@@ -96,6 +104,10 @@ jobs:
             skill "$GITHUB_WORKSPACE/.runx/runx/skills/objective-to-skill" \
             --objective "$ISSUE_TITLE" \
             --project_context "$ISSUE_BODY"
+          node scripts/apply-automaton-promotions.mjs \
+            --repo-root "$GITHUB_WORKSPACE" \
+            --summary "$GITHUB_WORKSPACE/.artifacts/skill-learning/core-summary.json" \
+            --output "$GITHUB_WORKSPACE/.artifacts/skill-learning/promotion-apply.json"
 
       - name: Materialize proposal
         if: ${{ steps.preflight.outputs.enabled == 'true' }}

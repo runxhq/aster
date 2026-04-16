@@ -1,0 +1,11 @@
+---
+const { doc, title = doc?.title } = Astro.props;
+---
+
+{doc && (
+  <section class="panel">
+    <p class="eyebrow">{doc.frontmatter["updated"] ?? doc.frontmatter["date"] ?? doc.path}</p>
+    <h2>{title}</h2>
+    <div class="prose" set:html={doc.html} />
+  </section>
+)}

@@ -81,8 +81,14 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
           mkdir -p .artifacts/sourcey-refresh
-          node scripts/runx-agent-bridge.mjs \
+          node scripts/automaton-core.mjs \
+            --lane sourcey-refresh \
             --runx-root "$GITHUB_WORKSPACE/.runx/runx" \
+            --artifact-root "$GITHUB_WORKSPACE/.artifacts/sourcey-refresh" \
+            --subject-kind github_repository \
+            --subject-locator "${{ github.repository }}" \
+            --repo "${{ github.repository }}" \
+            --target-repo "${{ github.repository }}" \
             --receipt-dir "$GITHUB_WORKSPACE/.artifacts/sourcey-refresh/receipts" \
             --trace-dir "$GITHUB_WORKSPACE/.artifacts/sourcey-refresh/provider-trace" \
             --output "$GITHUB_WORKSPACE/.artifacts/sourcey-refresh/result.json" \
@@ -95,6 +101,10 @@ jobs:
             --docs_inputs '{"mode":"config","config":"docs/sourcey.config.ts"}' \
             --output_dir "$GITHUB_WORKSPACE/.sourcey/runx-docs" \
             --sourcey_bin "$GITHUB_WORKSPACE/scripts/sourcey-wrapper.sh"
+          node scripts/apply-automaton-promotions.mjs \
+            --repo-root "$GITHUB_WORKSPACE" \
+            --summary "$GITHUB_WORKSPACE/.artifacts/sourcey-refresh/core-summary.json" \
+            --output "$GITHUB_WORKSPACE/.artifacts/sourcey-refresh/promotion-apply.json"
 
       - name: Validate repo after sourcey refresh
         if: ${{ steps.preflight.outputs.enabled == 'true' }}

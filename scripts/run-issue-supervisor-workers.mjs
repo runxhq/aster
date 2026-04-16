@@ -96,12 +96,30 @@ async function runWorker({ options, workerRequest, index }) {
     const repoSnapshotPath = path.join(artifactDir, "repo-snapshot.json");
     await writeFile(repoSnapshotPath, `${JSON.stringify(repoSnapshot, null, 2)}\n`);
     const inlineRepoSnapshot = buildInlineRepoSnapshot(repoSnapshot);
-    const bridgeArgs = [
-      path.join(repoRoot, "scripts", "runx-agent-bridge.mjs"),
+    const coreArgs = [
+      path.join(repoRoot, "scripts", "automaton-core.mjs"),
+      "--lane",
+      "issue-to-pr-worker",
       "--runx-root",
       path.resolve(options.runxRoot),
+      "--artifact-root",
+      artifactDir,
       "--workdir",
       workDir,
+      "--subject-kind",
+      "github_issue",
+      "--subject-locator",
+      `${targetRepo}#issue/${options.issueNumber}`,
+      "--repo",
+      options.defaultRepo,
+      "--target-repo",
+      targetRepo,
+      "--issue-number",
+      options.issueNumber,
+      "--issue-url",
+      options.issueUrl,
+      "--snapshot",
+      repoSnapshotPath,
       "--receipt-dir",
       receiptDir,
       "--trace-dir",
@@ -145,7 +163,7 @@ async function runWorker({ options, workerRequest, index }) {
     ];
 
     await runRunxBridgeWithRetry({
-      bridgeArgs,
+      bridgeArgs: coreArgs,
       startRunxArgs,
       resultPath,
       cwd: workDir,

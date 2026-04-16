@@ -22,7 +22,7 @@ export default {
         groups: [
           {
             group: "Start",
-            pages: ["introduction", "philosophy", "dogfood", "evolution"],
+            pages: ["introduction", "philosophy", "architecture", "dogfood", "evolution"],
           },
           {
             group: "Operate",

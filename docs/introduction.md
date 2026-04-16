@@ -43,6 +43,7 @@ more capable without becoming more mysterious.
 The docs in this repo should describe:
 
 - the intention of `automaton`
+- the architecture and memory boundary between `automaton` and `runx`
 - the real live flows running against this repo
 - the governance boundaries around self-improvement
 - the current evolutionary stage and the next stage
@@ -72,3 +73,6 @@ governance all count as real progress.
 This repo is intentionally small so the full loop stays inspectable: trigger,
 workflow, `runx` packet, bridge output, artifacts, git diff, and final public
 result.
+
+For the execution shape behind that loop, see
+[architecture.md](./architecture.md).

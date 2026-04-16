@@ -95,8 +95,16 @@ jobs:
         run: |
           mkdir -p .artifacts/issue-supervisor
           ISSUE_URL="${{ github.event.issue.html_url }}"
-          node scripts/runx-agent-bridge.mjs \
+          node scripts/automaton-core.mjs \
+            --lane issue-supervisor \
             --runx-root "$GITHUB_WORKSPACE/.runx/runx" \
+            --artifact-root "$GITHUB_WORKSPACE/.artifacts/issue-supervisor" \
+            --subject-kind github_issue \
+            --subject-locator "${{ github.repository }}#issue/${{ github.event.issue.number }}" \
+            --repo "${{ github.repository }}" \
+            --target-repo "${{ github.repository }}" \
+            --issue-number "${{ github.event.issue.number }}" \
+            --issue-url "$ISSUE_URL" \
             --receipt-dir "$GITHUB_WORKSPACE/.artifacts/issue-supervisor/triage-receipts" \
             --trace-dir "$GITHUB_WORKSPACE/.artifacts/issue-supervisor/triage-provider-trace" \
             --output "$GITHUB_WORKSPACE/.artifacts/issue-supervisor/triage-result.json" \
@@ -112,6 +120,27 @@ jobs:
           node scripts/prepare-issue-supervisor-decision.mjs \
             --input "$GITHUB_WORKSPACE/.artifacts/issue-supervisor/triage-result.json" \
             --output "$GITHUB_WORKSPACE/.artifacts/issue-supervisor/supervisor-decision.json"
+          node scripts/apply-automaton-promotions.mjs \
+            --repo-root "$GITHUB_WORKSPACE" \
+            --summary "$GITHUB_WORKSPACE/.artifacts/issue-supervisor/core-summary.json" \
+            --output "$GITHUB_WORKSPACE/.artifacts/issue-supervisor/promotion-apply.json"
+          cat > "$GITHUB_WORKSPACE/.artifacts/issue-supervisor/operator-memory-pr-body.md" <<'EOF'
+          ## Summary
+
+          This draft PR updates operator memory from the `issue-supervisor` lane.
+
+          - Appends the new reflection/history drafts into repo-owned surfaces
+          - Updates the target dossier recent-outcomes projection
+          - Keeps canonical evidence in workflow receipts and artifacts
+          EOF
+          node scripts/publish-runx-pr.mjs \
+            --repo "${{ github.repository }}" \
+            --branch "runx/operator-memory-issue-supervisor" \
+            --title "[runx] update issue-supervisor operator memory" \
+            --commit-message "docs(memory): update issue-supervisor operator memory" \
+            --body-file "$GITHUB_WORKSPACE/.artifacts/issue-supervisor/operator-memory-pr-body.md" \
+            --close-existing-if-noop \
+            > "$GITHUB_WORKSPACE/.artifacts/issue-supervisor/operator-memory-publish.json"
           jq -r '.comment_body' "$GITHUB_WORKSPACE/.artifacts/issue-supervisor/supervisor-decision.json" \
             > "$GITHUB_WORKSPACE/.artifacts/issue-supervisor/supervisor-comment.md"
           if [ "$(jq -r '.supervisor_decision.should_start_planner' "$GITHUB_WORKSPACE/.artifacts/issue-supervisor/supervisor-decision.json")" = "true" ]; then

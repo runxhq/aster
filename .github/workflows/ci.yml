@@ -24,5 +24,14 @@ jobs:
       - name: Run repo checks
         run: npm run check
 
+      - name: Install site dependencies
+        run: npm --prefix site install
+
       - name: Build Sourcey docs
         run: npm run docs:build
+
+      - name: Check automaton site
+        run: npm run site:check
+
+      - name: Build automaton site
+        run: npm run site:build

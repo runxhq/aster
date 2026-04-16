@@ -3,6 +3,8 @@ node_modules/
 runx/
 .artifacts/
 .sourcey/
+site/dist/
+site/.astro/
 
 
 # scafld

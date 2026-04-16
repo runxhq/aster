@@ -18,6 +18,25 @@ description: Secrets, approvals, artifacts, and what still needs hardening.
   write to the target repo. This should be an `auscaster` token when outbound
   adoption PRs should be authored and opened as `@auscaster`.
 
+## Planned Hosted Memory Access
+
+`automaton` should not use a broad shared `RUNX_API_KEY` for memory access.
+
+The planned model is:
+
+- one dedicated `runx` service principal for `automaton`
+- preferred authentication via GitHub OIDC exchange for short-lived tokens
+- rotated service token fallback only when OIDC is unavailable
+- narrow scopes such as `memory:read`, `memory:write`, `memory:query`,
+  `memory:snapshot:publish`, and `receipt:read`
+- namespace ACLs that restrict the principal to automaton-owned namespaces
+
+The public site must not use privileged memory credentials from the browser.
+It should read public receipts, published public snapshots, or build-time
+exports only.
+
+The intended public face is `site/`, not a Sourcey docs surface.
+
 ## Approval policy
 
 Approvals stay explicit:
@@ -44,11 +63,46 @@ Every mutating or public lane uploads:
 
 That makes failures diagnosable and keeps the trust boundary visible.
 
-## Still missing
+## Execution Hardening Contract
 
-- provider failover and key rotation
-- stronger evals for comment quality and PR usefulness
-- a merge and rollback policy for generated PRs
-- persistent tracking for upstream skill contribution state beyond the current
-  artifact packet
-- persistent receipt indexing outside workflow artifacts
+These are no longer undefined gaps. They are explicit execution requirements.
+
+### Provider auth and key rotation
+
+- hosted memory and other runx control-plane access should prefer OIDC-issued
+  short-lived service-principal tokens
+- rotated static service tokens are fallback only
+- no human refresh token or broad shared admin key is allowed in automation
+- provider-facing secrets should have rotation playbooks before lanes widen
+
+### Eval gates
+
+- mutating PR lanes stay draft-first by default
+- public-comment lanes should record usefulness and correctness evals
+- authority only widens when eval quality is stable and reflected in receipts
+
+### Merge and rollback
+
+- generated PRs are draft by default unless an explicit lane policy says
+  otherwise
+- merge remains human-reviewed until a separate policy says otherwise
+- rollback should happen through a new corrective PR or corrective public
+  comment, never by pretending the original mutation did not occur
+- every rollback or correction should emit a reflection and a history entry when
+  publicly relevant
+
+### Persistent tracking
+
+- upstream contribution state should graduate from artifact-only packets into
+  `state/` projections backed by receipts
+- hosted receipt indexing and generic memory should make artifact retrieval and
+  replay queryable beyond raw workflow bundles
+
+### Readiness rule
+
+Execution may start once:
+
+- the plan/spec layer is closed
+- every lane has an approval mode and memory effect
+- public surfaces render only promoted or published data
+- memory access is principal-scoped rather than key-shared

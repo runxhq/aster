@@ -1,0 +1,34 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { listRepoDocs, readRepoDoc } from "../../lib/content.js";
+
+export async function getStaticPaths() {
+  const targets = await listRepoDocs("state/targets", { limit: 128 });
+  return targets.map((target) => ({
+    params: {
+      slug: target.path.split("/").at(-1)?.replace(/\.md$/, "") ?? "",
+    },
+  }));
+}
+
+const { slug } = Astro.params;
+const target = await readRepoDoc(`state/targets/${slug}.md`);
+---
+
+<BaseLayout
+  title={target?.title ?? "Target"}
+  description={target?.excerpt ?? "Target dossier"}
+  current="targets"
+>
+  <section class="panel">
+    <p class="eyebrow">{target?.frontmatter["subject_kind"] ?? "target dossier"}</p>
+    <h1>{target?.title}</h1>
+    <p class="muted">{target?.frontmatter["subject_locator"]}</p>
+  </section>
+
+  {target && (
+    <article class="panel" style="margin-top: 1rem;">
+      <div class="prose" set:html={target.html} />
+    </article>
+  )}
+</BaseLayout>

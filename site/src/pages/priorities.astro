@@ -1,0 +1,11 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import RichDoc from "../components/RichDoc.astro";
+import { readRepoDoc } from "../lib/content.js";
+
+const priorities = await readRepoDoc("state/priorities.md");
+---
+
+<BaseLayout title="Priorities" description="Current operator priorities." current="priorities">
+  <RichDoc doc={priorities} />
+</BaseLayout>

@@ -1,0 +1,19 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import RichDoc from "../components/RichDoc.astro";
+import { readRepoDoc } from "../lib/content.js";
+
+const capabilities = await readRepoDoc("state/capabilities.md");
+const lanes = await readRepoDoc("doctrine/LANES.md");
+---
+
+<BaseLayout
+  title="Capabilities"
+  description="Current capabilities, trust posture, and lane catalog."
+  current="capabilities"
+>
+  <section class="grid two">
+    <RichDoc doc={capabilities} />
+    <RichDoc doc={lanes} />
+  </section>
+</BaseLayout>

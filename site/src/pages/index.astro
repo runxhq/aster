@@ -1,0 +1,72 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { readPublicModel, targetHref } from "../lib/content.js";
+
+const model = await readPublicModel();
+const latestHistory = model.history[0];
+const latestReflection = model.reflections[0];
+---
+
+<BaseLayout
+  title="Thesis"
+  description="The public thesis and current operating surface of automaton."
+  current="home"
+>
+  <section class="hero">
+    <article class="panel">
+      <p class="eyebrow">Operator Thesis</p>
+      <h1>{model.thesis?.title ?? "Automaton"}</h1>
+      <p class="muted">{model.thesis?.excerpt}</p>
+      <div class="prose" set:html={model.thesis?.html} />
+    </article>
+
+    <div class="stack">
+      <section class="panel">
+        <p class="eyebrow">Current Stage</p>
+        <h2>Context before scale</h2>
+        <p>
+          The current work is to make doctrine, state, history, and reflections
+          mechanically visible to every lane before the model acts.
+        </p>
+      </section>
+      <section class="panel">
+        <p class="eyebrow">Latest Proof</p>
+        <h2>{latestHistory?.title ?? "No history yet"}</h2>
+        <p>{latestHistory?.excerpt}</p>
+        <a class="muted" href="/history/">Read history →</a>
+      </section>
+    </div>
+  </section>
+
+  <section class="grid two" style="margin-top: 1rem;">
+    <article class="panel">
+      <p class="eyebrow">Live Priorities</p>
+      <h2>{model.priorities?.title}</h2>
+      <div class="prose" set:html={model.priorities?.html} />
+    </article>
+    <article class="panel">
+      <p class="eyebrow">Latest Reflection</p>
+      <h2>{latestReflection?.title ?? "No reflections yet"}</h2>
+      <p>{latestReflection?.excerpt}</p>
+      <a class="muted" href="/reflections/">Read reflections →</a>
+    </article>
+  </section>
+
+  <section class="grid two" style="margin-top: 1rem;">
+    <article class="panel">
+      <p class="eyebrow">Guardrails</p>
+      <div class="prose" set:html={model.guardrails?.html} />
+    </article>
+    <article class="panel">
+      <p class="eyebrow">Targets</p>
+      <div class="stack">
+        {model.targets.map((target) => (
+          <a class="list-card" href={targetHref(target)}>
+            <h3>{target.title}</h3>
+            <p>{target.excerpt}</p>
+          </a>
+        ))}
+      </div>
+    </article>
+  </section>
+</BaseLayout>

@@ -23,15 +23,29 @@ async function main(argv = process.argv.slice(2)) {
 
   const outputPath = path.resolve(options.output);
   const bridgeOutput = `${outputPath}.bridge.json`;
+  const artifactRoot = path.dirname(outputPath);
+  const repo = process.env.GITHUB_REPOSITORY || "nilstate/automaton";
   await mkdir(path.dirname(outputPath), { recursive: true });
   await mkdir(path.resolve(options.receiptDir), { recursive: true });
   await mkdir(path.resolve(options.traceDir), { recursive: true });
 
   const runxRoot = path.resolve(options.runxRoot);
-  const bridgeArgs = [
-    path.join(repoRoot, "scripts", "runx-agent-bridge.mjs"),
+  const coreArgs = [
+    path.join(repoRoot, "scripts", "automaton-core.mjs"),
+    "--lane",
+    "issue-supervisor-plan",
     "--runx-root",
     runxRoot,
+    "--artifact-root",
+    artifactRoot,
+    "--subject-kind",
+    "github_issue",
+    "--subject-locator",
+    `issue-supervisor-plan:${firstString(changeSet?.source?.id) ?? "unknown"}`,
+    "--repo",
+    repo,
+    "--target-repo",
+    repo,
     "--receipt-dir",
     path.resolve(options.receiptDir),
     "--trace-dir",
@@ -49,7 +63,7 @@ async function main(argv = process.argv.slice(2)) {
     JSON.stringify(changeSet),
   ];
 
-  execFileSync(process.execPath, bridgeArgs, {
+  execFileSync(process.execPath, coreArgs, {
     cwd: repoRoot,
     env: process.env,
     stdio: "inherit",

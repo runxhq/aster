@@ -1,0 +1,26 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { listRepoDocs, targetHref } from "../../lib/content.js";
+
+const targets = await listRepoDocs("state/targets", { limit: 64 });
+---
+
+<BaseLayout title="Targets" description="Current target dossiers." current="targets">
+  <section class="panel">
+    <p class="eyebrow">Target Universe</p>
+    <h1>Targets</h1>
+    <p class="muted">
+      Curated target dossiers that explain why a repo matters and how the
+      operator should behave there.
+    </p>
+  </section>
+
+  <section class="grid two" style="margin-top: 1rem;">
+    {targets.map((target) => (
+      <a class="list-card" href={targetHref(target)}>
+        <h3>{target.title}</h3>
+        <p>{target.excerpt}</p>
+      </a>
+    ))}
+  </section>
+</BaseLayout>

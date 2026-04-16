@@ -1,5 +1,5 @@
 import { existsSync } from "node:fs";
-import { mkdir, mkdtemp, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import https from "node:https";
@@ -24,6 +24,7 @@ async function main() {
   const reasoningEffort =
     options.reasoningEffort ?? process.env.RUNX_CALLER_REASONING_EFFORT ?? "xhigh";
   const maxTurns = Number(options.maxTurns ?? process.env.RUNX_CALLER_MAX_TURNS ?? "8");
+  const contextText = await loadCallerContext(options.contextFile);
 
   if (!existsSync(cliBin)) {
     throw new Error(`runx CLI build not found at ${cliBin}`);
@@ -82,6 +83,7 @@ async function main() {
           provider,
           model,
           reasoningEffort,
+          contextText,
           request,
           traceDir,
         });
@@ -132,6 +134,10 @@ function parseArgs(argv) {
     }
     if (token === "--output") {
       options.outputPath = requireValue(argv, ++index, token);
+      continue;
+    }
+    if (token === "--context-file") {
+      options.contextFile = requireValue(argv, ++index, token);
       continue;
     }
     if (token === "--model") {
@@ -222,7 +228,14 @@ async function runRunx({ cliBin, receiptDir, runArgs, workdir }) {
   }
 }
 
-async function resolveCognitiveWork({ provider, model, reasoningEffort, request, traceDir }) {
+async function resolveCognitiveWork({
+  provider,
+  model,
+  reasoningEffort,
+  contextText,
+  request,
+  traceDir,
+}) {
   if (provider !== "openai") {
     throw new Error(`Unsupported provider '${provider}'.`);
   }
@@ -239,7 +252,7 @@ async function resolveCognitiveWork({ provider, model, reasoningEffort, request,
   const requestTimeoutMs = Number(process.env.RUNX_CALLER_REQUEST_TIMEOUT_MS ?? "1200000");
 
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
-    const messages = buildInputMessages(request, expectedOutputs, previousFailure);
+    const messages = buildInputMessages(request, expectedOutputs, previousFailure, contextText);
     const payload = buildResponsesPayload({ model, messages, reasoningEffort });
 
     let response;
@@ -416,7 +429,7 @@ function postJson(url, { headers, body, timeoutMs }) {
   });
 }
 
-function buildInputMessages(request, expectedOutputs, previousFailure) {
+export function buildInputMessages(request, expectedOutputs, previousFailure, contextText) {
   const requiredKeys = Object.keys(expectedOutputs);
   const lines = [
     "You are the external caller for a governed runx skill boundary.",
@@ -441,6 +454,22 @@ function buildInputMessages(request, expectedOutputs, previousFailure) {
       role: "system",
       content: lines.join(" "),
     },
+  ];
+
+  if (contextText) {
+    messages.push({
+      role: "system",
+      content: [
+        "Use this operator context bundle as additional guidance for the task.",
+        "Treat doctrine as constitutional guidance.",
+        "Treat state, history, reflections, and artifact summaries as derived context that must yield to fresher evidence in the request envelope.",
+        "",
+        contextText,
+      ].join("\n"),
+    });
+  }
+
+  messages.push(
     {
       role: "user",
       content: JSON.stringify(
@@ -455,7 +484,7 @@ function buildInputMessages(request, expectedOutputs, previousFailure) {
         2,
       ),
     },
-  ];
+  );
 
   if (previousFailure) {
     messages.push({
@@ -596,6 +625,16 @@ function splitCsv(value) {
     .split(",")
     .map((entry) => entry.trim())
     .filter(Boolean);
+}
+
+async function loadCallerContext(contextFile) {
+  const candidate = contextFile ?? process.env.RUNX_CALLER_CONTEXT_FILE;
+  if (!candidate) {
+    return "";
+  }
+  const resolved = path.resolve(candidate);
+  const content = await readFile(resolved, "utf8");
+  return content.trim();
 }
 
 function sanitizeTraceName(value) {

@@ -2,7 +2,15 @@
 
 `automaton` is the canonical public dogfood destination for `runx`.
 
-The docs in this repo are about `automaton` itself:
+The repo itself now carries the operator core:
+
+- constitutional doctrine under `doctrine/`
+- mutable current state under `state/`
+- append-only public memory under `history/` and `reflections/`
+- the separate public face under `site/`
+- working docs under `docs/` during migration
+
+The docs in this repo are still about `automaton` itself:
 
 - what `automaton` is trying to become
 - the philosophy that governs how it should behave
@@ -61,7 +69,8 @@ The governing philosophy is:
 
 Two supporting lanes stay valuable even when the external caller is offline:
 
-- `docs-pages`: builds and deploys the Sourcey site from committed docs sources
+- `docs-pages`: builds and deploys the separate `automaton.runx.ai` site from
+  repo-owned operator content
 - `runx-dogfood`: keeps a draft-first receipt trail for the broader catalog
 
 ## Required Secrets
@@ -85,6 +94,18 @@ the draft-first observability lanes continue to run.
   prove
 - [docs/philosophy.md](./docs/philosophy.md): the doctrine behind the repo's
   behavior and safety boundaries
+- [docs/architecture.md](./docs/architecture.md): the full-shape plan,
+  ownership boundary, memory model, and site topology
+- [doctrine/AUTOMATON.md](./doctrine/AUTOMATON.md): the public thesis
+- [doctrine/GUARDRAILS.md](./doctrine/GUARDRAILS.md): constitutional safety and
+  truth constraints
+- [doctrine/LANES.md](./doctrine/LANES.md): the bounded lane catalog
+- [state/priorities.md](./state/priorities.md): current operator priorities
+- [state/capabilities.md](./state/capabilities.md): current strengths, limits,
+  and trust posture
+- [history/](./history): append-only public evolutionary record
+- [reflections/](./reflections): append-only diagnosis and interpretation layer
+- [site/](./site): Astro source for `automaton.runx.ai`
 - [docs/evolution.md](./docs/evolution.md): the intended evolutionary path
 - [docs/operating-model.md](./docs/operating-model.md): the governance model
   for gradual self-improvement
@@ -93,7 +114,18 @@ the draft-first observability lanes continue to run.
 - [docs/backlog.md](./docs/backlog.md): the next bounded improvements worth
   pursuing
 - [docs/sourcey.config.ts](./docs/sourcey.config.ts): Sourcey config for the
-  public docs site
+  working docs surface during migration
+- [scripts/build-automaton-context.mjs](./scripts/build-automaton-context.mjs):
+  assembles doctrine, state, history, reflections, and artifact signals into a
+  bounded context bundle before the bridge calls the model
+- [scripts/automaton-core.mjs](./scripts/automaton-core.mjs): the unified lane
+  runtime that assembles context, invokes the bridge, and writes promotion
+  drafts
+- [scripts/promote-automaton-state.mjs](./scripts/promote-automaton-state.mjs):
+  materializes reflection/history draft packets from completed lane runs
+- [scripts/apply-automaton-promotions.mjs](./scripts/apply-automaton-promotions.mjs):
+  applies promotion drafts back into repo-owned `history/`, `reflections/`, and
+  target dossier recent-outcomes sections
 - [scripts/runx-agent-bridge.mjs](./scripts/runx-agent-bridge.mjs): external
   caller that answers `runx` `agent-step` requests without internal shortcuts
 - [scripts/prepare-issue-supervisor-decision.mjs](./scripts/prepare-issue-supervisor-decision.mjs):
@@ -113,6 +145,8 @@ the draft-first observability lanes continue to run.
 ```bash
 npm run check
 npm run docs:build
+npm --prefix site install
+npm run site:build
 ```
 
 Run the live dogfood lane locally from this repo:

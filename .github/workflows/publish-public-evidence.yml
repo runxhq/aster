@@ -128,11 +128,11 @@ jobs:
               lane = metadata["lane"]
               checks = f"{metadata['checks_passed']}/{metadata['checks_total']} checks"
               if lane == "docs":
-                  return f"Sourcey docs deploy workflow finished with {status}; {checks} recorded."
+                  return f"Automaton public site workflow finished with {status}; {checks} recorded."
               if lane == "ci":
-                  return f"Repo checks and Sourcey docs build finished with {status}; {checks} recorded."
+                  return f"Repo checks and public-site build finished with {status}; {checks} recorded."
               if lane == "sourcey":
-                  return f"Sourcey refresh ran through runx with {status}; draft PR/artifacts are linked from the workflow."
+                  return f"Working-docs refresh ran through runx with {status}; draft PR/artifacts are linked from the workflow."
               if lane == "automaton":
                   return f"Automaton dogfood or governance lane finished with {status}; workflow artifacts carry the receipt trail."
               if lane == "skill-contribution":

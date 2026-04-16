@@ -22,6 +22,21 @@ If the system needs more sophistication, that should show up as better docs,
 sharper skill context, stronger typed packets, and clearer approvals, not as
 more hidden magic.
 
+## Boundary
+
+`runx` is the governed runtime. `automaton` is a separate operator that uses
+that runtime.
+
+That means:
+
+- `runx` may own generic primitives such as receipts, approvals, artifacts, and
+  generic memory
+- `automaton` owns operator semantics such as priorities, targets,
+  reflections, and public narrative
+
+If a concept would only make sense for `automaton`, it should not become a
+`runx` product noun.
+
 ## Phases
 
 ### 1. Observe
@@ -114,6 +129,18 @@ want to inspect and use."
   future as if it already exists
 - repeated failure modes should feed skill or context hardening, not endless
   blind retries
+
+## Memory And Context
+
+`automaton` should grow memory in layers.
+
+- first: repo files, receipts, and artifacts
+- next: append-only journals, reflections, and target dossiers
+- later: derived context indexes and compact summaries
+- later still: a generic hosted memory substrate if retrieval pressure justifies it
+
+The important rule is that receipts stay canonical. Derived context is allowed
+to help the next run, but it must stay rebuildable from evidence.
 
 ## Missing Pieces
 

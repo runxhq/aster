@@ -1,0 +1,198 @@
+spec_version: "1.1"
+task_id: "automaton-memory-model"
+created: "2026-04-16T12:00:00Z"
+updated: "2026-04-16T12:00:00Z"
+status: "draft"
+
+task:
+  title: "Define automaton memory model and SQL threshold"
+  summary: >
+    Specify how automaton manages context over time without baking
+    automaton-specific schemas into runx. The design must start from receipts
+    and the current .artifacts-backed repo reality, allow a generic hosted
+    memory substrate later, and define exactly when SQL becomes justified.
+  size: "medium"
+  risk_level: "medium"
+  context:
+    packages:
+      - "docs"
+      - ".artifacts"
+      - "scripts"
+      - "schemas"
+      - "../runx/plans"
+    related_docs:
+      - "docs/architecture.md"
+      - "docs/operating-model.md"
+      - "docs/evolution.md"
+      - "../runx/plans/runx.md"
+    invariants:
+      - "receipts_stay_canonical"
+      - "derived_memory_is_rebuildable"
+      - "generic_memory_in_runx_has_no_automaton_nouns"
+  objectives:
+    - "Define layered memory growth from receipt-grounded context to hosted generic memory."
+    - "Ground layer 0 explicitly in today's .artifacts and receipt bundles."
+    - "Define canonical, derived, and projected state."
+    - "Define the context assembly flow for future lanes."
+    - "Define stable subject identity, provenance, redaction, audit, and rebuild rules."
+    - "Define memory API semantics, retention defaults, and recovery behavior."
+    - "Define the exact pressure points that justify SQL."
+  touchpoints:
+    - area: "memory"
+      description: "Keep the first store simple and evidence-grounded."
+    - area: "hosted boundary"
+      description: "Allow a generic hosted memory service without moving automaton semantics into runx."
+    - area: "operator projections"
+      description: "Define targets, priorities, and capabilities as automaton-owned meanings."
+  scope:
+    in_scope:
+      - "Memory layers"
+      - "Current layer-0 reality"
+      - "Context assembly order"
+      - "Subject identity and governance rules"
+      - "Memory API and retention defaults"
+      - "SQL threshold criteria"
+      - "Generic memory primitive vocabulary"
+    out_of_scope:
+      - "Implementing SQL tables"
+      - "Adding embeddings or vector search"
+      - "Choosing a final local cache format"
+  dependencies:
+    - "automaton-operator-architecture"
+  acceptance:
+    validation_profile: "standard"
+    definition_of_done:
+      - id: "dod1"
+        description: "The plan explains how automaton can operate before SQL."
+        status: "pending"
+      - id: "dod2"
+        description: "The plan defines generic hosted memory primitives and keeps operator semantics outside runx."
+        status: "pending"
+      - id: "dod3"
+        description: "The plan defines when SQL becomes necessary."
+        status: "pending"
+      - id: "dod4"
+        description: "The plan explicitly anchors layer 0 in current .artifacts and receipts."
+        status: "pending"
+      - id: "dod5"
+        description: "The plan defines subject identity, audit/redaction, and rebuild rules."
+        status: "pending"
+      - id: "dod6"
+        description: "The plan defines the memory API contract, retention defaults, and recovery drills."
+        status: "pending"
+    validation:
+      - id: "v1"
+        type: "documentation"
+        description: "Architecture page contains the memory layers, API, subject identity, governance rules, and SQL threshold."
+        command: "rg -n \"Layer 0|\\.artifacts/|Subject Identity|Memory API Contract|Retention Policy|Provenance, Redaction, Audit|Rebuild And Compaction|Recovery Drills|Layer 1|Layer 2|Layer 3|Layer 4|Does Automaton Need SQL\\?\" docs/architecture.md"
+        expected: "all memory layers and SQL section found"
+      - id: "v2"
+        type: "documentation"
+        description: "Operating model references memory and context explicitly."
+        command: "rg -n \"Memory And Context|generic memory substrate|derived context\" docs/operating-model.md docs/architecture.md"
+        expected: "memory terms present"
+
+planning_log:
+  - timestamp: "2026-04-16T12:00:00Z"
+    actor: "codex"
+    summary: >
+      Created to answer the direct planning question: whether automaton needs
+      SQL or can manage its own context first, and how hosted generic memory
+      fits without crossing the boundary.
+
+phases:
+  - id: "phase1"
+    name: "Layered Memory"
+    objective: "Define the layered memory progression and what belongs in each layer."
+    changes:
+      - file: "docs/architecture.md"
+        action: "update"
+        content_spec: |
+          Add layered memory progression from receipt-grounded context to
+          generic hosted memory and operator projections, explicitly grounding
+          layer 0 in .artifacts and receipt bundles that already exist.
+    acceptance_criteria:
+      - id: "ac1_1"
+        type: "documentation"
+        description: "Memory layers are enumerated and layer 0 is grounded in artifacts."
+        command: "rg -n \"Layer 0|\\.artifacts/|Layer 1|Layer 2|Layer 3|Layer 4\" docs/architecture.md"
+        expected: "memory layers listed"
+    status: "pending"
+  - id: "phase2"
+    name: "SQL Threshold"
+    objective: "Make the decision to add SQL explicit and evidence-based."
+    dependencies: ["phase1"]
+    changes:
+      - file: "docs/architecture.md"
+        action: "update"
+        content_spec: |
+          Add the section that names retrieval, concurrency, dedupe, retry
+          budget, and ranking pressure as the reasons SQL becomes justified.
+    acceptance_criteria:
+      - id: "ac2_1"
+        type: "documentation"
+        description: "SQL criteria are present."
+        command: "rg -n \"shared context across concurrent cycles|cooldowns, dedupe, retry budgets|fast selection over many targets\" docs/architecture.md"
+        expected: "SQL criteria present"
+    status: "pending"
+  - id: "phase3"
+    name: "Context Assembly Contract"
+    objective: "Define how future lanes assemble context from receipts, memory, and repo state."
+    dependencies: ["phase1"]
+    changes:
+      - file: "docs/architecture.md"
+        action: "update"
+        content_spec: |
+          Add a numbered context assembly order that starts from repo state and
+          receipts and only then updates projections.
+    acceptance_criteria:
+      - id: "ac3_1"
+        type: "documentation"
+        description: "Context assembly section is present."
+        command: "rg -n \"Context Assembly|write receipts first|write reflection and projection updates second\" docs/architecture.md"
+        expected: "context assembly section present"
+    status: "pending"
+  - id: "phase4"
+    name: "Memory Governance"
+    objective: "Define subject identity, audit, redaction, rebuild, and public export rules."
+    dependencies: ["phase1"]
+    changes:
+      - file: "docs/architecture.md"
+        action: "update"
+        content_spec: |
+          Add sections for subject identity, provenance/redaction/audit,
+          rebuild/compaction, and public snapshot export so the memory layer is
+          governable rather than merely queryable.
+    acceptance_criteria:
+      - id: "ac4_1"
+        type: "documentation"
+        description: "Memory governance sections are present."
+        command: "rg -n \"Subject Identity|Provenance, Redaction, Audit|Rebuild And Compaction|Public Snapshot Export\" docs/architecture.md"
+        expected: "memory governance sections present"
+    status: "pending"
+  - id: "phase5"
+    name: "API And Retention"
+    objective: "Define the memory API contract, retention defaults, and recovery behavior."
+    dependencies: ["phase1"]
+    changes:
+      - file: "docs/architecture.md"
+        action: "update"
+        content_spec: |
+          Add a strict memory API contract, retention defaults by class, and
+          recovery drills for bad snapshot publish or corrupted derived memory.
+    acceptance_criteria:
+      - id: "ac5_1"
+        type: "documentation"
+        description: "Memory API and retention sections are present."
+        command: "rg -n \"Memory API Contract|Retention Policy|Recovery Drills\" docs/architecture.md"
+        expected: "memory API and retention sections present"
+    status: "pending"
+
+rollback:
+  strategy: "per_phase"
+  commands:
+    phase1: "git checkout HEAD -- docs/architecture.md"
+    phase2: "git checkout HEAD -- docs/architecture.md"
+    phase3: "git checkout HEAD -- docs/architecture.md"
+    phase4: "git checkout HEAD -- docs/architecture.md"
+    phase5: "git checkout HEAD -- docs/architecture.md"
