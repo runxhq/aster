@@ -24,3 +24,7 @@ respond with high-signal triage or contribution behavior.
 - keep interventions bounded and specific
 - prefer obvious docs, validation, or scope clarifications over broad design claims
 - treat public maintainer silence as signal and respect cooldowns
+
+## Recent Outcomes
+
+- 2026-04-16 · `pr-triage` · `success` · lane finished with success
