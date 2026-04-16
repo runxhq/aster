@@ -1,0 +1,55 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { doctrineHref, listDoctrineDocs, readRepoDoc } from "../../lib/content.js";
+
+const doctrine = await listDoctrineDocs();
+
+export async function getStaticPaths() {
+  const docs = await listDoctrineDocs();
+  return docs.map((doc) => ({
+    params: {
+      slug: doc.path.split("/").at(-1)?.replace(/\.md$/, "").toLowerCase() ?? "",
+    },
+  }));
+}
+
+const { slug } = Astro.params;
+const doc = doctrine.find((entry) => entry.path.split("/").at(-1)?.replace(/\.md$/, "").toLowerCase() === slug)
+  ?? await readRepoDoc(`doctrine/${String(slug).toUpperCase()}.md`);
+---
+
+<BaseLayout
+  title={doc?.title ?? "Doctrine"}
+  description={doc?.excerpt ?? "Doctrine"}
+  current="doctrine"
+>
+  <section class="panel">
+    <div class="panel-inner">
+      <p class="eyebrow">Constitutional Doctrine</p>
+      <h1>{doc?.title ?? "Doctrine"}</h1>
+      <p class="muted">{doc?.excerpt}</p>
+    </div>
+  </section>
+
+  {doc && (
+    <article class="panel" style="margin-top: 1rem;">
+      <div class="panel-inner">
+        <div class="prose" set:html={doc.html} />
+      </div>
+    </article>
+  )}
+
+  <section class="panel" style="margin-top: 1rem;">
+    <div class="panel-inner">
+      <p class="eyebrow">Doctrine Set</p>
+      <div class="stack">
+        {doctrine.map((entry) => (
+          <a class="list-card" href={doctrineHref(entry)}>
+            <h3>{entry.title}</h3>
+            <p>{entry.excerpt}</p>
+          </a>
+        ))}
+      </div>
+    </div>
+  </section>
+</BaseLayout>

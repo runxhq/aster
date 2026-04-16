@@ -6,6 +6,7 @@ import { mkdtemp, mkdir, readFile, writeFile } from "node:fs/promises";
 
 import {
   applyAutomatonPromotions,
+  assertManagedPromotionTarget,
   upsertFrontmatterField,
   upsertRecentOutcomesSection,
 } from "./apply-automaton-promotions.mjs";
@@ -27,6 +28,13 @@ test("upsertFrontmatterField updates existing frontmatter values", () => {
   );
 
   assert.match(updated, /updated: 2026-04-17/);
+});
+
+test("assertManagedPromotionTarget rejects doctrine writes", () => {
+  assert.throws(
+    () => assertManagedPromotionTarget("/tmp/repo", "/tmp/repo/doctrine/VOICE.md"),
+    /may not write into doctrine/i,
+  );
 });
 
 test("applyAutomatonPromotions copies drafts and updates target dossier", async () => {

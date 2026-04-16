@@ -44,6 +44,8 @@ const required = [
   "site/src/lib/content.js",
   "site/src/layouts/BaseLayout.astro",
   "site/src/pages/index.astro",
+  "site/src/pages/doctrine/index.astro",
+  "site/src/pages/doctrine/[slug].astro",
   "site/src/pages/priorities.astro",
   "site/src/pages/history.astro",
   "site/src/pages/capabilities.astro",

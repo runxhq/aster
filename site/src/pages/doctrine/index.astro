@@ -1,0 +1,32 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { doctrineHref, listDoctrineDocs } from "../../lib/content.js";
+
+const doctrine = await listDoctrineDocs();
+---
+
+<BaseLayout
+  title="Doctrine"
+  description="The constitutional doctrine that defines automaton."
+  current="doctrine"
+>
+  <section class="panel">
+    <div class="panel-inner">
+      <p class="eyebrow">Constitution</p>
+      <h1>Doctrine</h1>
+      <p class="muted">
+        The constitutional layer is human-reviewed, stable, and upstream of
+        operator policy, state, history, and reflections.
+      </p>
+    </div>
+  </section>
+
+  <section class="grid two" style="margin-top: 1rem;">
+    {doctrine.map((doc) => (
+      <a class="list-card" href={doctrineHref(doc)}>
+        <h3>{doc.title}</h3>
+        <p>{doc.excerpt}</p>
+      </a>
+    ))}
+  </section>
+</BaseLayout>

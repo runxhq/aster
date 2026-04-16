@@ -1,7 +1,7 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import FeedList from "../components/FeedList.astro";
-import { readPublicModel, targetHref } from "../lib/content.js";
+import { doctrineHref, readPublicModel, targetHref } from "../lib/content.js";
 import { readActivityModel } from "../lib/activity.js";
 
 const model = await readPublicModel();
@@ -119,10 +119,10 @@ const constitution = model.constitution.filter((doc) => doc !== null);
         <p class="eyebrow">Constitution</p>
         <div class="stack">
           {constitution.map((doc) => (
-            <article class="list-card">
+            <a class="list-card" href={doctrineHref(doc)}>
               <h3>{doc.title}</h3>
               <p>{doc.excerpt}</p>
-            </article>
+            </a>
           ))}
         </div>
       </div>

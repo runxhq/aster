@@ -131,6 +131,17 @@ export function targetHref(doc) {
   return `/targets/${path.basename(doc.path, ".md")}/`;
 }
 
+export function doctrineHref(doc) {
+  return `/doctrine/${path.basename(doc.path, ".md").toLowerCase()}/`;
+}
+
+export async function listDoctrineDocs() {
+  const docs = await Promise.all(doctrineOrder.map((relativePath) => readRepoDoc(relativePath)));
+  /** @type {RepoDoc[]} */
+  const concreteDocs = docs.filter((doc) => doc !== null);
+  return concreteDocs;
+}
+
 function splitFrontmatter(raw) {
   if (!raw.startsWith("---\n")) {
     return { frontmatter: {}, content: raw };
@@ -185,3 +196,14 @@ function trimInline(value, limit) {
   }
   return `${collapsed.slice(0, limit - 3)}...`;
 }
+
+const doctrineOrder = [
+  "doctrine/AUTOMATON.md",
+  "doctrine/MISSION.md",
+  "doctrine/EXAMPLES.md",
+  "doctrine/CONDUCT.md",
+  "doctrine/VOICE.md",
+  "doctrine/EPISTEMOLOGY.md",
+  "doctrine/AUTHORITY.md",
+  "doctrine/EVOLUTION.md",
+];

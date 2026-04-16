@@ -3,6 +3,12 @@ import path from "node:path";
 
 import { slugifyRepoLike } from "./build-automaton-context.mjs";
 
+const managedPromotionRoots = [
+  "reflections",
+  "history",
+  path.join("state", "targets"),
+];
+
 async function main(argv = process.argv.slice(2)) {
   const options = parseArgs(argv);
   const result = await applyAutomatonPromotions(options);
@@ -29,6 +35,8 @@ export async function applyAutomatonPromotions(options) {
     "history",
     path.basename(historySource).replace(/^history-/, ""),
   );
+  assertManagedPromotionTarget(repoRoot, reflectionTarget);
+  assertManagedPromotionTarget(repoRoot, historyTarget);
 
   await mkdir(path.dirname(reflectionTarget), { recursive: true });
   await mkdir(path.dirname(historyTarget), { recursive: true });
@@ -40,6 +48,7 @@ export async function applyAutomatonPromotions(options) {
     || "nilstate/automaton";
   const targetSlug = slugifyRepoLike(targetRepo);
   const targetDossierPath = path.join(repoRoot, "state", "targets", `${targetSlug}.md`);
+  assertManagedPromotionTarget(repoRoot, targetDossierPath);
   const targetUpdated = await updateTargetRecentOutcomes({
     dossierPath: targetDossierPath,
     packet,
@@ -69,6 +78,24 @@ async function copyIfChanged(source, target) {
 
   await copyFile(source, target);
   return true;
+}
+
+export function assertManagedPromotionTarget(repoRoot, targetPath) {
+  const relative = path.relative(path.resolve(repoRoot), path.resolve(targetPath));
+  if (relative.startsWith("..") || path.isAbsolute(relative)) {
+    throw new Error(`promotion target escapes repo root: ${targetPath}`);
+  }
+  const normalized = relative.replaceAll(path.sep, "/");
+  if (normalized === "doctrine" || normalized.startsWith("doctrine/")) {
+    throw new Error(`promotion target may not write into doctrine/: ${normalized}`);
+  }
+  const allowed = managedPromotionRoots.some((root) => {
+    const normalizedRoot = root.replaceAll(path.sep, "/");
+    return normalized === normalizedRoot || normalized.startsWith(`${normalizedRoot}/`);
+  });
+  if (!allowed) {
+    throw new Error(`promotion target outside managed roots: ${normalized}`);
+  }
 }
 
 async function updateTargetRecentOutcomes({ dossierPath, packet }) {

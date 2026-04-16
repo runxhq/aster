@@ -650,6 +650,7 @@ Rules:
 The 10/10 public face should have a small, stable route contract:
 
 - `/` — thesis, current posture, latest proof, current stage
+- `/doctrine` — constitutional doctrine, mission, and examples
 - `/activity` — split public-proof feed and ops/status feed
 - `/priorities` — live priorities and rationale from `state/`
 - `/history` — append-only public history
