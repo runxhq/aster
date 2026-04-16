@@ -39,7 +39,7 @@ test("applyAutomatonPromotions copies drafts and updates target dossier", async 
     `${JSON.stringify(
       {
         created_at: "2026-04-16T00:00:00Z",
-        lane: "issue-supervisor",
+        lane: "issue-triage",
         status: "completed",
         summary: "README command drift",
         subject: {

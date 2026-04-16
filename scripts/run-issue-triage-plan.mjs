@@ -12,7 +12,7 @@ async function main(argv = process.argv.slice(2)) {
   const options = parseArgs(argv);
   const decision = JSON.parse(await readFile(path.resolve(options.decision), "utf8"));
   const planRequest = asRecord(decision?.workspace_change_plan_request)
-    ?? asRecord(decision?.supervisor_decision?.workspace_change_plan_request);
+    ?? asRecord(decision?.triage_decision?.workspace_change_plan_request);
   const changeSet = asRecord(decision?.change_set);
 
   if (!planRequest || !changeSet) {
@@ -39,7 +39,7 @@ async function main(argv = process.argv.slice(2)) {
   const coreArgs = [
     path.join(repoRoot, "scripts", "automaton-core.mjs"),
     "--lane",
-    "issue-supervisor-plan",
+    "issue-triage-plan",
     "--runx-root",
     runxRoot,
     "--artifact-root",

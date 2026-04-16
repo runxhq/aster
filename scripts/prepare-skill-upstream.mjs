@@ -29,7 +29,7 @@ await mkdir(outputDir, { recursive: true });
 
 await writeFile(skillPath, skill.markdown);
 await writeJson(path.join(outputDir, "skill_opportunity.json"), opportunity);
-await writeJson(path.join(outputDir, "skill_research_report.json"), research);
+await writeJson(path.join(outputDir, "skill_recon_report.json"), research);
 await writeJson(path.join(outputDir, "skill_candidate.json"), candidate);
 await writeJson(path.join(outputDir, "contribution_packet.json"), contribution);
 await writeJson(path.join(outputDir, "public_feed_event.json"), feedEvent);
@@ -403,7 +403,7 @@ function buildOpportunity(context, opportunityId, generatedAt, options) {
 
 function buildResearchReport(context, opportunityId, options) {
   return {
-    schema: "runx.skill_research_report.v1",
+    schema: "runx.skill_recon_report.v1",
     opportunity_id: opportunityId,
     state: "researched",
     findings: [
@@ -466,7 +466,7 @@ function buildCandidate(context, opportunityId, options, skill) {
       repo_grounded: true,
       mentions_runx_as_optional: true,
       requires_platform_dependency: false,
-      dogfood_status: "prepared",
+      proving_ground_status: "prepared",
       harness_status: "not_applicable_for_portable_upstream_file",
       evidence_source_count: context.files.length,
     },
@@ -480,7 +480,7 @@ function buildCandidate(context, opportunityId, options, skill) {
 
 function buildContributionPacket(context, opportunityId, options, generatedAt) {
   return {
-    schema: "runx.skill_contribution.v1",
+    schema: "runx.skill_upstream.v1",
     opportunity_id: opportunityId,
     state: "contribution_ready",
     target: {
@@ -511,7 +511,7 @@ function buildContributionPacket(context, opportunityId, options, generatedAt) {
 
 function buildFeedEvent(context, opportunityId, options, generatedAt) {
   return {
-    lane: "skill-contribution",
+    lane: "skill-upstream",
     summary: `Prepared portable SKILL.md contribution for ${context.repo}.`,
     status: "success",
     timestamp: generatedAt,
@@ -645,7 +645,7 @@ function slugify(value) {
 
 function parseArgs(argv) {
   const parsed = {
-    outputDir: ".artifacts/skill-contribution",
+    outputDir: ".artifacts/skill-upstream",
     mode: "requested",
     workflow: "operator-bringup",
     candidatePath: "SKILL.md",

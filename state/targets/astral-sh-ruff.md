@@ -17,8 +17,7 @@ high-signal engineering repo.
 
 ## Default Lanes
 
-- `pr-triage`
-- `issue-supervisor`
+- `issue-triage`
 
 ## Trust Notes
 

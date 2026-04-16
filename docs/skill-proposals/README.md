@@ -1,6 +1,6 @@
 # Skill Proposals
 
-This directory stores generated skill proposals produced by the `skill-learning`
+This directory stores generated skill proposals produced by the `skill-lab`
 workflow.
 
 Each proposal should contain:

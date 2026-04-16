@@ -1,3 +1,3 @@
-import { main } from "./prepare-issue-supervisor-decision.mjs";
+import { main } from "./prepare-issue-triage-decision.mjs";
 
 await main();

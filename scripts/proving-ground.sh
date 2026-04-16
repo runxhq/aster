@@ -3,9 +3,9 @@ set -euo pipefail
 
 AUTOMATON_ROOT="${AUTOMATON_ROOT:-$(pwd)}"
 RUNX_ROOT="${RUNX_ROOT:?set RUNX_ROOT to the runx workspace root}"
-ARTIFACT_DIR="${ARTIFACT_DIR:-$AUTOMATON_ROOT/.artifacts/runx-dogfood}"
+ARTIFACT_DIR="${ARTIFACT_DIR:-$AUTOMATON_ROOT/.artifacts/proving-ground}"
 RUNX_ANSWERS_DIR="${RUNX_ANSWERS_DIR:-}"
-RUNX_DOGFOOD_PROFILE="${RUNX_DOGFOOD_PROFILE:-full}"
+PROVING_GROUND_PROFILE="${PROVING_GROUND_PROFILE:-full}"
 
 if [[ -f "$RUNX_ROOT/packages/cli/dist/index.js" ]]; then
   RUNX_REPO_ROOT="$RUNX_ROOT"
@@ -62,7 +62,7 @@ run_json sourcey \
   skill "$SKILLS_ROOT/sourcey" \
   --project "$AUTOMATON_ROOT"
 
-if [[ "$RUNX_DOGFOOD_PROFILE" != "minimal" ]]; then
+if [[ "$PROVING_GROUND_PROFILE" != "minimal" ]]; then
   run_json content-pipeline \
     skill "$SKILLS_ROOT/content-pipeline" \
     --objective "Draft the next automaton operator update from repo evidence" \
@@ -96,4 +96,4 @@ if [[ "$RUNX_DOGFOOD_PROFILE" != "minimal" ]]; then
     --target_entities runx
 fi
 
-echo "dogfood artifacts written to $ARTIFACT_DIR"
+echo "proving-ground artifacts written to $ARTIFACT_DIR"

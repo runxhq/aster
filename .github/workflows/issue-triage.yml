@@ -1,0 +1,415 @@
+name: issue-triage
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+on:
+  issues:
+    types:
+      - opened
+      - edited
+      - reopened
+  pull_request_target:
+    types:
+      - opened
+      - reopened
+      - ready_for_review
+      - synchronize
+  workflow_dispatch:
+    inputs:
+      target_repo:
+        description: Repo containing the issue or PR. Defaults to this repo.
+        required: false
+        type: string
+      issue_number:
+        description: Issue number to triage explicitly.
+        required: false
+        type: string
+      pr_number:
+        description: Pull request number to triage explicitly.
+        required: false
+        type: string
+
+permissions:
+  actions: write
+  contents: write
+  pull-requests: write
+  issues: write
+
+concurrency:
+  group: issue-triage-${{ github.event.inputs.target_repo || github.repository }}-${{ github.event.issue.number || github.event.pull_request.number || github.event.inputs.issue_number || github.event.inputs.pr_number || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  issue-triage-issue:
+    if: >-
+      ${{
+        (github.event_name == 'issues' && !startsWith(github.event.issue.title, '[skill]')) ||
+        (github.event_name == 'workflow_dispatch' && inputs.issue_number != '' && inputs.pr_number == '')
+      }}
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.AUTOMATON_GH_TOKEN != '' && secrets.AUTOMATON_GH_TOKEN || secrets.RUNX_REPOSITORY_PAT || github.token }}
+      RUNX_CALLER_MODEL: ${{ vars.RUNX_CALLER_MODEL || 'gpt-5.4' }}
+      RUNX_CALLER_REASONING_EFFORT: ${{ vars.RUNX_CALLER_REASONING_EFFORT || 'xhigh' }}
+      RUNX_CALLER_MAX_ATTEMPTS: ${{ vars.RUNX_CALLER_MAX_ATTEMPTS || '3' }}
+    steps:
+      - name: Check lane prerequisites
+        id: preflight
+        env:
+          HAS_OPENAI_KEY: ${{ secrets.OPENAI_API_KEY != '' }}
+        run: |
+          if [ "${HAS_OPENAI_KEY}" != "true" ]; then
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "OPENAI_API_KEY not configured; skipping issue-triage."
+          else
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Check out automaton
+        if: ${{ steps.preflight.outputs.enabled == 'true' }}
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Check out runx
+        if: ${{ steps.preflight.outputs.enabled == 'true' }}
+        uses: actions/checkout@v6
+        with:
+          repository: ${{ vars.RUNX_REPOSITORY || 'nilstate/runx' }}
+          ref: ${{ vars.RUNX_REF || 'main' }}
+          path: .runx/runx
+          token: ${{ secrets.RUNX_REPOSITORY_PAT || github.token }}
+
+      - name: Set up Node.js
+        if: ${{ steps.preflight.outputs.enabled == 'true' }}
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - name: Enable corepack
+        if: ${{ steps.preflight.outputs.enabled == 'true' }}
+        run: corepack enable
+
+      - name: Install and build runx
+        if: ${{ steps.preflight.outputs.enabled == 'true' }}
+        run: |
+          pnpm --dir .runx/runx install --no-frozen-lockfile
+          pnpm --dir .runx/runx build
+
+      - name: Install scafld
+        if: ${{ steps.preflight.outputs.enabled == 'true' }}
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/nilstate/scafld/main/install.sh | sh
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          "$HOME/.local/bin/scafld" --version
+
+      - name: Configure git author
+        if: ${{ steps.preflight.outputs.enabled == 'true' }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Resolve issue envelope
+        if: ${{ steps.preflight.outputs.enabled == 'true' }}
+        id: issue
+        env:
+          EVENT_ISSUE_NUMBER: ${{ github.event.issue.number }}
+          EVENT_ISSUE_TITLE: ${{ github.event.issue.title }}
+          EVENT_ISSUE_BODY: ${{ github.event.issue.body }}
+          EVENT_ISSUE_URL: ${{ github.event.issue.html_url }}
+        run: |
+          mkdir -p .artifacts/issue-triage/issue
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TARGET_REPO="${{ github.event.inputs.target_repo || github.repository }}"
+            gh issue view "${{ github.event.inputs.issue_number }}" \
+              --repo "$TARGET_REPO" \
+              --json number,title,body,url \
+              > .artifacts/issue-triage/issue/issue.json
+          else
+            TARGET_REPO="${{ github.repository }}"
+            jq -n \
+              --arg number "$EVENT_ISSUE_NUMBER" \
+              --arg title "$EVENT_ISSUE_TITLE" \
+              --arg body "$EVENT_ISSUE_BODY" \
+              --arg url "$EVENT_ISSUE_URL" \
+              '{number: ($number | tonumber), title: $title, body: $body, url: $url}' \
+              > .artifacts/issue-triage/issue/issue.json
+          fi
+          TARGET_SLUG="$(printf '%s' "$TARGET_REPO" | tr '[:upper:]/' '[:lower:]-')"
+          echo "target_repo=$TARGET_REPO" >> "$GITHUB_OUTPUT"
+          echo "target_slug=$TARGET_SLUG" >> "$GITHUB_OUTPUT"
+          echo "number=$(jq -r '.number' .artifacts/issue-triage/issue/issue.json)" >> "$GITHUB_OUTPUT"
+          echo "title<<EOF" >> "$GITHUB_OUTPUT"
+          jq -r '.title' .artifacts/issue-triage/issue/issue.json >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+          echo "body<<EOF" >> "$GITHUB_OUTPUT"
+          jq -r '.body // ""' .artifacts/issue-triage/issue/issue.json >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+          echo "url=$(jq -r '.url' .artifacts/issue-triage/issue/issue.json)" >> "$GITHUB_OUTPUT"
+
+      - name: Enforce prerelease target scope
+        if: ${{ steps.preflight.outputs.enabled == 'true' }}
+        id: target_scope
+        run: |
+          TARGET_SLUG="$(printf '%s' "${{ steps.issue.outputs.target_repo }}" | tr '[:upper:]/' '[:lower:]-')"
+          if [ -f "state/targets/$TARGET_SLUG.md" ]; then
+            echo "allowed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "allowed=false" >> "$GITHUB_OUTPUT"
+            echo "Target repo '${{ steps.issue.outputs.target_repo }}' has no curated target dossier; skipping issue-triage." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Run issue-triage on issue
+        if: ${{ steps.preflight.outputs.enabled == 'true' && steps.target_scope.outputs.allowed == 'true' }}
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          ISSUE_TITLE: ${{ steps.issue.outputs.title }}
+          ISSUE_BODY: ${{ steps.issue.outputs.body }}
+        run: |
+          node scripts/automaton-core.mjs \
+            --lane issue-triage \
+            --runx-root "$GITHUB_WORKSPACE/.runx/runx" \
+            --artifact-root "$GITHUB_WORKSPACE/.artifacts/issue-triage/issue" \
+            --subject-kind github_issue \
+            --subject-locator "${{ steps.issue.outputs.target_repo }}#issue/${{ steps.issue.outputs.number }}" \
+            --repo "${{ github.repository }}" \
+            --target-repo "${{ steps.issue.outputs.target_repo }}" \
+            --issue-number "${{ steps.issue.outputs.number }}" \
+            --issue-url "${{ steps.issue.outputs.url }}" \
+            --receipt-dir "$GITHUB_WORKSPACE/.artifacts/issue-triage/issue/triage-receipts" \
+            --trace-dir "$GITHUB_WORKSPACE/.artifacts/issue-triage/issue/triage-provider-trace" \
+            --output "$GITHUB_WORKSPACE/.artifacts/issue-triage/issue/triage-result.json" \
+            -- \
+            skill "$GITHUB_WORKSPACE/.runx/runx/skills/support-triage" \
+            --title "$ISSUE_TITLE" \
+            --body "$ISSUE_BODY" \
+            --source "github_issue" \
+            --source_id "${{ steps.issue.outputs.number }}" \
+            --source_url "${{ steps.issue.outputs.url }}" \
+            --product_context "automaton public proving-ground repository" \
+            --operator_context "Act as the issue-triage gate. Always draft a user-facing triage comment. Approve issue-to-pr only when the work is bounded to one repo-scoped governed PR. Use action_decision=proceed_to_plan when objective-decompose should freeze a shared plan before mutation. Use action_decision=request_review when the issue needs discussion before planning or mutation."
+          node scripts/prepare-issue-triage-decision.mjs \
+            --input "$GITHUB_WORKSPACE/.artifacts/issue-triage/issue/triage-result.json" \
+            --repo-root "$GITHUB_WORKSPACE" \
+            --default-repo "${{ steps.issue.outputs.target_repo }}" \
+            --output "$GITHUB_WORKSPACE/.artifacts/issue-triage/issue/triage-decision.json"
+          node scripts/apply-automaton-promotions.mjs \
+            --repo-root "$GITHUB_WORKSPACE" \
+            --summary "$GITHUB_WORKSPACE/.artifacts/issue-triage/issue/core-summary.json" \
+            --output "$GITHUB_WORKSPACE/.artifacts/issue-triage/issue/promotion-apply.json"
+          cat > "$GITHUB_WORKSPACE/.artifacts/issue-triage/issue/operator-memory-pr-body.md" <<'EOF'
+          ## Summary
+
+          This draft PR updates operator memory from the `issue-triage` lane.
+
+          - Appends the new reflection/history drafts into repo-owned surfaces
+          - Updates the target dossier recent-outcomes projection
+          - Keeps canonical evidence in workflow receipts and artifacts
+          EOF
+          node scripts/publish-runx-pr.mjs \
+            --repo "${{ github.repository }}" \
+            --branch "runx/operator-memory-issue-triage-${{ steps.issue.outputs.target_slug }}-issue-${{ steps.issue.outputs.number }}" \
+            --title "[runx] update issue-triage operator memory" \
+            --commit-message "docs(memory): update issue-triage operator memory" \
+            --body-file "$GITHUB_WORKSPACE/.artifacts/issue-triage/issue/operator-memory-pr-body.md" \
+            > "$GITHUB_WORKSPACE/.artifacts/issue-triage/issue/operator-memory-publish.json"
+          jq -r '.comment_body' "$GITHUB_WORKSPACE/.artifacts/issue-triage/issue/triage-decision.json" \
+            > "$GITHUB_WORKSPACE/.artifacts/issue-triage/issue/triage-comment.md"
+          if [ "$(jq -r '.triage_decision.should_start_planner' "$GITHUB_WORKSPACE/.artifacts/issue-triage/issue/triage-decision.json")" = "true" ]; then
+            node scripts/run-issue-triage-plan.mjs \
+              --decision "$GITHUB_WORKSPACE/.artifacts/issue-triage/issue/triage-decision.json" \
+              --runx-root "$GITHUB_WORKSPACE/.runx/runx" \
+              --target-repo "${{ steps.issue.outputs.target_repo }}" \
+              --issue-number "${{ steps.issue.outputs.number }}" \
+              --receipt-dir "$GITHUB_WORKSPACE/.artifacts/issue-triage/issue/plan-receipts" \
+              --trace-dir "$GITHUB_WORKSPACE/.artifacts/issue-triage/issue/plan-provider-trace" \
+              --output "$GITHUB_WORKSPACE/.artifacts/issue-triage/issue/plan-result.json" \
+              --comment-output "$GITHUB_WORKSPACE/.artifacts/issue-triage/issue/plan-comment.md"
+            if [ -f "$GITHUB_WORKSPACE/.artifacts/issue-triage/issue/plan-comment.md" ]; then
+              printf '\n\n' >> "$GITHUB_WORKSPACE/.artifacts/issue-triage/issue/triage-comment.md"
+              cat "$GITHUB_WORKSPACE/.artifacts/issue-triage/issue/plan-comment.md" >> "$GITHUB_WORKSPACE/.artifacts/issue-triage/issue/triage-comment.md"
+            fi
+          fi
+          if [ "$(jq -r '.triage_decision.should_start_worker' "$GITHUB_WORKSPACE/.artifacts/issue-triage/issue/triage-decision.json")" != "true" ]; then
+            exit 0
+          fi
+          node scripts/run-issue-triage-workers.mjs \
+            --decision "$GITHUB_WORKSPACE/.artifacts/issue-triage/issue/triage-decision.json" \
+            --runx-root "$GITHUB_WORKSPACE/.runx/runx" \
+            --default-repo "${{ steps.issue.outputs.target_repo }}" \
+            --issue-number "${{ steps.issue.outputs.number }}" \
+            --issue-title "$ISSUE_TITLE" \
+            --issue-body "$ISSUE_BODY" \
+            --issue-url "${{ steps.issue.outputs.url }}" \
+            --scafld-bin "$HOME/.local/bin/scafld" \
+            --artifact-root "$GITHUB_WORKSPACE/.artifacts/issue-triage/issue/workers" \
+            --work-root "$GITHUB_WORKSPACE/.artifacts/issue-triage/issue/workspaces" \
+            --output "$GITHUB_WORKSPACE/.artifacts/issue-triage/issue/worker-run-summary.json"
+
+      - name: Post issue comment
+        if: ${{ steps.preflight.outputs.enabled == 'true' && steps.target_scope.outputs.allowed == 'true' && always() }}
+        run: |
+          if [ ! -f ".artifacts/issue-triage/issue/triage-comment.md" ]; then
+            exit 0
+          fi
+          node scripts/post-issue-triage-comment.mjs \
+            --repo "${{ steps.issue.outputs.target_repo }}" \
+            --issue "${{ steps.issue.outputs.number }}" \
+            --body-file ".artifacts/issue-triage/issue/triage-comment.md"
+
+      - name: Upload issue artifacts
+        if: ${{ always() && steps.preflight.outputs.enabled == 'true' && steps.target_scope.outputs.allowed == 'true' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: issue-triage-issue-${{ steps.issue.outputs.number || github.event.issue.number || github.event.inputs.issue_number }}
+          path: .artifacts/issue-triage/issue
+
+  issue-triage-pr:
+    if: >-
+      ${{
+        github.event_name == 'pull_request_target' ||
+        (github.event_name == 'workflow_dispatch' && inputs.pr_number != '' && inputs.issue_number == '')
+      }}
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.AUTOMATON_GH_TOKEN != '' && secrets.AUTOMATON_GH_TOKEN || github.token }}
+      RUNX_CALLER_MODEL: ${{ vars.RUNX_CALLER_MODEL || 'gpt-5.4' }}
+      RUNX_CALLER_REASONING_EFFORT: ${{ vars.RUNX_CALLER_REASONING_EFFORT || 'xhigh' }}
+      RUNX_CALLER_MAX_ATTEMPTS: ${{ vars.RUNX_CALLER_MAX_ATTEMPTS || '3' }}
+    steps:
+      - name: Check lane prerequisites
+        id: preflight
+        env:
+          HAS_OPENAI_KEY: ${{ secrets.OPENAI_API_KEY != '' }}
+        run: |
+          if [ "${HAS_OPENAI_KEY}" != "true" ]; then
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "OPENAI_API_KEY not configured; skipping issue-triage."
+          else
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Check out automaton
+        if: ${{ steps.preflight.outputs.enabled == 'true' }}
+        uses: actions/checkout@v6
+
+      - name: Check out runx
+        if: ${{ steps.preflight.outputs.enabled == 'true' }}
+        uses: actions/checkout@v6
+        with:
+          repository: ${{ vars.RUNX_REPOSITORY || 'nilstate/runx' }}
+          ref: ${{ vars.RUNX_REF || 'main' }}
+          path: .runx/runx
+          token: ${{ secrets.RUNX_REPOSITORY_PAT || github.token }}
+
+      - name: Set up Node.js
+        if: ${{ steps.preflight.outputs.enabled == 'true' }}
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - name: Enable corepack
+        if: ${{ steps.preflight.outputs.enabled == 'true' }}
+        run: corepack enable
+
+      - name: Configure git author
+        if: ${{ steps.preflight.outputs.enabled == 'true' }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Install and build runx
+        if: ${{ steps.preflight.outputs.enabled == 'true' }}
+        run: |
+          pnpm --dir .runx/runx install --no-frozen-lockfile
+          pnpm --dir .runx/runx build
+
+      - name: Build PR snapshot
+        if: ${{ steps.preflight.outputs.enabled == 'true' }}
+        id: target_scope
+        run: |
+          TARGET_REPO="${{ github.event.inputs.target_repo || github.repository }}"
+          TARGET_SLUG="$(printf '%s' "$TARGET_REPO" | tr '[:upper:]/' '[:lower:]-')"
+          if [ ! -f "state/targets/$TARGET_SLUG.md" ]; then
+            echo "allowed=false" >> "$GITHUB_OUTPUT"
+            echo "Target repo '$TARGET_REPO' has no curated target dossier; skipping issue-triage." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          echo "allowed=true" >> "$GITHUB_OUTPUT"
+          mkdir -p .artifacts/issue-triage/pr
+          node scripts/build-pr-snapshot.mjs \
+            --repo "$TARGET_REPO" \
+            --pr "${{ github.event.inputs.pr_number || github.event.pull_request.number }}" \
+            > .artifacts/issue-triage/pr/pr-snapshot.json
+
+      - name: Run issue-triage on PR
+        if: ${{ steps.preflight.outputs.enabled == 'true' && steps.target_scope.outputs.allowed == 'true' }}
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          TARGET_REPO="${{ github.event.inputs.target_repo || github.repository }}"
+          TARGET_SLUG="$(printf '%s' "$TARGET_REPO" | tr '[:upper:]/' '[:lower:]-')"
+          node scripts/automaton-core.mjs \
+            --lane issue-triage \
+            --runx-root "$GITHUB_WORKSPACE/.runx/runx" \
+            --artifact-root "$GITHUB_WORKSPACE/.artifacts/issue-triage/pr" \
+            --subject-kind github_pull_request \
+            --subject-locator "$TARGET_REPO#pr/${{ github.event.inputs.pr_number || github.event.pull_request.number }}" \
+            --repo "${{ github.repository }}" \
+            --target-repo "$TARGET_REPO" \
+            --pr-number "${{ github.event.inputs.pr_number || github.event.pull_request.number }}" \
+            --snapshot "$GITHUB_WORKSPACE/.artifacts/issue-triage/pr/pr-snapshot.json" \
+            --receipt-dir "$GITHUB_WORKSPACE/.artifacts/issue-triage/pr/receipts" \
+            --trace-dir "$GITHUB_WORKSPACE/.artifacts/issue-triage/pr/provider-trace" \
+            --output "$GITHUB_WORKSPACE/.artifacts/issue-triage/pr/result.json" \
+            -- \
+            skill "$GITHUB_WORKSPACE/.runx/runx/skills/github-triage" \
+            --runner respond \
+            --objective "Draft the next high-signal maintainer comment for this pull request" \
+            --issue_snapshot "$(cat "$GITHUB_WORKSPACE/.artifacts/issue-triage/pr/pr-snapshot.json")" \
+            --maintainer_context "Comment as the automaton operator. Focus on scope drift, missing validation, scafld governance, and the clearest next unblock. This is a pull request thread, not a user support issue."
+          node scripts/apply-automaton-promotions.mjs \
+            --repo-root "$GITHUB_WORKSPACE" \
+            --summary "$GITHUB_WORKSPACE/.artifacts/issue-triage/pr/core-summary.json" \
+            --output "$GITHUB_WORKSPACE/.artifacts/issue-triage/pr/promotion-apply.json"
+          cat > "$GITHUB_WORKSPACE/.artifacts/issue-triage/pr/operator-memory-pr-body.md" <<'EOF'
+          ## Summary
+
+          This draft PR updates operator memory from the `issue-triage` lane.
+
+          - Appends the new reflection/history drafts into repo-owned surfaces
+          - Updates the target dossier recent-outcomes projection
+          - Keeps canonical evidence in workflow receipts and artifacts
+          EOF
+          node scripts/publish-runx-pr.mjs \
+            --repo "${{ github.repository }}" \
+            --branch "runx/operator-memory-issue-triage-$TARGET_SLUG-pr-${{ github.event.inputs.pr_number || github.event.pull_request.number }}" \
+            --title "[runx] update issue-triage operator memory" \
+            --commit-message "docs(memory): update issue-triage operator memory" \
+            --body-file "$GITHUB_WORKSPACE/.artifacts/issue-triage/pr/operator-memory-pr-body.md" \
+            > "$GITHUB_WORKSPACE/.artifacts/issue-triage/pr/operator-memory-publish.json"
+
+      - name: Materialize PR comment
+        if: ${{ steps.preflight.outputs.enabled == 'true' && steps.target_scope.outputs.allowed == 'true' }}
+        run: |
+          node scripts/write-triage-comment.mjs \
+            --input ".artifacts/issue-triage/pr/result.json" \
+            --output ".artifacts/issue-triage/pr/comment.md"
+
+      - name: Post PR comment
+        if: ${{ steps.preflight.outputs.enabled == 'true' && steps.target_scope.outputs.allowed == 'true' }}
+        run: |
+          TARGET_REPO="${{ github.event.inputs.target_repo || github.repository }}"
+          node scripts/post-issue-triage-pr-comment.mjs \
+            --repo "$TARGET_REPO" \
+            --pr "$(jq -r '.pr_number' .artifacts/issue-triage/pr/pr-snapshot.json)" \
+            --body-file ".artifacts/issue-triage/pr/comment.md" \
+            --sha "$(jq -r '.head_sha' .artifacts/issue-triage/pr/pr-snapshot.json)"
+
+      - name: Upload PR artifacts
+        if: ${{ always() && steps.preflight.outputs.enabled == 'true' && steps.target_scope.outputs.allowed == 'true' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: issue-triage-pr-${{ github.event.pull_request.number || github.event.inputs.pr_number }}
+          path: .artifacts/issue-triage/pr

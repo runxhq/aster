@@ -16,10 +16,9 @@ line.
 
 ## Default Lanes
 
-- `issue-supervisor`
-- `pr-triage`
-- `skill-learning`
-- `runx-dogfood`
+- `issue-triage`
+- `skill-lab`
+- `proving-ground`
 - `sourcey-refresh` during migration
 
 ## Trust Notes

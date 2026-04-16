@@ -6,12 +6,12 @@ content runs.
 ## Current Gaps
 
 - the Sourcey site should publish a machine-readable run catalog and receipt map
-- PR triage should evolve from one comment into structured review-check output
-- issue-supervisor should enforce dependency edges from `objective-decompose`
+- issue triage should evolve from one comment into structured review-check output
+- issue-triage should enforce dependency edges from `objective-decompose`
   when a phased plan contains ordered repo workers
-- skill-learning should feed skill-contribution packets before any runx
+- skill-lab should feed skill-upstream packets before any runx
   registry binding is drafted
-- skill-contribution-watch should track upstream PR merge, rejection, or stale
+- merge-watch should track upstream PR merge, rejection, or stale
   state
-- draft-only dogfood runs should roll up into one concise operator dashboard
+- draft-only proving-ground runs should roll up into one concise operator dashboard
 - workflow receipts should eventually land in a persistent, queryable store

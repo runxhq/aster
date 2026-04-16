@@ -1,4 +1,4 @@
-name: skill-contribution-watch
+name: merge-watch
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -7,24 +7,24 @@ on:
   workflow_dispatch:
     inputs:
       target_repo:
-        description: "External repo with an upstream SKILL.md contribution PR"
+        description: External repo with an upstream SKILL.md contribution PR
         required: true
-        default: "nilstate/icey-cli"
+        default: nilstate/icey-cli
         type: string
       pr_number:
-        description: "Contribution PR number"
+        description: Contribution PR number
         required: true
         default: "2"
         type: string
       candidate_path:
-        description: "Portable skill file path in the target repo"
+        description: Portable skill file path in the target repo
         required: true
-        default: "SKILL.md"
+        default: SKILL.md
         type: string
       registry_owner:
-        description: "runx registry owner namespace to request after merge"
+        description: runx registry owner namespace to request after merge
         required: true
-        default: "nilstate"
+        default: nilstate
         type: string
   schedule:
     - cron: "37 4 * * *"
@@ -34,11 +34,11 @@ permissions:
   pull-requests: read
 
 concurrency:
-  group: skill-contribution-watch-${{ github.event_name == 'workflow_dispatch' && inputs.target_repo || 'nilstate/icey-cli' }}-${{ github.event_name == 'workflow_dispatch' && inputs.pr_number || '2' }}
+  group: merge-watch-${{ github.event_name == 'workflow_dispatch' && inputs.target_repo || 'nilstate/icey-cli' }}-${{ github.event_name == 'workflow_dispatch' && inputs.pr_number || '2' }}
   cancel-in-progress: false
 
 jobs:
-  skill-contribution-watch:
+  merge-watch:
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ secrets.UPSTREAM_CONTRIBUTION_TOKEN || secrets.RUNX_REPOSITORY_PAT || github.token }}
@@ -57,18 +57,18 @@ jobs:
         with:
           node-version: 24
 
-      - name: Watch upstream skill contribution
+      - name: Observe upstream PR state
         run: |
           set -euo pipefail
-          mkdir -p .artifacts/skill-contribution-watch
-          node scripts/watch-skill-contribution.mjs \
+          mkdir -p .artifacts/merge-watch
+          node scripts/merge-watch.mjs \
             --repo "$TARGET_REPO" \
             --pr "$PR_NUMBER" \
             --candidate-path "$CANDIDATE_PATH" \
             --registry-owner "$REGISTRY_OWNER" \
-            --artifacts-dir .artifacts/skill-contribution-watch \
-            > .artifacts/skill-contribution-watch.summary.json
-          cat .artifacts/skill-contribution-watch.summary.json
+            --artifacts-dir .artifacts/merge-watch \
+            > .artifacts/merge-watch.summary.json
+          cat .artifacts/merge-watch.summary.json
 
       - name: Publish enriched watch evidence
         if: ${{ always() }}
@@ -77,7 +77,7 @@ jobs:
           RUNX_PUBLIC_EVIDENCE_TOKEN: ${{ secrets.RUNX_PUBLIC_EVIDENCE_TOKEN }}
         run: |
           set -euo pipefail
-          if [ ! -s .artifacts/skill-contribution-watch/public_feed_event.json ]; then
+          if [ ! -s .artifacts/merge-watch/public_feed_event.json ]; then
             echo "no public_feed_event.json generated"
             exit 0
           fi
@@ -85,12 +85,12 @@ jobs:
             echo "RUNX_PUBLIC_EVIDENCE_TOKEN not configured; skipping enriched evidence publish"
             exit 0
           fi
-          python3 - <<'PY' > "$RUNNER_TEMP/skill-contribution-watch-evidence.json"
+          python3 - <<'PY' > "$RUNNER_TEMP/merge-watch-evidence.json"
           import json
           import os
           from datetime import datetime, timezone
 
-          with open(".artifacts/skill-contribution-watch/public_feed_event.json", "r", encoding="utf-8") as handle:
+          with open(".artifacts/merge-watch/public_feed_event.json", "r", encoding="utf-8") as handle:
               feed = json.load(handle)
 
           metadata = dict(feed.get("metadata") or {})
@@ -99,7 +99,7 @@ jobs:
               "kind": "automaton_run",
               "source": "github-actions",
               "status": feed.get("status") or "success",
-              "title": f"skill-contribution-watch · {metadata.get('target_repo') or os.environ.get('TARGET_REPO')}",
+              "title": f"merge-watch · {metadata.get('target_repo') or os.environ.get('TARGET_REPO')}",
               "timestamp": feed.get("timestamp") or datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
               "summary": feed.get("summary"),
               "repo": os.environ.get("GITHUB_REPOSITORY"),
@@ -121,14 +121,14 @@ jobs:
             -X POST \
             -H "authorization: Bearer ${RUNX_PUBLIC_EVIDENCE_TOKEN}" \
             -H "content-type: application/json" \
-            --data @"$RUNNER_TEMP/skill-contribution-watch-evidence.json" \
+            --data @"$RUNNER_TEMP/merge-watch-evidence.json" \
             "${RUNX_PUBLIC_EVIDENCE_API_BASE_URL%/}/v1/admin/public/evidence"
 
       - name: Upload artifacts
         if: ${{ always() }}
         uses: actions/upload-artifact@v7
         with:
-          name: skill-contribution-watch-${{ github.run_id }}
+          name: merge-watch-${{ github.run_id }}
           path: |
-            .artifacts/skill-contribution-watch
-            .artifacts/skill-contribution-watch.summary.json
+            .artifacts/merge-watch
+            .artifacts/merge-watch.summary.json

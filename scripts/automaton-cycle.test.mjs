@@ -93,10 +93,10 @@ test("discover, score, and select curated external targets inside prerelease v1"
       "",
       "## Default Lanes",
       "",
-      "- `issue-supervisor`",
-      "- `pr-triage`",
+      "- `issue-triage`",
+      "- `issue-triage`",
       "- `sourcey-refresh`",
-      "- `runx-dogfood`",
+      "- `proving-ground`",
       "",
       "## Recent Outcomes",
       "",
@@ -116,8 +116,8 @@ test("discover, score, and select curated external targets inside prerelease v1"
       "",
       "## Default Lanes",
       "",
-      "- `pr-triage`",
-      "- `issue-supervisor`",
+      "- `issue-triage`",
+      "- `issue-triage`",
       "",
     ].join("\n"),
   );
@@ -161,7 +161,7 @@ test("discover, score, and select curated external targets inside prerelease v1"
 
   assert.equal(result.selection.status, "selected");
   assert.equal(result.selection.selected.target_repo, "vercel/next.js");
-  assert.equal(result.selection.selected.lane, "pr-triage");
+  assert.equal(result.selection.selected.lane, "issue-triage");
   assert.match(result.selection.priorities[0].subject_locator, /vercel\/next\.js#pr\/101/);
   assert.equal(result.selection.priorities[0].within_v1_scope, true);
   assert.equal(result.selection.priorities[0].vetoed, false);
@@ -238,7 +238,7 @@ test("buildDispatchPlan dispatches curated external opportunities", () => {
       reason: "highest_non_vetoed_score",
       priorities: [],
       selected: {
-        lane: "pr-triage",
+        lane: "issue-triage",
         target_repo: "vercel/next.js",
         subject_locator: "vercel/next.js#pr/101",
         pr_number: "101",
@@ -248,8 +248,8 @@ test("buildDispatchPlan dispatches curated external opportunities", () => {
   });
 
   assert.equal(plan.status, "ready");
-  assert.equal(plan.lane, "pr-triage");
-  assert.equal(plan.workflow, "pr-triage.yml");
+  assert.equal(plan.lane, "issue-triage");
+  assert.equal(plan.workflow, "issue-triage.yml");
   assert.equal(plan.inputs.target_repo, "vercel/next.js");
   assert.equal(plan.inputs.pr_number, "101");
 });
@@ -298,8 +298,8 @@ test("runAutomatonCycle vetoes candidates with an open operator-memory PR", asyn
       "",
       "## Default Lanes",
       "",
-      "- `pr-triage`",
-      "- `issue-supervisor`",
+      "- `issue-triage`",
+      "- `issue-triage`",
       "",
     ].join("\n"),
   );
@@ -345,15 +345,117 @@ test("runAutomatonCycle vetoes candidates with an open operator-memory PR", asyn
     repoRoot,
     repo: "nilstate/automaton",
     discoveryInput: discoveryPath,
-    openOperatorMemoryBranches: ["runx/operator-memory-pr-triage-astral-sh-uv-pr-101"],
+    openOperatorMemoryBranches: ["runx/operator-memory-issue-triage-astral-sh-uv-pr-101"],
     now: "2026-04-16T12:00:00Z",
   });
 
   assert.equal(result.selection.status, "selected");
   assert.equal(result.selection.selected.target_repo, "astral-sh/uv");
-  assert.equal(result.selection.selected.lane, "issue-supervisor");
+  assert.equal(result.selection.selected.lane, "issue-triage");
   assert.equal(result.selection.selected.issue_number, "202");
   assert.equal(result.selection.priorities[0].subject_locator, "astral-sh/uv#pr/101");
   assert.match(result.selection.priorities[0].veto_reasons.join(","), /open_operator_memory_pr/);
   assert.equal(result.selection.priorities[0].within_v1_scope, true);
+});
+
+test("runAutomatonCycle vetoes bot-authored dependency update pull requests", async () => {
+  const tempRoot = await mkdtemp(path.join(os.tmpdir(), "automaton-bot-pr-"));
+  const repoRoot = path.join(tempRoot, "repo");
+  await mkdir(path.join(repoRoot, "doctrine"), { recursive: true });
+  await mkdir(path.join(repoRoot, "state", "targets"), { recursive: true });
+  await mkdir(path.join(repoRoot, "history"), { recursive: true });
+  await mkdir(path.join(repoRoot, "reflections"), { recursive: true });
+
+  await writeFile(
+    path.join(repoRoot, "doctrine", "SCORING.md"),
+    [
+      "# Automaton Scoring Policy",
+      "",
+      "- `stranger_value`: `0.24`",
+      "- `proof_strength`: `0.24`",
+      "- `compounding_value`: `0.19`",
+      "- `tractability`: `0.16`",
+      "- `novelty`: `0.09`",
+      "- `maintenance_efficiency`: `0.08`",
+      "",
+      "- `stranger_value < 0.60`",
+      "- `proof_strength < 0.70`",
+      "If the top non-vetoed candidate scores below `0.68`, prefer `no_op`.",
+      "",
+      "- `completed`, `success`, `merged`, `published`: `72h`",
+      "- `noop`, `ignored`, `stale`, `silence`: `7d`",
+      "- `rejected`, `corrected`: `21d`",
+      "- `failed`, `error`: `24h`",
+      "",
+    ].join("\n"),
+  );
+
+  await writeFile(
+    path.join(repoRoot, "state", "targets", "astral-sh-uv.md"),
+    [
+      "---",
+      "title: Target Dossier — astral-sh/uv",
+      "subject_locator: astral-sh/uv",
+      "---",
+      "",
+      "# astral-sh/uv",
+      "",
+      "## Default Lanes",
+      "",
+      "- `issue-triage`",
+      "",
+    ].join("\n"),
+  );
+
+  const discoveryPath = path.join(repoRoot, "discovery.json");
+  await writeFile(
+    discoveryPath,
+    `${JSON.stringify(
+      {
+        "astral-sh/uv": {
+          issues: [
+            {
+              number: 202,
+              title: "docs: clarify resolver failure messaging",
+              body: "Narrow issue with a bounded next step.",
+              url: "https://github.com/astral-sh/uv/issues/202",
+              authorAssociation: "NONE",
+              author: { login: "outside-dev" },
+              updatedAt: "2026-04-15T10:00:00Z",
+            },
+          ],
+          prs: [
+            {
+              number: 18991,
+              title: "Update Rust crate similar to v3",
+              body: "Renovate artifact drift.",
+              url: "https://github.com/astral-sh/uv/pull/18991",
+              isDraft: false,
+              authorAssociation: "NONE",
+              author: { login: "app/renovate" },
+              updatedAt: "2026-04-15T12:00:00Z",
+              headRefName: "renovate/similar-3.x",
+              labels: ["internal", "build:artifacts"],
+            },
+          ],
+        },
+      },
+      null,
+      2,
+    )}\n`,
+  );
+
+  const result = await runAutomatonCycle({
+    repoRoot,
+    repo: "nilstate/automaton",
+    discoveryInput: discoveryPath,
+    now: "2026-04-16T12:00:00Z",
+  });
+
+  assert.equal(result.selection.status, "selected");
+  assert.equal(result.selection.selected.subject_locator, "astral-sh/uv#issue/202");
+  assert.equal(result.selection.priorities[0].subject_locator, "astral-sh/uv#pr/18991");
+  assert.match(result.selection.priorities[0].veto_reasons.join(","), /bot_authored_pull_request/);
+  assert.match(result.selection.priorities[0].veto_reasons.join(","), /dependency_update_pull_request/);
+  assert.match(result.selection.priorities[0].veto_reasons.join(","), /internal_or_build_only_pull_request/);
 });

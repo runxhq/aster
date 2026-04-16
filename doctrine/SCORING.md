@@ -31,8 +31,12 @@ Do not act when any veto is active:
 
 - `stranger_value < 0.60`
 - `proof_strength < 0.70`
+- target has no curated dossier
 - lane is not allowed by the target dossier
 - cooldown is active for the same lane on the same target
+- subject already has an open operator-memory PR
+- bot-authored pull requests are vetoed by default
+- dependency-update or internal/build-only pull requests do not count as thesis work
 
 When every candidate is vetoed, return `no_op`.
 
@@ -65,6 +69,7 @@ The intended biases are:
 The cycle is:
 
 1. discover candidate opportunities
+   use scheduled target scans and live GitHub events, but only for dossier-backed targets
 2. score each candidate mechanically
 3. keep the top three as the priority queue
 4. select the highest non-vetoed candidate or emit `no_op`

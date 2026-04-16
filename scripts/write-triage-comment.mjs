@@ -12,7 +12,7 @@ if (!body) {
 }
 
 const comment = [
-  "<!-- automaton:runx-pr-triage -->",
+  "<!-- automaton:runx-issue-triage -->",
   body.trim(),
 ].join("\n\n");
 

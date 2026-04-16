@@ -16,11 +16,11 @@ respond with high-signal triage or contribution behavior.
 
 ## Default Lanes
 
-- `pr-triage`
-- `issue-supervisor`
+- `issue-triage`
 
 ## Trust Notes
 
 - keep interventions bounded and specific
 - prefer obvious docs, validation, or scope clarifications over broad design claims
+- do not spend public attention on bot-authored dependency refresh PRs unless a maintainer explicitly asks for review help
 - treat public maintainer silence as signal and respect cooldowns

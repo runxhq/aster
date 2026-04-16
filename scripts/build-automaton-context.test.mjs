@@ -18,14 +18,14 @@ test("slugifyRepoLike normalizes repo locators", () => {
 test("buildContextBundle loads doctrine, state, and target dossier", async () => {
   const bundle = await buildContextBundle({
     repoRoot,
-    lane: "issue-supervisor",
+    lane: "issue-triage",
     subjectKind: "github_issue",
     subjectLocator: "nilstate/automaton#issue/42",
     repo: "nilstate/automaton",
     targetRepo: "nilstate/automaton",
   });
 
-  assert.equal(bundle.lane, "issue-supervisor");
+  assert.equal(bundle.lane, "issue-triage");
   assert.equal(bundle.subject.kind, "github_issue");
   assert.equal(bundle.state.target?.title, "Target Dossier — nilstate/automaton");
   assert.ok(bundle.doctrine.some((doc) => doc.title === "Automaton Thesis"));
@@ -36,7 +36,7 @@ test("buildContextBundle loads doctrine, state, and target dossier", async () =>
 test("renderContextPrompt includes doctrine and state sections", async () => {
   const bundle = await buildContextBundle({
     repoRoot,
-    lane: "pr-triage",
+    lane: "issue-triage",
     subjectKind: "github_pull_request",
     subjectLocator: "nilstate/automaton#pr/7",
     repo: "nilstate/automaton",

@@ -16,8 +16,7 @@ useful narrowing is hard.
 
 ## Default Lanes
 
-- `pr-triage`
-- `issue-supervisor`
+- `issue-triage`
 
 ## Trust Notes
 

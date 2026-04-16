@@ -8,7 +8,7 @@ test("ensureRemoteLease fetches the remote automation branch before pushing", ()
   const runner = (command, args) => {
     calls.push([command, args]);
     if (args[0] === "ls-remote") {
-      return "abc123\trefs/heads/runx/operator-memory-pr-triage-pr-8\n";
+      return "abc123\trefs/heads/runx/operator-memory-issue-triage-pr-8\n";
     }
     if (args[0] === "fetch") {
       return "";
@@ -16,18 +16,18 @@ test("ensureRemoteLease fetches the remote automation branch before pushing", ()
     throw new Error(`unexpected command: ${command} ${args.join(" ")}`);
   };
 
-  const lease = ensureRemoteLease("runx/operator-memory-pr-triage-pr-8", runner);
+  const lease = ensureRemoteLease("runx/operator-memory-issue-triage-pr-8", runner);
 
   assert.equal(lease, "abc123");
   assert.deepEqual(calls, [
-    ["git", ["ls-remote", "--heads", "origin", "runx/operator-memory-pr-triage-pr-8"]],
+    ["git", ["ls-remote", "--heads", "origin", "runx/operator-memory-issue-triage-pr-8"]],
     [
       "git",
       [
         "fetch",
         "--no-tags",
         "origin",
-        "runx/operator-memory-pr-triage-pr-8:refs/remotes/origin/runx/operator-memory-pr-triage-pr-8",
+        "runx/operator-memory-issue-triage-pr-8:refs/remotes/origin/runx/operator-memory-issue-triage-pr-8",
       ],
     ],
   ]);

@@ -1,11 +1,11 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://runx.ai/schemas/skill-contribution-artifacts.schema.json",
+  "$id": "https://runx.ai/schemas/skill-upstream-artifacts.schema.json",
   "title": "runx skill contribution artifact bundle",
   "type": "object",
   "required": [
     "skill_opportunity",
-    "skill_research_report",
+    "skill_recon_report",
     "skill_candidate",
     "contribution_packet",
     "public_feed_event"
@@ -14,7 +14,7 @@
     "skill_opportunity": {
       "$ref": "#/$defs/skillOpportunity"
     },
-    "skill_research_report": {
+    "skill_recon_report": {
       "$ref": "#/$defs/skillResearchReport"
     },
     "skill_candidate": {
@@ -129,7 +129,7 @@
       "required": ["schema", "opportunity_id", "state", "findings", "sources", "risks", "recommended_flow"],
       "properties": {
         "schema": {
-          "const": "runx.skill_research_report.v1"
+          "const": "runx.skill_recon_report.v1"
         },
         "opportunity_id": {
           "type": "string"
@@ -246,7 +246,7 @@
       "required": ["schema", "opportunity_id", "state", "target", "changes", "pull_request", "review"],
       "properties": {
         "schema": {
-          "const": "runx.skill_contribution.v1"
+          "const": "runx.skill_upstream.v1"
         },
         "opportunity_id": {
           "type": "string"
@@ -307,7 +307,7 @@
       "required": ["lane", "summary", "status", "metadata"],
       "properties": {
         "lane": {
-          "const": "skill-contribution"
+          "const": "skill-upstream"
         },
         "summary": {
           "type": "string"

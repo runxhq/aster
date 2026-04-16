@@ -108,11 +108,11 @@ That progression should be gradual:
 
 - `docs-pages` publishes the static Sourcey site from committed docs sources
 - `sourcey-refresh` opens a PR with `runx`-authored docs/config updates
-- `issue-supervisor` turns issue intake into a public triage artifact, then
+- `issue-triage` turns issue intake into a public triage artifact, then
   runs `objective-decompose` when the gate approves planning, and only starts
   an `issue-to-pr` worker when the gate approves bounded build work
-- `pr-triage` comments on open PRs with a runx-authored maintainer response
-- `skill-learning` turns a skill proposal issue into a concrete skill-design PR
+- `issue-triage` comments on open PRs with a runx-authored maintainer response
+- `skill-lab` turns a skill proposal issue into a concrete skill-design PR
 
 The key test at this phase is not only "did the run finish." The real test is
 "did the repo end up with a public artifact that a maintainer would actually

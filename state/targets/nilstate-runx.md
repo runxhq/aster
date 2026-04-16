@@ -16,9 +16,9 @@ runtime.
 
 ## Default Lanes
 
-- `pr-triage`
-- `skill-contribution`
-- `skill-contribution-watch`
+- `issue-triage`
+- `skill-upstream`
+- `merge-watch`
 
 ## Trust Notes
 

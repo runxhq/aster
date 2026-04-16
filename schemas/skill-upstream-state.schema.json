@@ -1,12 +1,12 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://runx.ai/schemas/skill-contribution-state.schema.json",
+  "$id": "https://runx.ai/schemas/skill-upstream-state.schema.json",
   "title": "runx skill contribution state",
   "type": "object",
   "required": ["schema", "observed_at", "state", "target", "pull_request", "checks", "files", "transition"],
   "properties": {
     "schema": {
-      "const": "runx.skill_contribution_state.v1"
+      "const": "runx.skill_upstream_state.v1"
     },
     "observed_at": {
       "type": "string",

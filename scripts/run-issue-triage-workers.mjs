@@ -16,7 +16,7 @@ const repoRoot = path.resolve(scriptDir, "..");
 async function main(argv = process.argv.slice(2)) {
   const options = parseArgs(argv);
   const decision = JSON.parse(await readFile(path.resolve(options.decision), "utf8"));
-  const rawWorkerRequests = asArray(decision?.supervisor_decision?.worker_requests)
+  const rawWorkerRequests = asArray(decision?.triage_decision?.worker_requests)
     .map(asRecord)
     .filter(Boolean);
   const verificationCatalog = loadVerificationProfileCatalogSync(repoRoot);
@@ -250,7 +250,7 @@ async function runWorker({ options, workerRequest, index, verificationCatalog })
       run("gh", [
         "workflow",
         "run",
-        "pr-triage.yml",
+        "issue-triage.yml",
         "--repo",
         targetRepo,
         "-f",
@@ -476,13 +476,13 @@ function buildPrBody({
     : "- no repo-specific validation command was declared";
   return `## Summary
 
-This draft PR was opened by the \`automaton\` issue supervisor lane.
+This draft PR was opened by the \`automaton\` issue triage lane.
 
 - Source issue: #${issueNumber}
 - Issue URL: ${issueUrl}
 - Target repo: \`${targetRepo}\`
 - Worker: \`${workerNumber}\`
-- Lane: \`support-triage -> issue-supervisor -> issue-to-pr worker\`
+- Lane: \`support-triage -> issue-triage -> issue-to-pr worker\`
 - scafld task: \`${taskId}\`
 
 ## Validation
@@ -505,8 +505,8 @@ async function writeOutput(outputPath, payload) {
 
 function parseArgs(argv) {
   const options = {
-    artifactRoot: ".artifacts/issue-supervisor/workers",
-    workRoot: ".artifacts/issue-supervisor/workspaces",
+    artifactRoot: ".artifacts/issue-triage/workers",
+    workRoot: ".artifacts/issue-triage/workspaces",
   };
 
   for (let index = 0; index < argv.length; index += 1) {

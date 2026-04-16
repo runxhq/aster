@@ -6,12 +6,11 @@ on:
       - ci
       - automaton-cycle
       - docs-pages
-      - issue-supervisor
-      - pr-triage
-      - runx-dogfood
-      - skill-contribution
-      - skill-contribution-watch
-      - skill-learning
+      - issue-triage
+      - proving-ground
+      - skill-upstream
+      - merge-watch
+      - skill-lab
       - sourcey-refresh
     types:
       - completed
@@ -113,23 +112,27 @@ jobs:
                   return "ops"
               if name == "docs-pages":
                   return "docs"
-              if "sourcey" in name:
-                  return "sourcey"
-              if "dogfood" in name:
-                  return "automaton"
-              if name == "skill-contribution":
-                  return "skill-contribution"
-              if name == "skill-contribution-watch":
-                  return "upstream-skill"
-              if "skill" in name:
-                  return "skill-learning"
-              if "triage" in name or "supervisor" in name:
-                  return "automaton"
-              return "automaton"
+              if name == "sourcey-refresh":
+                  return "sourcey-refresh"
+              if name == "issue-triage":
+                  return "issue-triage"
+              if name == "skill-lab":
+                  return "skill-lab"
+              if name == "skill-upstream":
+                  return "skill-upstream"
+              if name == "merge-watch":
+                  return "merge-watch"
+              if name == "proving-ground":
+                  return "proving-ground"
+              if name == "market-brief":
+                  return "market-brief"
+              if name == "trust-audit":
+                  return "trust-audit"
+              return "ops"
 
           def feed_channel(workflow: str | None, status: str) -> str:
               name = (workflow or "").lower()
-              if name in {"pr-triage", "issue-supervisor", "skill-contribution", "skill-contribution-watch"} and status == "success":
+              if name in {"issue-triage", "docs-pr", "fix-pr", "skill-upstream", "merge-watch", "market-brief", "trust-audit"} and status == "success":
                   return "main"
               return "ops"
 
@@ -137,28 +140,30 @@ jobs:
               lane = metadata["lane"]
               checks = f"{metadata['checks_passed']}/{metadata['checks_total']} checks"
               channel = metadata["feed_channel"]
-              if workflow == "pr-triage":
-                  return f"PR triage lane finished with {status}; workflow artifacts carry the public review comment, receipt trail, and operator-memory update."
-              if workflow == "issue-supervisor":
-                  return f"Issue supervisor finished with {status}; workflow artifacts carry the public comment, routing decisions, and receipt trail."
-              if workflow == "skill-contribution":
-                  return f"Portable SKILL.md contribution lane finished with {status}; the upstream draft PR or contribution packet is linked from workflow artifacts."
-              if workflow == "skill-contribution-watch":
-                  return f"Upstream skill adoption watch finished with {status}; merge state and registry-binding evidence are linked from workflow artifacts."
+              if workflow == "issue-triage":
+                  return f"Issue-triage finished with {status}; workflow artifacts carry the public issue or PR comment, routing decisions, and receipt trail."
+              if workflow == "skill-lab":
+                  return f"Skill-lab finished with {status}; workflow artifacts carry the proposal draft and supporting receipts."
+              if workflow == "skill-upstream":
+                  return f"Skill-upstream finished with {status}; the upstream draft PR or contribution packet is linked from workflow artifacts."
+              if workflow == "merge-watch":
+                  return f"Merge-watch finished with {status}; merge state and registry-binding evidence are linked from workflow artifacts."
+              if workflow == "proving-ground":
+                  return f"Proving-ground finished with {status}; workflow artifacts carry the receipt trail and catalog summary."
               if workflow == "automaton-cycle":
                   return f"Selector cycle finished with {status}; artifacts record the assessed queue, thesis scores, and dispatched next lane."
               if lane == "docs":
                   return f"Automaton public site workflow finished with {status}; {checks} recorded."
               if lane == "ci":
                   return f"Repo checks and public-site build finished with {status}; {checks} recorded."
-              if lane == "sourcey":
+              if lane == "sourcey-refresh":
                   return f"Working-docs refresh ran through runx with {status}; draft PR/artifacts are linked from the workflow."
-              if lane == "automaton":
-                  return f"Automaton dogfood or governance lane finished with {status}; workflow artifacts carry the receipt trail."
-              if lane == "skill-contribution":
-                  return f"Portable SKILL.md contribution lane finished with {status}; artifacts carry the upstream packet and validation proof."
-              if lane == "upstream-skill":
-                  return f"Upstream SKILL.md watch lane finished with {status}; artifacts carry the PR transition and registry-binding request when merged."
+              if lane == "proving-ground":
+                  return f"Proving-ground finished with {status}; workflow artifacts carry the receipt trail."
+              if lane == "skill-upstream":
+                  return f"Skill-upstream finished with {status}; artifacts carry the upstream packet and validation proof."
+              if lane == "merge-watch":
+                  return f"Merge-watch finished with {status}; artifacts carry the PR transition and registry-binding request when merged."
               if channel == "main":
                   return f"{workflow or 'automaton workflow'} finished with {status}; the linked workflow artifacts carry the public proof and receipt trail."
               return f"{workflow or 'automaton workflow'} finished with {status}; {checks} recorded."
@@ -186,7 +191,7 @@ jobs:
               "commit_short": (trim(os.environ.get("RUNX_PUBLIC_EVIDENCE_COMMIT")) or trim(os.environ.get("GITHUB_SHA")) or "")[:12],
               "run_id": trim(os.environ.get("RUNX_PUBLIC_EVIDENCE_RUN_ID")),
               "workflow": workflow,
-              "model": trim(os.environ.get("RUNX_CALLER_MODEL")) if proof_lane(workflow) in {"sourcey", "automaton", "skill-learning", "skill-contribution"} else None,
+              "model": trim(os.environ.get("RUNX_CALLER_MODEL")) if proof_lane(workflow) in {"sourcey-refresh", "issue-triage", "skill-lab", "skill-upstream", "merge-watch", "proving-ground", "market-brief", "trust-audit"} else None,
               "github_run_id": trim(os.environ.get("GITHUB_RUN_ID")),
               "github_run_attempt": trim(os.environ.get("GITHUB_RUN_ATTEMPT")),
               "github_job": trim(os.environ.get("GITHUB_JOB")),

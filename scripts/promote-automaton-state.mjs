@@ -303,12 +303,13 @@ function isMainFeedEligible(lane, status) {
     return false;
   }
   return [
-    "pr-triage",
-    "issue-supervisor",
-    "skill-contribution",
-    "skill-contribution-watch",
+    "issue-triage",
+    "docs-pr",
+    "fix-pr",
+    "skill-upstream",
+    "merge-watch",
     "market-brief",
-    "trust-report",
+    "trust-audit",
   ].includes(normalizedLane);
 }
 

@@ -1,4 +1,4 @@
-name: skill-learning
+name: skill-lab
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -23,11 +23,11 @@ permissions:
   issues: write
 
 concurrency:
-  group: skill-learning-${{ github.event.issue.number || github.event.inputs.issue_number || github.ref_name }}
+  group: skill-lab-${{ github.event.issue.number || github.event.inputs.issue_number || github.ref_name }}
   cancel-in-progress: true
 
 jobs:
-  skill-learning:
+  skill-lab:
     if: ${{ github.event_name == 'workflow_dispatch' || startsWith(github.event.issue.title, '[skill]') }}
     runs-on: ubuntu-latest
     env:
@@ -43,7 +43,7 @@ jobs:
         run: |
           if [ "${HAS_OPENAI_KEY}" != "true" ]; then
             echo "enabled=false" >> "$GITHUB_OUTPUT"
-            echo "OPENAI_API_KEY not configured; skipping skill-learning."
+            echo "OPENAI_API_KEY not configured; skipping skill-lab."
           else
             echo "enabled=true" >> "$GITHUB_OUTPUT"
           fi
@@ -94,12 +94,12 @@ jobs:
           EVENT_ISSUE_BODY: ${{ github.event.issue.body }}
           EVENT_ISSUE_URL: ${{ github.event.issue.html_url }}
         run: |
-          mkdir -p .artifacts/skill-learning
+          mkdir -p .artifacts/skill-lab
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             gh issue view "${{ github.event.inputs.issue_number }}" \
               --repo "${{ github.repository }}" \
               --json number,title,body,url \
-              > .artifacts/skill-learning/issue.json
+              > .artifacts/skill-lab/issue.json
           else
             jq -n \
               --arg number "$EVENT_ISSUE_NUMBER" \
@@ -107,16 +107,16 @@ jobs:
               --arg body "$EVENT_ISSUE_BODY" \
               --arg url "$EVENT_ISSUE_URL" \
               '{number: ($number | tonumber), title: $title, body: $body, url: $url}' \
-              > .artifacts/skill-learning/issue.json
+              > .artifacts/skill-lab/issue.json
           fi
-          echo "number=$(jq -r '.number' .artifacts/skill-learning/issue.json)" >> "$GITHUB_OUTPUT"
+          echo "number=$(jq -r '.number' .artifacts/skill-lab/issue.json)" >> "$GITHUB_OUTPUT"
           echo "title<<EOF" >> "$GITHUB_OUTPUT"
-          jq -r '.title' .artifacts/skill-learning/issue.json >> "$GITHUB_OUTPUT"
+          jq -r '.title' .artifacts/skill-lab/issue.json >> "$GITHUB_OUTPUT"
           echo "EOF" >> "$GITHUB_OUTPUT"
           echo "body<<EOF" >> "$GITHUB_OUTPUT"
-          jq -r '.body // \"\"' .artifacts/skill-learning/issue.json >> "$GITHUB_OUTPUT"
+          jq -r '.body // \"\"' .artifacts/skill-lab/issue.json >> "$GITHUB_OUTPUT"
           echo "EOF" >> "$GITHUB_OUTPUT"
-          echo "url=$(jq -r '.url' .artifacts/skill-learning/issue.json)" >> "$GITHUB_OUTPUT"
+          echo "url=$(jq -r '.url' .artifacts/skill-lab/issue.json)" >> "$GITHUB_OUTPUT"
 
       - name: Run objective-to-skill
         if: ${{ steps.preflight.outputs.enabled == 'true' }}
@@ -126,32 +126,32 @@ jobs:
           ISSUE_BODY: ${{ steps.issue.outputs.body }}
         run: |
           node scripts/automaton-core.mjs \
-            --lane skill-learning \
+            --lane skill-lab \
             --runx-root "$GITHUB_WORKSPACE/.runx/runx" \
-            --artifact-root "$GITHUB_WORKSPACE/.artifacts/skill-learning" \
+            --artifact-root "$GITHUB_WORKSPACE/.artifacts/skill-lab" \
             --subject-kind github_issue \
             --subject-locator "${{ github.repository }}#issue/${{ steps.issue.outputs.number }}" \
             --repo "${{ github.repository }}" \
             --target-repo "${{ github.repository }}" \
             --issue-number "${{ steps.issue.outputs.number }}" \
             --issue-url "${{ steps.issue.outputs.url }}" \
-            --receipt-dir "$GITHUB_WORKSPACE/.artifacts/skill-learning/receipts" \
-            --trace-dir "$GITHUB_WORKSPACE/.artifacts/skill-learning/provider-trace" \
-            --output "$GITHUB_WORKSPACE/.artifacts/skill-learning/result.json" \
+            --receipt-dir "$GITHUB_WORKSPACE/.artifacts/skill-lab/receipts" \
+            --trace-dir "$GITHUB_WORKSPACE/.artifacts/skill-lab/provider-trace" \
+            --output "$GITHUB_WORKSPACE/.artifacts/skill-lab/result.json" \
             -- \
             skill "$GITHUB_WORKSPACE/.runx/runx/skills/objective-to-skill" \
             --objective "$ISSUE_TITLE" \
             --project_context "$ISSUE_BODY"
           node scripts/apply-automaton-promotions.mjs \
             --repo-root "$GITHUB_WORKSPACE" \
-            --summary "$GITHUB_WORKSPACE/.artifacts/skill-learning/core-summary.json" \
-            --output "$GITHUB_WORKSPACE/.artifacts/skill-learning/promotion-apply.json"
+            --summary "$GITHUB_WORKSPACE/.artifacts/skill-lab/core-summary.json" \
+            --output "$GITHUB_WORKSPACE/.artifacts/skill-lab/promotion-apply.json"
 
       - name: Materialize proposal
         if: ${{ steps.preflight.outputs.enabled == 'true' }}
         run: |
           node scripts/write-skill-proposal.mjs \
-            --input ".artifacts/skill-learning/result.json" \
+            --input ".artifacts/skill-lab/result.json" \
             --title "${{ github.event.issue.title }}" \
             --issue-url "${{ github.event.issue.html_url }}"
 
@@ -162,10 +162,10 @@ jobs:
       - name: Write PR body
         if: ${{ steps.preflight.outputs.enabled == 'true' }}
         run: |
-          cat > .artifacts/skill-learning/pr-body.md <<EOF
+          cat > .artifacts/skill-lab/pr-body.md <<EOF
           ## Summary
 
-          This draft PR was opened by the \`automaton\` skill-learning lane.
+          This draft PR was opened by the \`automaton\` skill-lab lane.
 
           - Source issue: #${{ steps.issue.outputs.number }}
           - Issue URL: ${{ steps.issue.outputs.url }}
@@ -187,24 +187,24 @@ jobs:
             --branch "runx/skill-${{ steps.issue.outputs.number }}" \
             --title "[runx] skill proposal #${{ steps.issue.outputs.number }}" \
             --commit-message "docs(skill): propose skill #${{ steps.issue.outputs.number }}" \
-            --body-file ".artifacts/skill-learning/pr-body.md" \
+            --body-file ".artifacts/skill-lab/pr-body.md" \
             --issue-number "${{ steps.issue.outputs.number }}" \
-            > .artifacts/skill-learning/publish.json
-          cat .artifacts/skill-learning/publish.json
+            > .artifacts/skill-lab/publish.json
+          cat .artifacts/skill-lab/publish.json
 
-      - name: Queue PR triage
-        if: ${{ steps.preflight.outputs.enabled == 'true' && hashFiles('.artifacts/skill-learning/publish.json') != '' }}
+      - name: Queue issue-triage on draft PR
+        if: ${{ steps.preflight.outputs.enabled == 'true' && hashFiles('.artifacts/skill-lab/publish.json') != '' }}
         run: |
-          if [ "$(jq -r '.status' .artifacts/skill-learning/publish.json)" != "published" ]; then
+          if [ "$(jq -r '.status' .artifacts/skill-lab/publish.json)" != "published" ]; then
             exit 0
           fi
-          gh workflow run pr-triage.yml \
+          gh workflow run issue-triage.yml \
             --repo "${{ github.repository }}" \
-            -f pr_number="$(jq -r '.pr_number' .artifacts/skill-learning/publish.json)"
+            -f pr_number="$(jq -r '.pr_number' .artifacts/skill-lab/publish.json)"
 
       - name: Upload artifacts
         if: ${{ always() && steps.preflight.outputs.enabled == 'true' }}
         uses: actions/upload-artifact@v7
         with:
-          name: skill-learning-${{ steps.issue.outputs.number || github.event.issue.number || github.event.inputs.issue_number }}
-          path: .artifacts/skill-learning
+          name: skill-lab-${{ steps.issue.outputs.number || github.event.issue.number || github.event.inputs.issue_number }}
+          path: .artifacts/skill-lab

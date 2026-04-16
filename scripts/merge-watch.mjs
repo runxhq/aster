@@ -51,7 +51,7 @@ const skillId = upstreamSkill
   : undefined;
 
 const contributionStateRecord = {
-  schema: "runx.skill_contribution_state.v1",
+  schema: "runx.skill_upstream_state.v1",
   observed_at: observedAt,
   state,
   target: {
@@ -94,14 +94,14 @@ const contributionStateRecord = {
 };
 
 const feedEvent = {
-  lane: "skill-contribution",
+  lane: "merge-watch",
   status: statusForState(state, checks),
   timestamp: observedAt,
   summary: summaryForState(state, options.repo, checks, skillId),
   metadata: {
-    lane: state === "accepted_upstream" ? "upstream-skill" : "skill-contribution-watch",
-    feed_channel: "main",
-    main_feed_eligible: true,
+    lane: "merge-watch",
+    feed_channel: state === "accepted_upstream" || state === "rejected_upstream" ? "main" : "ops",
+    main_feed_eligible: state === "accepted_upstream" || state === "rejected_upstream",
     state,
     target_repo: options.repo,
     skill_path: options.candidatePath,
@@ -118,7 +118,7 @@ const feedEvent = {
 };
 
 await mkdir(artifactsDir, { recursive: true });
-await writeJson(path.join(artifactsDir, "skill_contribution_state.json"), contributionStateRecord);
+await writeJson(path.join(artifactsDir, "skill_upstream_state.json"), contributionStateRecord);
 await writeJson(path.join(artifactsDir, "public_feed_event.json"), feedEvent);
 
 let registryBindingRequest;
@@ -349,7 +349,7 @@ async function writeJson(file, value) {
 
 function parseArgs(argv) {
   const parsed = {
-    artifactsDir: ".artifacts/skill-contribution-watch",
+    artifactsDir: ".artifacts/merge-watch",
     candidatePath: "SKILL.md",
     staleAfterDays: 21,
   };

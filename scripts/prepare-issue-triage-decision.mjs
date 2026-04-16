@@ -10,7 +10,7 @@ import {
 export async function main(argv = process.argv.slice(2)) {
   const options = parseArgs(argv);
   const report = JSON.parse(await readFile(options.input, "utf8"));
-  const output = prepareIssueSupervisorDecision(report, options);
+  const output = prepareIssueTriageDecision(report, options);
 
   if (options.output) {
     await writeFile(options.output, `${JSON.stringify(output, null, 2)}\n`);
@@ -19,7 +19,7 @@ export async function main(argv = process.argv.slice(2)) {
   }
 }
 
-export function prepareIssueSupervisorDecision(report, options = {}) {
+export function prepareIssueTriageDecision(report, options = {}) {
   const triage = extractTriageReport(report);
   const changeSet = extractChangeSet(report);
   const defaultRepo = firstString(options.defaultRepo);
@@ -77,7 +77,7 @@ export function prepareIssueSupervisorDecision(report, options = {}) {
     && workerValidation.accepted.length > 0;
   const workerRequests = shouldStartWorker ? workerValidation.accepted : [];
   const commentTarget = resolveCommentTarget(reviewTarget);
-  const commentBody = buildSupervisorComment({
+  const commentBody = buildTriageComment({
     triage,
     commenceDecision,
     actionDecision,
@@ -96,7 +96,7 @@ export function prepareIssueSupervisorDecision(report, options = {}) {
     workspace_change_plan_request: workspaceChangePlanRequest,
     issue_to_pr_request: workerRequests[0]?.issue_to_pr_request,
     comment_body: commentBody,
-    supervisor_decision: {
+    triage_decision: {
       commence_decision: commenceDecision,
       action_decision: actionDecision,
       recommended_lane: recommendedLane,
@@ -111,7 +111,7 @@ export function prepareIssueSupervisorDecision(report, options = {}) {
   };
 }
 
-export function buildSupervisorComment({
+export function buildTriageComment({
   triage,
   commenceDecision,
   actionDecision,
@@ -123,7 +123,7 @@ export function buildSupervisorComment({
   boundaryNotes = [],
 }) {
   const lines = [
-    "## runx issue supervisor",
+    "## runx issue triage",
     "",
     `- Commence: \`${commenceDecision}\``,
     `- Next lane: \`${recommendedLane}\``,
@@ -135,7 +135,7 @@ export function buildSupervisorComment({
   }
   if (commentTarget !== "none" && commentTarget !== reviewTarget) {
     lines.push(`- Comment surface: \`${commentTarget}\``);
-    lines.push("- Draft PR review was requested, but no draft PR exists yet, so the supervisor comment is posted on the issue first.");
+    lines.push("- Draft PR review was requested, but no draft PR exists yet, so the triage comment is posted on the issue first.");
   }
   if (workerCount > 0) {
     lines.push(`- Worker fanout: \`${workerCount}\``);

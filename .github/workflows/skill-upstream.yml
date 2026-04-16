@@ -1,4 +1,4 @@
-name: skill-contribution
+name: skill-upstream
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -7,35 +7,35 @@ on:
   workflow_dispatch:
     inputs:
       target_repo:
-        description: "External repo to receive portable SKILL.md"
+        description: External repo to receive portable SKILL.md
         required: true
-        default: "nilstate/icey-cli"
+        default: nilstate/icey-cli
         type: string
       target_ref:
-        description: "Target repo ref to inspect"
+        description: Target repo ref to inspect
         required: true
-        default: "main"
+        default: main
         type: string
       workflow:
-        description: "Workflow opportunity name"
+        description: Workflow opportunity name
         required: true
-        default: "operator-bringup"
+        default: operator-bringup
         type: string
       mode:
-        description: "Learning intake mode"
+        description: Upstream contribution intake mode
         required: true
-        default: "requested"
+        default: requested
         type: choice
         options:
           - requested
           - auto
       publish:
-        description: "Open/update a draft PR in the target repo"
+        description: Open or update a draft PR in the target repo
         required: true
         default: false
         type: boolean
       force:
-        description: "Overwrite an existing SKILL.md in the target checkout"
+        description: Overwrite an existing SKILL.md in the target checkout
         required: true
         default: false
         type: boolean
@@ -46,11 +46,11 @@ permissions:
   pull-requests: write
 
 concurrency:
-  group: skill-contribution-${{ inputs.target_repo }}
+  group: skill-upstream-${{ inputs.target_repo }}
   cancel-in-progress: false
 
 jobs:
-  skill-contribution:
+  skill-upstream:
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ secrets.UPSTREAM_CONTRIBUTION_TOKEN || secrets.RUNX_REPOSITORY_PAT || github.token }}
@@ -85,14 +85,14 @@ jobs:
           git -C .target/repo config user.name "auscaster"
           git -C .target/repo config user.email "100876+auscaster@users.noreply.github.com"
 
-      - name: Prepare portable skill contribution
+      - name: Prepare portable skill upstream packet
         run: |
           set -euo pipefail
           mkdir -p .artifacts
           args=(
             --target-repo-dir .target/repo
             --target-repo "$TARGET_REPO"
-            --output-dir .artifacts/skill-contribution
+            --output-dir .artifacts/skill-upstream
             --workflow "$CONTRIBUTION_WORKFLOW"
             --mode "$CONTRIBUTION_MODE"
             --branch "runx/add-skill-md"
@@ -100,17 +100,17 @@ jobs:
           if [ "$FORCE_WRITE" = "true" ]; then
             args+=(--force)
           fi
-          node scripts/prepare-skill-contribution.mjs "${args[@]}" \
-            > .artifacts/skill-contribution.prepare.json
-          cat .artifacts/skill-contribution.prepare.json
+          node scripts/prepare-skill-upstream.mjs "${args[@]}" \
+            > .artifacts/skill-upstream.prepare.json
+          cat .artifacts/skill-upstream.prepare.json
 
-      - name: Validate portable skill contribution
+      - name: Validate portable skill upstream packet
         run: |
-          node scripts/validate-skill-contribution.mjs \
+          node scripts/validate-skill-upstream.mjs \
             --target-repo-dir .target/repo \
-            --artifacts-dir .artifacts/skill-contribution \
-            > .artifacts/skill-contribution.validate.json
-          cat .artifacts/skill-contribution.validate.json
+            --artifacts-dir .artifacts/skill-upstream \
+            > .artifacts/skill-upstream.validate.json
+          cat .artifacts/skill-upstream.validate.json
 
       - name: Publish draft PR
         if: ${{ inputs.publish }}
@@ -122,16 +122,16 @@ jobs:
             --branch "runx/add-skill-md" \
             --title "Add portable SKILL.md" \
             --commit-message "docs: add portable SKILL.md" \
-            --body-file "$GITHUB_WORKSPACE/.artifacts/skill-contribution/pr-body.md" \
-            > "$GITHUB_WORKSPACE/.artifacts/skill-contribution/publish.json"
-          cat "$GITHUB_WORKSPACE/.artifacts/skill-contribution/publish.json"
+            --body-file "$GITHUB_WORKSPACE/.artifacts/skill-upstream/pr-body.md" \
+            > "$GITHUB_WORKSPACE/.artifacts/skill-upstream/publish.json"
+          cat "$GITHUB_WORKSPACE/.artifacts/skill-upstream/publish.json"
 
       - name: Upload artifacts
         if: ${{ always() }}
         uses: actions/upload-artifact@v7
         with:
-          name: skill-contribution-${{ github.run_id }}
+          name: skill-upstream-${{ github.run_id }}
           path: |
-            .artifacts/skill-contribution
-            .artifacts/skill-contribution.prepare.json
-            .artifacts/skill-contribution.validate.json
+            .artifacts/skill-upstream
+            .artifacts/skill-upstream.prepare.json
+            .artifacts/skill-upstream.validate.json

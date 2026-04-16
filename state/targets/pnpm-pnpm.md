@@ -16,8 +16,7 @@ test of whether automaton can help strangers without drifting into noise.
 
 ## Default Lanes
 
-- `pr-triage`
-- `issue-supervisor`
+- `issue-triage`
 
 ## Trust Notes
 

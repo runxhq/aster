@@ -6,7 +6,7 @@ import {
   isRetryableBridgeFailure,
   normalizeTaskId,
   sanitizeIssueBody,
-} from "./run-issue-supervisor-workers.mjs";
+} from "./run-issue-triage-workers.mjs";
 
 test("normalizeTaskId converts mixed separators into kebab-case", () => {
   assert.equal(normalizeTaskId("GitHub_Issue-5"), "github-issue-5");

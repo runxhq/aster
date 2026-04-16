@@ -5,6 +5,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { slugifyRepoLike } from "./build-automaton-context.mjs";
+import { evaluatePublicPullRequestCandidate } from "./public-work-policy.mjs";
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const defaultRepoRoot = path.resolve(scriptDir, "..");
@@ -119,8 +120,8 @@ export function discoverOpportunities({ repo, discovery, dossiers, memory, now }
 
     for (const issue of issues) {
       const lane = String(issue.title ?? "").startsWith("[skill]") && targetRepo === repo
-        ? "skill-learning"
-        : "issue-supervisor";
+        ? "skill-lab"
+        : "issue-triage";
       const updatedAt = issue.updatedAt ?? issue.updated_at ?? issue.createdAt ?? issue.created_at ?? now.toISOString();
       opportunities.push({
         id: `issue-${targetRepo}-${issue.number}-${lane}`,
@@ -148,8 +149,8 @@ export function discoverOpportunities({ repo, discovery, dossiers, memory, now }
     for (const pr of prs) {
       const updatedAt = pr.updatedAt ?? pr.updated_at ?? pr.createdAt ?? pr.created_at ?? now.toISOString();
       opportunities.push({
-        id: `pr-${targetRepo}-${pr.number}-pr-triage`,
-        lane: "pr-triage",
+        id: `pr-${targetRepo}-${pr.number}-issue-triage`,
+        lane: "issue-triage",
         source: "github_pull_request",
         title: pr.title ?? `PR #${pr.number}`,
         summary: pr.title ?? `PR #${pr.number}`,
@@ -162,13 +163,14 @@ export function discoverOpportunities({ repo, discovery, dossiers, memory, now }
         author_login: firstString(pr.author?.login ?? pr.author_login),
         is_external: !isInternalAssociation(pr.authorAssociation ?? pr.author_association),
         body_length: String(pr.body ?? "").length,
+        labels: normalizeCollection(pr.labels),
         updated_at: updatedAt,
         age_days: ageDays(now, updatedAt),
         stale_days: ageDays(now, updatedAt),
         is_draft: Boolean(pr.isDraft ?? pr.is_draft),
         head_ref_name: firstString(pr.headRefName ?? pr.head_ref_name),
         dossier,
-        memory_records: findRelevantMemory(memory, `${targetRepo}#pr/${pr.number}`, targetRepo, "pr-triage"),
+        memory_records: findRelevantMemory(memory, `${targetRepo}#pr/${pr.number}`, targetRepo, "issue-triage"),
       });
     }
   }
@@ -185,12 +187,12 @@ export function discoverOpportunities({ repo, discovery, dossiers, memory, now }
   );
   opportunities.push(
     buildMaintenanceOpportunity({
-      lane: "runx-dogfood",
+      lane: "proving-ground",
       repo,
       dossiers,
       memory,
       now,
-      title: "Run bounded dogfood to surface receipt and governance drift",
+      title: "Run bounded proving-ground lanes to surface receipt and governance drift",
     }),
   );
 
@@ -256,6 +258,15 @@ export function scoreOpportunity({ opportunity, dossiers, memory, policy, now, o
   const operatorMemoryBranch = operatorMemoryBranchForOpportunity(opportunity);
   if (operatorMemoryBranch && openOperatorMemoryBranches.includes(operatorMemoryBranch)) {
     veto_reasons.push("open_operator_memory_pr");
+  }
+  if (opportunity.source === "github_pull_request") {
+    const publicPrPolicy = evaluatePublicPullRequestCandidate({
+      authorLogin: opportunity.author_login,
+      title: opportunity.title,
+      labels: opportunity.labels,
+      headRefName: opportunity.head_ref_name,
+    });
+    veto_reasons.push(...publicPrPolicy.reasons);
   }
   if (cooldown.active) {
     veto_reasons.push(`cooldown:${cooldown.reason}`);
@@ -422,7 +433,7 @@ async function fetchGitHubDiscovery(repos, options) {
       "api",
       `repos/${repo}/pulls?state=open&per_page=${String(options.maxPrs ?? 20)}`,
       "--jq",
-      "[ .[] | { number, title, body, url: .html_url, isDraft: (.draft // false), author: { login: .user.login }, authorAssociation: .author_association, createdAt: .created_at, updatedAt: .updated_at, headRefName: .head.ref, baseRefName: .base.ref } ]",
+      "[ .[] | { number, title, body, url: .html_url, isDraft: (.draft // false), author: { login: .user.login }, authorAssociation: .author_association, createdAt: .created_at, updatedAt: .updated_at, headRefName: .head.ref, baseRefName: .base.ref, labels: [ .labels[]?.name ] } ]",
     ]));
     discovery[repo] = { issues, prs };
   }
@@ -541,7 +552,7 @@ function computeStrangerValue(opportunity) {
   if (opportunity.lane === "sourcey-refresh") {
     return clamp(0.48 + Math.min(opportunity.stale_days / 90, 0.22));
   }
-  if (opportunity.lane === "runx-dogfood") {
+  if (opportunity.lane === "proving-ground") {
     return clamp(0.46 + Math.min(opportunity.stale_days / 60, 0.24));
   }
   return 0.5;
@@ -557,7 +568,7 @@ function computeProofStrength(opportunity) {
   if (opportunity.lane === "sourcey-refresh") {
     return 0.76;
   }
-  if (opportunity.lane === "runx-dogfood") {
+  if (opportunity.lane === "proving-ground") {
     return 0.74;
   }
   return 0.72;
@@ -574,7 +585,7 @@ function computeCompoundingValue(opportunity, dossier) {
   if (dossier?.default_lanes?.includes(opportunity.lane)) {
     score += 0.05;
   }
-  if (["pr-triage", "issue-supervisor"].includes(opportunity.lane)) {
+  if (opportunity.lane === "issue-triage") {
     score += 0.04;
   }
   return clamp(score);
@@ -589,7 +600,7 @@ function computeTractability(opportunity) {
     return clamp(score);
   }
   if (opportunity.source === "github_issue") {
-    let score = opportunity.lane === "skill-learning" ? 0.63 : 0.72;
+    let score = opportunity.lane === "skill-lab" ? 0.63 : 0.72;
     if (opportunity.body_length < 1800) {
       score += 0.05;
     }
@@ -598,7 +609,7 @@ function computeTractability(opportunity) {
   if (opportunity.lane === "sourcey-refresh") {
     return 0.74;
   }
-  if (opportunity.lane === "runx-dogfood") {
+  if (opportunity.lane === "proving-ground") {
     return 0.9;
   }
   return 0.65;
@@ -615,19 +626,19 @@ function computeNovelty(opportunity, recentOutcomes, memoryRecords, recentLaneEx
 }
 
 function computeMaintenanceEfficiency(opportunity) {
-  if (opportunity.lane === "pr-triage") {
-    return 0.82;
-  }
-  if (opportunity.lane === "issue-supervisor") {
+  if (opportunity.lane === "issue-triage") {
+    if (opportunity.source === "github_pull_request") {
+      return 0.82;
+    }
     return 0.76;
   }
-  if (opportunity.lane === "skill-learning") {
+  if (opportunity.lane === "skill-lab") {
     return 0.6;
   }
   if (opportunity.lane === "sourcey-refresh") {
     return 0.64;
   }
-  if (opportunity.lane === "runx-dogfood") {
+  if (opportunity.lane === "proving-ground") {
     return 0.86;
   }
   return 0.6;
@@ -960,11 +971,10 @@ function extractCooldown(raw, labels, fallback) {
 
 function laneWorkflow(lane) {
   return {
-    "issue-supervisor": "issue-supervisor.yml",
-    "pr-triage": "pr-triage.yml",
-    "skill-learning": "skill-learning.yml",
+    "issue-triage": "issue-triage.yml",
+    "skill-lab": "skill-lab.yml",
     "sourcey-refresh": "sourcey-refresh.yml",
-    "runx-dogfood": "runx-dogfood.yml",
+    "proving-ground": "proving-ground.yml",
   }[lane] ?? null;
 }
 

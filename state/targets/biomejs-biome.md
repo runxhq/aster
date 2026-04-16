@@ -16,8 +16,7 @@ advice.
 
 ## Default Lanes
 
-- `pr-triage`
-- `issue-supervisor`
+- `issue-triage`
 
 ## Trust Notes
 

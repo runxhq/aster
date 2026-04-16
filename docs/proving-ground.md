@@ -1,11 +1,11 @@
 ---
-title: Dogfood Story
-description: Why automaton exists as a public dogfood surface and how that loop should work.
+title: Proving-Ground Story
+description: Why automaton exists as a public proving-ground surface and how that loop should work.
 ---
 
-# Dogfood Story
+# Proving-Ground Story
 
-`automaton` exists so `runx` can dogfood itself on a real public target instead
+`automaton` exists so `runx` can test itself on a real public target instead
 of a private benchmark or a staged demo.
 
 The repo matters because it forces the system to confront real operating
@@ -16,7 +16,7 @@ conditions:
 - repo context that is useful but never perfect
 - public artifacts that can be inspected by anyone
 
-That pressure is the point. Dogfooding is not only about proving that a lane
+That pressure is the point. A proving-ground loop is not only about proving that a lane
 can succeed. It is about exposing where skill context is thin, where research
 is under-specified, and where governance needs to be sharper.
 
@@ -39,9 +39,9 @@ is under-specified, and where governance needs to be sharper.
 - `automaton` can develop a visible evolutionary history rather than a static
   showcase narrative
 
-## The intended dogfood trajectory
+## The intended proving-ground trajectory
 
-The dogfood story should grow in layers:
+The proving-ground story should grow in layers:
 
 1. observe the repo honestly
 2. answer and route inbound issues
@@ -55,7 +55,7 @@ The dogfood story should grow in layers:
 That last point matters most. `automaton` is not only a destination for `runx`
 workflows. It is the public record of how those workflows become trustworthy.
 
-The dogfood loop should therefore improve two things at once:
+The proving-ground loop should therefore improve two things at once:
 
 - the `automaton` repo itself
 - the quality of the `runx` skills and flows acting on it

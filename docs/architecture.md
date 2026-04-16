@@ -68,10 +68,10 @@ The repo already has a real current shape. The plan should start there instead
 of pretending this is greenfield:
 
 - `docs/` is the current planning and operator-docs surface
-- `.artifacts/runx-dogfood/` and other `.artifacts/` trees are the current
+- `.artifacts/proving-ground/` and other `.artifacts/` trees are the current
   layer-0 evidence surface
 - `.github/workflows/` contains the live lanes
-- the skill-contribution and watcher work already produce real artifacts and
+- the skill-upstream and watcher work already produce real artifacts and
   upstream state
 
 The target shape below is not a claim that the repo already looks like that. It
@@ -162,12 +162,12 @@ effect.
 | lane | purpose | input | output | public artifact | approval mode | feed eligible | memory effect |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `sourcey-refresh` | transitional docs-refresh lane while `docs/` still exists | repo snapshot, docs config | docs diff, draft PR | draft PR, receipts | workflow gate | yes | update docs understanding during migration |
-| `issue-supervisor` | route issue before mutation | issue body, repo state | triage comment, optional worker requests | issue comment, receipts | supervisor gate | yes | append routing and failure notes |
-| `pr-triage` | review inbound PRs | PR snapshot | maintainer comment | PR comment, receipts | workflow gate | yes | capture review patterns |
-| `skill-learning` | turn repeated need into a skill proposal | issue, receipts, repo evidence | proposal markdown, draft PR | draft PR, receipts | draft-only | yes | grow explicit capabilities |
-| `skill-contribution` | contribute portable skill docs upstream | target repo evidence | `SKILL.md`, contribution packet, draft PR | upstream draft PR, receipts | draft-only | yes | record upstream adoption attempt |
-| `skill-contribution-watch` | observe upstream result | PR state, checks, merge metadata | state packet, binding request | proof record, receipts | read-only | yes | confirm acceptance or rejection |
-| `runx-dogfood` | preserve broad receipt visibility | selected run catalog | receipt bundles, summaries | receipt trail | no mutation | no | expose repeated failure classes |
+| `issue-triage` | route issue before mutation | issue body, repo state | triage comment, optional worker requests | issue comment, receipts | triage gate | yes | append routing and failure notes |
+| `issue-triage` | review inbound PRs | PR snapshot | maintainer comment | PR comment, receipts | workflow gate | yes | capture review patterns |
+| `skill-lab` | turn repeated need into a skill proposal | issue, receipts, repo evidence | proposal markdown, draft PR | draft PR, receipts | draft-only | yes | grow explicit capabilities |
+| `skill-upstream` | contribute portable skill docs upstream | target repo evidence | `SKILL.md`, contribution packet, draft PR | upstream draft PR, receipts | draft-only | yes | record upstream adoption attempt |
+| `merge-watch` | observe upstream result | PR state, checks, merge metadata | state packet, binding request | proof record, receipts | read-only | yes | confirm acceptance or rejection |
+| `proving-ground` | preserve broad receipt visibility | selected run catalog | receipt bundles, summaries | receipt trail | no mutation | no | expose repeated failure classes |
 | `market-brief` | summarize external market movement | supplied research set | brief markdown | published brief | explicit approval | later | update external context |
 
 ## Canonical, Derived, Public
@@ -511,7 +511,7 @@ The current discovery surface is:
 - open GitHub issues
 - open GitHub pull requests
 - bounded maintenance opportunities such as `sourcey-refresh`
-- bounded maintenance opportunities such as `runx-dogfood`
+- bounded maintenance opportunities such as `proving-ground`
 
 The current scoring authority is `doctrine/SCORING.md`, not older plan text.
 
@@ -610,7 +610,7 @@ The 10/10 public face should have a small, stable route contract:
 The public-face split is now explicit:
 
 - main feed: thesis-relevant public proofs
-- ops/status feed: selector runs, builds, dogfood, and operational exhaust
+- ops/status feed: selector runs, builds, proving-ground, and operational exhaust
 
 Every page should point back to receipts, snapshots, or public artifacts.
 

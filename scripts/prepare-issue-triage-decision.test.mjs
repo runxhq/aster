@@ -3,12 +3,12 @@ import assert from "node:assert/strict";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { prepareIssueSupervisorDecision } from "./prepare-issue-supervisor-decision.mjs";
+import { prepareIssueTriageDecision } from "./prepare-issue-triage-decision.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
-test("prepareIssueSupervisorDecision starts an issue-to-pr worker only after triage approves build", () => {
-  const decision = prepareIssueSupervisorDecision({
+test("prepareIssueTriageDecision starts an issue-to-pr worker only after triage approves build", () => {
+  const decision = prepareIssueTriageDecision({
     execution: {
       stdout: JSON.stringify({
         triage_report: {
@@ -38,8 +38,8 @@ test("prepareIssueSupervisorDecision starts an issue-to-pr worker only after tri
   }, { defaultRepo: "nilstate/automaton", repoRoot });
 
   assert.equal(decision.mode, "issue-to-pr");
-  assert.equal(decision.supervisor_decision.should_start_worker, true);
-  assert.equal(decision.supervisor_decision.worker_requests.length, 1);
+  assert.equal(decision.triage_decision.should_start_worker, true);
+  assert.equal(decision.triage_decision.worker_requests.length, 1);
   assert.equal(decision.issue_to_pr_request.target_repo, "nilstate/automaton");
   assert.equal(decision.issue_to_pr_request.verification_profile, "automaton.site-ci");
   assert.match(decision.comment_body, /Commence: `approve`/);
@@ -47,8 +47,8 @@ test("prepareIssueSupervisorDecision starts an issue-to-pr worker only after tri
   assert.match(decision.comment_body, /Worker fanout: `1`/);
 });
 
-test("prepareIssueSupervisorDecision derives a single worker request when triage omits issue_to_pr_request", () => {
-  const decision = prepareIssueSupervisorDecision({
+test("prepareIssueTriageDecision derives a single worker request when triage omits issue_to_pr_request", () => {
+  const decision = prepareIssueTriageDecision({
     execution: {
       stdout: JSON.stringify({
         triage_report: {
@@ -77,8 +77,8 @@ test("prepareIssueSupervisorDecision derives a single worker request when triage
   }, { defaultRepo: "nilstate/automaton", repoRoot });
 
   assert.equal(decision.mode, "issue-to-pr");
-  assert.equal(decision.supervisor_decision.should_start_worker, true);
-  assert.equal(decision.supervisor_decision.worker_requests.length, 1);
+  assert.equal(decision.triage_decision.should_start_worker, true);
+  assert.equal(decision.triage_decision.worker_requests.length, 1);
   assert.equal(decision.issue_to_pr_request.task_id, "issue-101");
   assert.equal(decision.issue_to_pr_request.issue_title, "README command drift");
   assert.equal(decision.issue_to_pr_request.source_id, "101");
@@ -86,8 +86,8 @@ test("prepareIssueSupervisorDecision derives a single worker request when triage
   assert.equal(decision.issue_to_pr_request.verification_profile, "automaton.site-ci");
 });
 
-test("prepareIssueSupervisorDecision holds at a review comment when mutation should not start yet", () => {
-  const decision = prepareIssueSupervisorDecision({
+test("prepareIssueTriageDecision holds at a review comment when mutation should not start yet", () => {
+  const decision = prepareIssueTriageDecision({
     execution: {
       stdout: JSON.stringify({
         triage_report: {
@@ -113,15 +113,15 @@ test("prepareIssueSupervisorDecision holds at a review comment when mutation sho
   }, { defaultRepo: "nilstate/automaton", repoRoot });
 
   assert.equal(decision.mode, "comment");
-  assert.equal(decision.supervisor_decision.should_start_worker, false);
-  assert.equal(decision.supervisor_decision.review_target, "issue");
-  assert.equal(decision.supervisor_decision.comment_target, "issue");
+  assert.equal(decision.triage_decision.should_start_worker, false);
+  assert.equal(decision.triage_decision.review_target, "issue");
+  assert.equal(decision.triage_decision.comment_target, "issue");
   assert.match(decision.comment_body, /runx is holding mutation until the scope is decomposed\./);
   assert.match(decision.comment_body, /Operator notes:/);
 });
 
-test("prepareIssueSupervisorDecision falls back to an issue comment when draft PR review is requested before publish", () => {
-  const decision = prepareIssueSupervisorDecision({
+test("prepareIssueTriageDecision falls back to an issue comment when draft PR review is requested before publish", () => {
+  const decision = prepareIssueTriageDecision({
     execution: {
       stdout: JSON.stringify({
         triage_report: {
@@ -142,14 +142,14 @@ test("prepareIssueSupervisorDecision falls back to an issue comment when draft P
     },
   }, { defaultRepo: "nilstate/automaton", repoRoot });
 
-  assert.equal(decision.supervisor_decision.review_target, "draft_pr");
-  assert.equal(decision.supervisor_decision.comment_target, "issue");
+  assert.equal(decision.triage_decision.review_target, "draft_pr");
+  assert.equal(decision.triage_decision.comment_target, "issue");
   assert.match(decision.comment_body, /Comment surface: `issue`/);
   assert.match(decision.comment_body, /no draft PR exists yet/i);
 });
 
-test("prepareIssueSupervisorDecision starts a planning lane for objective-decompose before any worker starts", () => {
-  const decision = prepareIssueSupervisorDecision({
+test("prepareIssueTriageDecision starts a planning lane for objective-decompose before any worker starts", () => {
+  const decision = prepareIssueTriageDecision({
     execution: {
       stdout: JSON.stringify({
         triage_report: {
@@ -196,14 +196,14 @@ test("prepareIssueSupervisorDecision starts a planning lane for objective-decomp
   }, { defaultRepo: "nilstate/automaton", repoRoot });
 
   assert.equal(decision.mode, "plan");
-  assert.equal(decision.supervisor_decision.should_start_planner, true);
-  assert.equal(decision.supervisor_decision.should_start_worker, false);
+  assert.equal(decision.triage_decision.should_start_planner, true);
+  assert.equal(decision.triage_decision.should_start_worker, false);
   assert.equal(decision.workspace_change_plan_request.change_set_id, "change-set-204");
   assert.match(decision.comment_body, /Planning lane: `objective-decompose`/);
 });
 
-test("prepareIssueSupervisorDecision stops non-mutating reply-only requests without inventing a worker", () => {
-  const decision = prepareIssueSupervisorDecision({
+test("prepareIssueTriageDecision stops non-mutating reply-only requests without inventing a worker", () => {
+  const decision = prepareIssueTriageDecision({
     execution: {
       stdout: JSON.stringify({
         triage_report: {
@@ -220,13 +220,13 @@ test("prepareIssueSupervisorDecision stops non-mutating reply-only requests with
   }, { defaultRepo: "nilstate/automaton", repoRoot });
 
   assert.equal(decision.mode, "comment");
-  assert.equal(decision.supervisor_decision.action_decision, "stop");
-  assert.equal(decision.supervisor_decision.should_start_worker, false);
+  assert.equal(decision.triage_decision.action_decision, "stop");
+  assert.equal(decision.triage_decision.should_start_worker, false);
   assert.match(decision.comment_body, /Share the documented API key rotation steps\./);
 });
 
-test("prepareIssueSupervisorDecision blocks out-of-scope worker fanout during prerelease v1", () => {
-  const decision = prepareIssueSupervisorDecision({
+test("prepareIssueTriageDecision blocks out-of-scope worker fanout during prerelease v1", () => {
+  const decision = prepareIssueTriageDecision({
     triage_report: {
       category: "bug",
       severity: "high",
@@ -264,8 +264,8 @@ test("prepareIssueSupervisorDecision blocks out-of-scope worker fanout during pr
   }, { defaultRepo: "nilstate/automaton", repoRoot });
 
   assert.equal(decision.mode, "comment");
-  assert.equal(decision.supervisor_decision.should_start_worker, false);
-  assert.equal(decision.supervisor_decision.worker_requests.length, 0);
+  assert.equal(decision.triage_decision.should_start_worker, false);
+  assert.equal(decision.triage_decision.worker_requests.length, 0);
   assert.match(decision.comment_body, /Boundary notes:/);
   assert.match(decision.comment_body, /outside prerelease v1 scope/);
 });

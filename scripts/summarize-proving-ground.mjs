@@ -1,7 +1,7 @@
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 
-const artifactDir = path.resolve(process.argv[2] ?? ".artifacts/runx-dogfood");
+const artifactDir = path.resolve(process.argv[2] ?? ".artifacts/proving-ground");
 const entries = (await readdir(artifactDir))
   .filter((entry) => entry.endsWith(".json"))
   .sort();
@@ -38,7 +38,7 @@ for (const report of reports) {
 }
 
 const lines = [
-  "# Automaton Dogfood Summary",
+  "# Automaton Proving Ground Summary",
   "",
   `- Generated: ${new Date().toISOString()}`,
   `- Artifact dir: \`${artifactDir}\``,
@@ -64,4 +64,3 @@ for (const report of reports) {
 }
 
 process.stdout.write(lines.join("\n"));
-

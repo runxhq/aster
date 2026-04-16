@@ -25,7 +25,7 @@ test("extractRunSignal prefers triage summaries from execution stdout", () => {
 
 test("buildPromotionDrafts creates reflection and history drafts", () => {
   const drafts = buildPromotionDrafts({
-    lane: "issue-supervisor",
+    lane: "issue-triage",
     now: new Date("2026-04-16T00:00:00Z"),
     contextBundle: {
       subject: {
@@ -47,7 +47,7 @@ test("buildPromotionDrafts creates reflection and history drafts", () => {
     },
   });
 
-  assert.match(drafts.reflection.filename, /^2026-04-16-issue-supervisor-/);
+  assert.match(drafts.reflection.filename, /^2026-04-16-issue-triage-/);
   assert.match(drafts.reflection.content, /## What Happened/);
   assert.match(drafts.reflection.content, /rcpt_123/);
   assert.match(drafts.history.content, /README command drift/);

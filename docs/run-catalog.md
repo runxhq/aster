@@ -13,29 +13,24 @@ This is the live run catalog for `automaton`.
 - approvals: `sourcey.discovery.approval`
 - output: docs-source diff, receipts, uploaded workflow artifact, draft PR
 
-### `issue-supervisor`
+### `issue-triage`
 
-- trigger: GitHub issues except `[skill]` proposals
-- command chain:
+- trigger: GitHub issues except `[skill]` proposals, plus PR `opened`,
+  `reopened`, `ready_for_review`, and `synchronize`
+- issue command chain:
   1. `support-triage`
-  2. `issue-supervisor`
+  2. `issue-triage`
   3. optional `objective-decompose`
   4. optional `issue-to-pr` worker fanout
   5. draft PR publication per worker
-- purpose: make issue routing public before mutation and start one or more
-  bounded workers only after the supervisor gate approves build
-- output: triage comment, supervisor decision artifact, optional archived scafld
-  specs, changed repo files, receipts, draft PRs, issue backlink comments
+- PR command: `runx skill <runx>/skills/github-triage --runner respond`
+- purpose: make issue and PR routing public before mutation, start bounded
+  workers only after the triage gate approves build, and keep PR review legible
+- output: triage comment, triage decision artifact, optional archived scafld
+  specs, changed repo files, receipts, draft PRs, issue backlink comments, and
+  posted PR comments
 
-### `pr-triage`
-
-- trigger: PR `opened`, `reopened`, and `ready_for_review`
-- command: `runx skill <runx>/skills/github-triage --runner respond`
-- purpose: inspect the live PR snapshot and post one high-signal maintainer
-  comment back onto the PR
-- output: response packet, posted PR comment, receipts
-
-### `skill-learning`
+### `skill-lab`
 
 - trigger: GitHub issues whose title begins with `[skill]`
 - command: `runx skill <runx>/skills/objective-to-skill`
@@ -43,25 +38,25 @@ This is the live run catalog for `automaton`.
   proposal, materialize it under `docs/skill-proposals/`, and open a draft PR
 - output: proposal markdown, raw packet JSON, receipts, draft PR
 
-### `skill-contribution`
+### `skill-upstream`
 
 - trigger: manual workflow dispatch
-- command: `node scripts/prepare-skill-contribution.mjs` followed by
-  `node scripts/validate-skill-contribution.mjs`
+- command: `node scripts/prepare-skill-upstream.mjs` followed by
+  `node scripts/validate-skill-upstream.mjs`
 - purpose: add a portable upstream `SKILL.md` to a target repo without adding
   runx-specific binding files
 - first target: `nilstate/icey-cli`
 - output: target `SKILL.md`, contribution artifact packet, PR body, optional
   draft PR, public evidence row
 
-### `skill-contribution-watch`
+### `merge-watch`
 
 - trigger: scheduled and manual workflow dispatch
-- command: `node scripts/watch-skill-contribution.mjs`
+- command: `node scripts/merge-watch.mjs`
 - purpose: observe upstream PR state after a portable `SKILL.md` contribution
   and hand accepted skills to runx registry binding
 - first target: `nilstate/icey-cli#2`
-- output: `skill_contribution_state.json`, proof-wall event, and
+- output: `skill_upstream_state.json`, proof-wall event, and
   `registry_binding_request.json` after upstream merge
 
 ## Continuous Support Lanes
@@ -73,7 +68,7 @@ This is the live run catalog for `automaton`.
 - purpose: publish the public Sourcey documentation site
 - output: GitHub Pages deployment from `.sourcey/runx-docs`
 
-### `runx-dogfood`
+### `proving-ground`
 
 - trigger: scheduled and manual workflow dispatch
 - purpose: keep broader receipt and envelope visibility across the catalog even
@@ -90,6 +85,6 @@ These are still missing or intentionally deferred:
 
 - `content-pipeline` opening operator-update PRs from repo evidence
 - `market-intelligence` producing weekly ecosystem briefs
-- `improve-skill` fed from failed dogfood receipts
+- `improve-skill` fed from failed proving-ground receipts
 - `ecosystem-vuln-scan` once the repo exposes a meaningful package surface
 - `moltbook-presence` once public posting credentials and approval routing exist

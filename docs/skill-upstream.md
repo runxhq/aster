@@ -1,15 +1,15 @@
 ---
-title: Skill Contribution
+title: Skill Upstream
 description: The upstream SKILL.md contribution lane from candidate artifact to draft PR.
 ---
 
-# Skill Contribution
+# Skill Upstream
 
-`skill-contribution` is the public upstream loop for portable `SKILL.md`
-files. It is separate from `skill-learning`.
+`skill-upstream` is the public upstream loop for portable `SKILL.md`
+files. It is separate from `skill-lab`.
 
-`skill-learning` decides what should be learned and produces a candidate
-artifact. `skill-contribution` takes a candidate and opens a maintainer-facing
+`skill-lab` decides what should be learned and produces a candidate
+artifact. `skill-upstream` takes a candidate and opens a maintainer-facing
 PR to the repo that benefits from the file.
 
 ## Boundary
@@ -35,20 +35,20 @@ documentation and as portable agent context.
 
 ## Execution Contract
 
-The lane writes these artifacts under `.artifacts/skill-contribution/`:
+The lane writes these artifacts under `.artifacts/skill-upstream/`:
 
 - `skill_opportunity.json`
-- `skill_research_report.json`
+- `skill_recon_report.json`
 - `skill_candidate.json`
 - `contribution_packet.json`
 - `public_feed_event.json`
 - `pr-body.md`
 
-The shared schema is `schemas/skill-contribution-artifacts.schema.json`.
+The shared schema is `schemas/skill-upstream-artifacts.schema.json`.
 
 ## Workflow
 
-The hosted workflow is `.github/workflows/skill-contribution.yml`.
+The hosted workflow is `.github/workflows/skill-upstream.yml`.
 
 Manual dispatch inputs:
 
@@ -65,13 +65,13 @@ and optionally publishes a draft PR.
 
 ## Watch Lane
 
-After a contribution PR exists, `skill-contribution-watch` owns the post-merge
+After a contribution PR exists, `merge-watch` owns the post-merge
 state transition. It reads the GitHub PR state, status checks, changed files,
 merge commit, and upstream `SKILL.md` blob metadata.
 
-The lane writes these artifacts under `.artifacts/skill-contribution-watch/`:
+The lane writes these artifacts under `.artifacts/merge-watch/`:
 
-- `skill_contribution_state.json`
+- `skill_upstream_state.json`
 - `public_feed_event.json`
 - `registry_binding_request.json` when the PR reaches `accepted_upstream`
 
@@ -80,9 +80,9 @@ maintainers and it does not add `x.yaml` upstream. Its job is to turn upstream
 state into a clean internal handoff: `accepted_upstream`,
 `rejected_upstream`, or `stale_upstream`.
 
-The hosted workflow is `.github/workflows/skill-contribution-watch.yml`.
+The hosted workflow is `.github/workflows/merge-watch.yml`.
 
-## Dogfood Target
+## Proving-Ground Target
 
 The first target is `nilstate/icey-cli` because it has a concrete operator
 surface:
@@ -135,32 +135,32 @@ Do not call the format an "Anthropic RFC" unless a canonical RFC URL is present
 in the source material. The stronger phrasing is: "The Agent Skills format was
 originally developed by Anthropic and is documented as an open specification."
 
-## Local Dogfood
+## Local Proving-Ground
 
 From the `automaton` repo:
 
 ```bash
-node scripts/prepare-skill-contribution.mjs \
+node scripts/prepare-skill-upstream.mjs \
   --target-repo-dir /home/kam/dev/icey-cli \
   --target-repo nilstate/icey-cli \
-  --output-dir .artifacts/skill-contribution/icey-cli \
+  --output-dir .artifacts/skill-upstream/icey-cli \
   --workflow operator-bringup \
   --mode requested
 
-node scripts/validate-skill-contribution.mjs \
+node scripts/validate-skill-upstream.mjs \
   --target-repo-dir /home/kam/dev/icey-cli \
-  --artifacts-dir .artifacts/skill-contribution/icey-cli
+  --artifacts-dir .artifacts/skill-upstream/icey-cli
 ```
 
 Watch the merged upstream PR and produce the binding handoff:
 
 ```bash
-node scripts/watch-skill-contribution.mjs \
+node scripts/merge-watch.mjs \
   --repo nilstate/icey-cli \
   --pr 2 \
   --candidate-path SKILL.md \
   --registry-owner nilstate \
-  --artifacts-dir .artifacts/skill-contribution-watch/icey-cli
+  --artifacts-dir .artifacts/merge-watch/icey-cli
 ```
 
 Publish only after reviewing the generated `SKILL.md` and PR body:
@@ -173,6 +173,6 @@ Publish only after reviewing the generated `SKILL.md` and PR body:
     --branch runx/add-skill-md \
     --title "Add portable SKILL.md" \
     --commit-message "docs: add portable SKILL.md" \
-    --body-file /home/kam/dev/automaton/.artifacts/skill-contribution/icey-cli/pr-body.md
+    --body-file /home/kam/dev/automaton/.artifacts/skill-upstream/icey-cli/pr-body.md
 )
 ```

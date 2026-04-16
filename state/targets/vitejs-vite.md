@@ -15,8 +15,7 @@ and unblock comments can genuinely reduce maintainer load.
 
 ## Default Lanes
 
-- `pr-triage`
-- `issue-supervisor`
+- `issue-triage`
 
 ## Trust Notes
 

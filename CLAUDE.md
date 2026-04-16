@@ -35,7 +35,7 @@ docs, GitHub workflows, helper scripts, and scafld-managed specs.
 ```bash
 npm run check
 npm run docs:build
-RUNX_ROOT=/home/kam/dev/runx bash scripts/runx-dogfood.sh
+RUNX_ROOT=/home/kam/dev/runx bash scripts/proving-ground.sh
 scafld list
 scafld status <task-id> --json
 ```

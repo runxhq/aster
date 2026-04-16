@@ -1,6 +1,6 @@
 # automaton
 
-`automaton` is the canonical public dogfood destination for `runx`.
+`automaton` is the canonical public proving-ground destination for `runx`.
 
 The repo itself now carries the operator core:
 
@@ -57,13 +57,12 @@ The governing philosophy is:
 
 - `sourcey-refresh`: `runx sourcey` authors and revises the Sourcey docs source
   bundle, then opens a draft PR
-- `issue-supervisor`: a normal GitHub issue runs through `support-triage`; the
-  supervisor posts a public triage comment, can run `objective-decompose` when
-  the gate approves planning, and only then starts one or more repo-scoped
-  `issue-to-pr` workers when the gate approves build
-- `pr-triage`: a live PR snapshot runs through `github-triage`, then the
-  workflow posts a maintainer comment back onto the PR
-- `skill-learning`: a skill proposal issue runs through
+- `issue-triage`: covers both issue intake and PR review. Issues run through
+  `support-triage`, can open `objective-decompose` when planning is approved,
+  and only then start one or more repo-scoped `issue-to-pr` workers when build
+  is approved. PR snapshots run through `github-triage` and publish one
+  high-signal maintainer comment back onto the PR
+- `skill-lab`: a skill proposal issue runs through
   `objective-to-skill`, materializes a proposal in `docs/skill-proposals/`,
   and opens a draft PR
 
@@ -71,7 +70,7 @@ Two supporting lanes stay valuable even when the external caller is offline:
 
 - `docs-pages`: builds and deploys the separate `automaton.runx.ai` site from
   repo-owned operator content
-- `runx-dogfood`: keeps a draft-first receipt trail for the broader catalog
+- `proving-ground`: keeps a draft-first receipt trail for the broader catalog
 
 ## Required Secrets
 
@@ -128,13 +127,13 @@ the draft-first observability lanes continue to run.
   target dossier recent-outcomes sections
 - [scripts/runx-agent-bridge.mjs](./scripts/runx-agent-bridge.mjs): external
   caller that answers `runx` `agent-step` requests without internal shortcuts
-- [scripts/prepare-issue-supervisor-decision.mjs](./scripts/prepare-issue-supervisor-decision.mjs):
-  converts a `support-triage` result into one explicit supervisor decision plus
+- [scripts/prepare-issue-triage-decision.mjs](./scripts/prepare-issue-triage-decision.mjs):
+  converts a `support-triage` result into one explicit triage decision plus
   optional planning and worker requests
-- [scripts/run-issue-supervisor-plan.mjs](./scripts/run-issue-supervisor-plan.mjs):
-  runs `objective-decompose` when the supervisor approves planning and appends a
+- [scripts/run-issue-triage-plan.mjs](./scripts/run-issue-triage-plan.mjs):
+  runs `objective-decompose` when the triage approves planning and appends a
   phased plan summary to the issue comment
-- [scripts/run-issue-supervisor-workers.mjs](./scripts/run-issue-supervisor-workers.mjs):
+- [scripts/run-issue-triage-workers.mjs](./scripts/run-issue-triage-workers.mjs):
   executes one or more isolated `issue-to-pr` workers and publishes the
   resulting draft PRs
 - [scripts/publish-runx-pr.mjs](./scripts/publish-runx-pr.mjs): reusable draft
@@ -149,11 +148,11 @@ npm --prefix site install
 npm run site:build
 ```
 
-Run the live dogfood lane locally from this repo:
+Run the live proving-ground lane locally from this repo:
 
 ```bash
-RUNX_ROOT=/home/kam/dev/runx bash scripts/runx-dogfood.sh
-node scripts/summarize-dogfood.mjs .artifacts/runx-dogfood
+RUNX_ROOT=/home/kam/dev/runx bash scripts/proving-ground.sh
+node scripts/summarize-proving-ground.mjs .artifacts/proving-ground
 ```
 
 Run a real `runx` lane through the external caller bridge:
@@ -170,8 +169,8 @@ node scripts/runx-agent-bridge.mjs \
   --project /home/kam/dev/automaton
 ```
 
-If you have prerecorded caller answers for a given dogfood run, place one JSON
-file per run name in `$RUNX_ANSWERS_DIR`:
+If you have prerecorded caller answers for a given proving-ground run, place
+one JSON file per run name in `$RUNX_ANSWERS_DIR`:
 
 ```text
 $RUNX_ANSWERS_DIR/

@@ -22,11 +22,11 @@ export default {
         groups: [
           {
             group: "Start",
-            pages: ["introduction", "philosophy", "architecture", "dogfood", "evolution"],
+            pages: ["introduction", "philosophy", "architecture", "proving-ground", "evolution"],
           },
           {
             group: "Operate",
-            pages: ["operating-model", "flows", "skill-contribution", "operations"],
+            pages: ["operating-model", "flows", "skill-upstream", "operations"],
           },
           {
             group: "Reference",

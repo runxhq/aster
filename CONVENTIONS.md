@@ -86,7 +86,7 @@ scripts: "ES modules under scripts/"
 ```bash
 npm run check
 npm run docs:build
-RUNX_ROOT=/home/kam/dev/runx bash scripts/runx-dogfood.sh
+RUNX_ROOT=/home/kam/dev/runx bash scripts/proving-ground.sh
 ```
 
 ### Rules

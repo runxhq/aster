@@ -1,4 +1,4 @@
-name: runx-dogfood
+name: proving-ground
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -12,7 +12,7 @@ permissions:
   contents: read
 
 jobs:
-  live-draft-runs:
+  proving-ground:
     runs-on: ubuntu-latest
     steps:
       - name: Check out automaton
@@ -39,22 +39,22 @@ jobs:
           pnpm --dir runx install --no-frozen-lockfile
           pnpm --dir runx build
 
-      - name: Run live dogfood lane
+      - name: Run proving-ground catalog
         env:
           RUNX_ROOT: ${{ github.workspace }}/runx
           ARTIFACT_DIR: ${{ github.workspace }}/automaton-artifacts
           AUTOMATON_ROOT: ${{ github.workspace }}
-          RUNX_DOGFOOD_PROFILE: minimal
+          PROVING_GROUND_PROFILE: minimal
         run: |
-          chmod +x scripts/runx-dogfood.sh
-          bash scripts/runx-dogfood.sh
-          node scripts/summarize-dogfood.mjs "$ARTIFACT_DIR" > "$ARTIFACT_DIR/summary.md"
+          chmod +x scripts/proving-ground.sh
+          bash scripts/proving-ground.sh
+          node scripts/summarize-proving-ground.mjs "$ARTIFACT_DIR" > "$ARTIFACT_DIR/summary.md"
 
       - name: Append workflow summary
         run: cat "${{ github.workspace }}/automaton-artifacts/summary.md" >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Upload dogfood artifacts
+      - name: Upload proving-ground artifacts
         uses: actions/upload-artifact@v7
         with:
-          name: automaton-dogfood
+          name: automaton-proving-ground
           path: ${{ github.workspace }}/automaton-artifacts

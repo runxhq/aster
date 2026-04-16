@@ -2,7 +2,7 @@
   "name": "automaton",
   "private": true,
   "version": "0.1.0",
-  "description": "Governed dogfood destination for runx live runs.",
+  "description": "Governed proving-ground destination for runx live runs.",
   "type": "module",
   "engines": {
     "node": ">=20"
