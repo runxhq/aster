@@ -47,7 +47,18 @@ export function buildCommentPlan({ options, body, runner = defaultRunner }) {
         "--repo",
         options.repo,
         "--json",
-        "title,author,authorAssociation,headRefName,labels,comments,reviews",
+        "title,author,headRefName,labels,comments,reviews",
+      ],
+    ),
+  );
+  const issueMetadata = JSON.parse(
+    runner(
+      "gh",
+      [
+        "api",
+        `repos/${options.repo}/issues/${options.pr}`,
+        "--jq",
+        "{ authorAssociation: .author_association }",
       ],
     ),
   );
@@ -55,7 +66,7 @@ export function buildCommentPlan({ options, body, runner = defaultRunner }) {
     source: "github_pull_request",
     lane: "issue-triage",
     authorLogin: report.author?.login,
-    authorAssociation: report.authorAssociation,
+    authorAssociation: issueMetadata.authorAssociation,
     title: report.title,
     labels: (report.labels ?? []).map((label) => label.name),
     headRefName: report.headRefName,

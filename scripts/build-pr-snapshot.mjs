@@ -11,7 +11,21 @@ const report = JSON.parse(
       "--repo",
       options.repo,
       "--json",
-      "number,title,body,url,author,authorAssociation,headRefName,headRefOid,baseRefName,isDraft,state,reviewDecision,files,comments,reviews,labels",
+      "number,title,body,url,author,headRefName,headRefOid,baseRefName,isDraft,state,reviewDecision,files,comments,reviews,labels",
+    ],
+    {
+      encoding: "utf8",
+    },
+  ),
+);
+const issueMetadata = JSON.parse(
+  execFileSync(
+    "gh",
+    [
+      "api",
+      `repos/${options.repo}/issues/${options.pr}`,
+      "--jq",
+      "{ authorAssociation: .author_association }",
     ],
     {
       encoding: "utf8",
@@ -25,7 +39,7 @@ const snapshot = {
   title: report.title,
   body: report.body,
   author: report.author?.login,
-  author_association: report.authorAssociation ?? null,
+  author_association: issueMetadata.authorAssociation ?? null,
   head_ref: report.headRefName,
   head_sha: report.headRefOid,
   base_ref: report.baseRefName,
