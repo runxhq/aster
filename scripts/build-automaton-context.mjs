@@ -563,11 +563,13 @@ function isRelevantContextDoc(entry, subject) {
 function sortDoctrineDocs(docs) {
   const priority = {
     "doctrine/AUTOMATON.md": 0,
-    "doctrine/CONDUCT.md": 1,
-    "doctrine/VOICE.md": 2,
-    "doctrine/EPISTEMOLOGY.md": 3,
-    "doctrine/AUTHORITY.md": 4,
-    "doctrine/EVOLUTION.md": 5,
+    "doctrine/MISSION.md": 1,
+    "doctrine/EXAMPLES.md": 2,
+    "doctrine/CONDUCT.md": 3,
+    "doctrine/VOICE.md": 4,
+    "doctrine/EPISTEMOLOGY.md": 5,
+    "doctrine/AUTHORITY.md": 6,
+    "doctrine/EVOLUTION.md": 7,
   };
   return [...docs].sort((left, right) => {
     return (priority[left.path] ?? 100) - (priority[right.path] ?? 100);
@@ -577,6 +579,8 @@ function sortDoctrineDocs(docs) {
 function trimDoctrineForPrompt(doc) {
   const preferences = {
     "doctrine/AUTOMATON.md": ["What It Must Become", "What It Must Never Become", "Success Condition"],
+    "doctrine/MISSION.md": ["What Must Be Proven", "Highest-Value Proof", "Mission Questions"],
+    "doctrine/EXAMPLES.md": ["Good Public Comment", "Bad Public Comment", "Good `no_op`", "Mission Contrast"],
     "doctrine/CONDUCT.md": ["People First", "Attention Is Expensive", "Public Attention Rules"],
     "doctrine/VOICE.md": ["Public Identity", "Voice Rules", "Permanence Test"],
     "doctrine/EPISTEMOLOGY.md": ["Receipts Before Memory", "Canonical And Derived", "Public Truthfulness"],

@@ -108,6 +108,10 @@ the draft-first observability lanes continue to run.
 - [docs/architecture.md](./docs/architecture.md): the full-shape plan,
   ownership boundary, memory model, and site topology
 - [doctrine/AUTOMATON.md](./doctrine/AUTOMATON.md): the public thesis
+- [doctrine/MISSION.md](./doctrine/MISSION.md): what kinds of actions most
+  strongly prove the `runx` runtime thesis in public
+- [doctrine/EXAMPLES.md](./doctrine/EXAMPLES.md): concrete good, bad, and
+  `no_op` examples for public action
 - [doctrine/CONDUCT.md](./doctrine/CONDUCT.md): how the operator should treat
   people and attention
 - [doctrine/VOICE.md](./doctrine/VOICE.md): how public GitHub interaction

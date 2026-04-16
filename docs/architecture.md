@@ -16,6 +16,14 @@ turning `runx` into an `automaton`-specific system.
 The constitutional doctrine in `doctrine/` is part of this plan, not an
 optional style preference.
 
+`doctrine/MISSION.md` is the bridge between the constitutional layer and the
+operational layer: it defines what kinds of public actions actually prove the
+`runx` thesis rather than merely generating activity.
+
+`doctrine/EXAMPLES.md` turns that mission into contrasted positive and negative
+patterns so the model can compare candidate actions against real shapes instead
+of only abstract rules.
+
 ## Hard Boundary
 
 `runx` is the governed runtime.

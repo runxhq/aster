@@ -7,6 +7,8 @@ const required = [
   "CLAUDE.md",
   "CONVENTIONS.md",
   "doctrine/AUTOMATON.md",
+  "doctrine/MISSION.md",
+  "doctrine/EXAMPLES.md",
   "doctrine/CONDUCT.md",
   "doctrine/VOICE.md",
   "doctrine/EPISTEMOLOGY.md",
