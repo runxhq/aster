@@ -1,0 +1,395 @@
+spec_version: "1.1"
+task_id: "skill-contribution-stack"
+created: "2026-04-16T00:57:00Z"
+updated: "2026-04-16T01:02:54Z"
+status: "in_progress"
+
+task:
+  title: "Implement upstream skill contribution stack"
+  summary: >
+    Build the full upstream skill-contribution stack for automaton and runx:
+    strategy docs, machine-readable artifact schemas, executable preparation
+    and validation scripts, a deployed GitHub Actions workflow, proof-wall
+    evidence wiring, and Sourcey docs coverage. The stack must preserve the
+    boundary that upstream repos receive portable SKILL.md only while runx
+    keeps x.yaml, harnesses, auth, trust tier, and registry binding metadata.
+  size: "large"
+  risk_level: "medium"
+  context:
+    packages:
+      - "automaton/.github/workflows"
+      - "automaton/scripts"
+      - "automaton/schemas"
+      - "automaton/docs"
+      - "runx/plans"
+      - "runx/docs"
+    files_impacted:
+      - path: "../runx/plans/runx.md"
+        lines: "all"
+        reason: "Clarify the strategy stack and public/private language boundary"
+      - path: "../runx/docs/skill-learning-contribution-spec.md"
+        lines: "all"
+        reason: "Formal implementation contract for learning, contribution, binding, and proof"
+      - path: ".github/workflows/skill-contribution.yml"
+        lines: "all"
+        reason: "Hosted execution lane for remote upstream SKILL.md preparation and PR publication"
+      - path: ".github/workflows/publish-public-evidence.yml"
+        lines: "all"
+        reason: "Expose skill-contribution as a public evidence lane"
+      - path: "scripts/prepare-skill-contribution.mjs"
+        lines: "all"
+        reason: "Generate upstream SKILL.md and artifact packets from target repo evidence"
+      - path: "scripts/validate-skill-contribution.mjs"
+        lines: "all"
+        reason: "Gate generated contributions before public PR publication"
+      - path: "schemas/skill-contribution-artifacts.schema.json"
+        lines: "all"
+        reason: "Machine-readable schema for contribution artifact packets"
+      - path: "docs/skill-contribution.md"
+        lines: "all"
+        reason: "Operator documentation for the lane"
+      - path: "docs/run-catalog.md"
+        lines: "all"
+        reason: "Declare the new lane in the public run catalog"
+      - path: "docs/flows.md"
+        lines: "all"
+        reason: "Describe hosted workflow behavior"
+      - path: "docs/operations.md"
+        lines: "all"
+        reason: "Document credentials, draft PR policy, and operational gaps"
+      - path: "docs/sourcey.config.ts"
+        lines: "all"
+        reason: "Expose skill-contribution docs in generated Sourcey docs"
+      - path: "scripts/check.mjs"
+        lines: "all"
+        reason: "Make new specs, scripts, docs, schema, and workflow required repo files"
+    invariants:
+      - "domain_boundaries"
+      - "public_api_stable"
+      - "config_from_env"
+      - "no_legacy_code"
+    related_docs:
+      - "../runx/docs/skill-learning-contribution-spec.md"
+      - "docs/skill-contribution.md"
+      - "docs/run-catalog.md"
+      - "docs/flows.md"
+      - "docs/operations.md"
+    cwd: "/home/kam/dev/automaton"
+  objectives:
+    - "Define skill-learning, skill-contribution, registry-binding, and proof-wall as separate layers with explicit ownership"
+    - "Create a machine-readable artifact schema for opportunity, research, candidate, contribution, and feed-event packets"
+    - "Create scripts that prepare and validate portable upstream SKILL.md contributions from target repo evidence"
+    - "Deploy a GitHub Actions workflow that runs the same path remotely and optionally publishes a draft upstream PR"
+    - "Wire skill-contribution into public evidence publishing and Sourcey docs"
+    - "Keep upstream PR language contribution-oriented and non-marketing"
+  scope:
+    in_scope:
+      - "Automaton orchestration for upstream SKILL.md contributions"
+      - "Runx strategy and implementation-spec documentation"
+      - "JSON artifact contracts and validation gates"
+      - "Remote workflow dispatch readiness"
+      - "First dogfood target support for nilstate/icey-cli"
+    out_of_scope:
+      - "Automatic merge of upstream PRs"
+      - "Registry binding implementation after upstream merge"
+      - "Changing nilstate/icey core repo in this task"
+      - "Adding x.yaml to upstream repos"
+      - "Replacing objective-to-skill internals"
+  dependencies:
+    - "GitHub CLI authenticated with repo scope for manual verification"
+    - "GitHub Actions availability on auscaster/automaton"
+    - "UPSTREAM_CONTRIBUTION_TOKEN or RUNX_WORKSPACE_PAT for cross-repo publishing from hosted workflow"
+    - "Sourcey CLI available through npx for docs build"
+  assumptions:
+    - "Automaton is the correct owner for upstream PR orchestration"
+    - "Runx core remains the owner of portable skill primitives and registry binding format"
+    - "External repos should receive SKILL.md only unless maintainers explicitly request more"
+    - "The first hosted dogfood can target nilstate/icey-cli because it has clear build, release, packaging, and operator workflows"
+  touchpoints:
+    - area: "runx strategy"
+      description: "Make the learning/contribution/binding stack explicit in the long-form runx plan"
+      owners: ["runx"]
+    - area: "runx implementation spec"
+      description: "Document state machine, artifacts, workflow ownership, quality gates, and proof-wall events"
+      owners: ["runx"]
+    - area: "automaton scripts"
+      description: "Prepare and validate upstream SKILL.md contribution packets"
+      owners: ["automaton"]
+    - area: "automaton workflow deployment"
+      description: "Run contribution lane in GitHub Actions against external repositories"
+      owners: ["automaton"]
+    - area: "automaton Sourcey docs"
+      description: "Publish operator docs for the new lane"
+      owners: ["automaton"]
+    - area: "public evidence"
+      description: "Map skill-contribution workflow runs onto the live proof wall"
+      owners: ["automaton", "runx/cloud"]
+  risks:
+    - description: "Public upstream PR language could read like runx marketing"
+      impact: "high"
+      mitigation: "Validator rejects public strategy terms and generated PR body keeps runx to an optional compatibility sentence"
+    - description: "Hosted workflow may not have cross-repo write credentials"
+      impact: "medium"
+      mitigation: "Workflow supports UPSTREAM_CONTRIBUTION_TOKEN or RUNX_WORKSPACE_PAT and can run with publish=false for validation-only proof"
+    - description: "Generated SKILL.md could become generic and unhelpful"
+      impact: "high"
+      mitigation: "Preparation script grounds output in explicit target repo files and validator requires evidence/workflow/safety sections"
+    - description: "Unrelated dirty automaton files could be accidentally committed"
+      impact: "medium"
+      mitigation: "Stage only explicit files for this stack and leave supervisor edits untouched"
+  acceptance:
+    validation_profile: "strict"
+    definition_of_done:
+      - id: "dod1"
+        description: "runx plan clearly separates skill-learning, skill-contribution, registry-binding, and proof-wall evidence"
+        status: "pending"
+      - id: "dod2"
+        description: "A detailed runx implementation spec exists for the complete stack"
+        status: "pending"
+      - id: "dod3"
+        description: "Automaton contains machine-readable JSON schema for contribution artifacts"
+        status: "pending"
+      - id: "dod4"
+        description: "Automaton can prepare a repo-grounded SKILL.md and contribution packet"
+        status: "pending"
+      - id: "dod5"
+        description: "Automaton can validate public-language, source-reference, and artifact gates before publication"
+        status: "pending"
+      - id: "dod6"
+        description: "Hosted skill-contribution workflow is deployed on main"
+        status: "pending"
+      - id: "dod7"
+        description: "Sourcey docs include the skill-contribution operator page"
+        status: "pending"
+      - id: "dod8"
+        description: "Remote dogfood spec is ready to execute against nilstate/icey-cli"
+        status: "pending"
+    validation:
+      - id: "v1"
+        type: "test"
+        description: "Automaton required-file check passes"
+        command: "npm run check"
+        expected: "automaton check passed"
+      - id: "v2"
+        type: "documentation"
+        description: "Sourcey docs build includes skill-contribution page"
+        command: "npm run docs:build"
+        expected: "Sourcey build exits 0"
+      - id: "v3"
+        type: "compile"
+        description: "New Node scripts parse"
+        command: "node --check scripts/prepare-skill-contribution.mjs && node --check scripts/validate-skill-contribution.mjs"
+        expected: "exit code 0"
+      - id: "v4"
+        type: "boundary"
+        description: "Workflow YAML and JSON schema parse"
+        command: "python3 - <<'PY'\nimport json, yaml\njson.load(open('schemas/skill-contribution-artifacts.schema.json'))\nfor p in ['.github/workflows/skill-contribution.yml', '.github/workflows/publish-public-evidence.yml']:\n    yaml.safe_load(open(p))\nprint('ok')\nPY"
+        expected: "ok"
+      - id: "v5"
+        type: "boundary"
+        description: "No whitespace errors in changed files"
+        command: "git diff --check"
+        expected: "exit code 0"
+      - id: "v6"
+        type: "integration"
+        description: "Remote workflow exists after push"
+        command: "gh workflow view skill-contribution.yml --repo auscaster/automaton"
+        expected: "workflow is visible"
+  constraints:
+    approvals_required: []
+    non_goals:
+      - "No auto-merge"
+      - "No upstream x.yaml"
+      - "No registry publication before upstream acceptance"
+  info_sources:
+    - "../runx/plans/runx.md"
+    - "../runx/docs/skill-learning-contribution-spec.md"
+    - "docs/skill-contribution.md"
+    - "nilstate/icey-cli README, Makefile, CMake, workflow, Docker, packaging, and release files"
+  notes: >
+    This spec is the implementation contract for the stack. A separate dogfood
+    spec records the first remote execution against nilstate/icey-cli.
+
+planning_log:
+  - timestamp: "2026-04-16T00:57:00Z"
+    actor: "user"
+    summary: "User required real specs, execution, deployment, and remote dogfooding rather than plan-only docs."
+  - timestamp: "2026-04-16T00:58:30Z"
+    actor: "agent"
+    summary: "Expanded the scafld task spec to cover runx docs, automaton schemas, scripts, workflows, evidence publishing, docs, validation, and deployment."
+
+  - timestamp: "2026-04-16T01:02:54Z"
+    actor: "cli"
+    summary: "Spec approved"
+  - timestamp: "2026-04-16T01:02:54Z"
+    actor: "cli"
+    summary: "Execution started"
+phases:
+  - id: "phase1"
+    name: "Runx strategy and implementation spec"
+    objective: "Make the stack explicit in runx plan and write the complete runx implementation contract."
+    changes:
+      - file: "../runx/plans/runx.md"
+        action: "update"
+        lines: "all"
+        content_spec: |
+          Replace vague adoption language with skill-learning, skill-contribution,
+          registry-binding, and proof-wall layering. Define upstream SKILL.md as
+          the portable artifact and keep x.yaml/policy/harness/trust in runx.
+      - file: "../runx/docs/skill-learning-contribution-spec.md"
+        action: "create"
+        lines: "all"
+        content_spec: |
+          Add vocabulary, public/private language, layer stack, state machine,
+          JSON artifact contracts, workflow specs, repo responsibilities, quality
+          gates, proof-wall events, build plan, and acceptance criteria.
+    acceptance_criteria:
+      - id: "ac1_1"
+        type: "documentation"
+        description: "Plan references the implementation spec and names all layers"
+        command: "rg -n 'Skill Learning, Contribution|skill-contribution|registry-binding|implementation contract' ../runx/plans/runx.md ../runx/docs/skill-learning-contribution-spec.md"
+        expected: "matches found"
+    status: "pending"
+  - id: "phase2"
+    name: "Artifact schemas and scripts"
+    objective: "Create machine-readable schemas plus preparation and validation scripts."
+    changes:
+      - file: "schemas/skill-contribution-artifacts.schema.json"
+        action: "create"
+        lines: "all"
+        content_spec: |
+          Define JSON Schema for opportunity, research report, candidate,
+          contribution packet, and public feed event artifacts.
+      - file: "scripts/prepare-skill-contribution.mjs"
+        action: "create"
+        lines: "all"
+        content_spec: |
+          Inspect a target repo, collect evidence files, generate portable
+          SKILL.md, write artifact JSON, and write maintainer-facing PR body.
+      - file: "scripts/validate-skill-contribution.mjs"
+        action: "create"
+        lines: "all"
+        content_spec: |
+          Validate generated artifacts, required SKILL.md sections, optional runx
+          wording, public-language restrictions, source references, and change
+          scope.
+    acceptance_criteria:
+      - id: "ac2_1"
+        type: "compile"
+        description: "Scripts parse"
+        command: "node --check scripts/prepare-skill-contribution.mjs && node --check scripts/validate-skill-contribution.mjs"
+        expected: "exit code 0"
+      - id: "ac2_2"
+        type: "test"
+        description: "Schema parses"
+        command: "python3 - <<'PY'\nimport json\njson.load(open('schemas/skill-contribution-artifacts.schema.json'))\nprint('schema ok')\nPY"
+        expected: "schema ok"
+    status: "pending"
+  - id: "phase3"
+    name: "Hosted workflow and public evidence"
+    objective: "Deploy the contribution lane and expose it to public evidence publishing."
+    changes:
+      - file: ".github/workflows/skill-contribution.yml"
+        action: "create"
+        lines: "all"
+        content_spec: |
+          Add manual dispatch workflow with target repo/ref/mode/publish/force
+          inputs. Checkout automaton and target repo, prepare, validate, optionally
+          publish draft PR, and upload artifacts.
+      - file: ".github/workflows/publish-public-evidence.yml"
+        action: "update"
+        lines: "all"
+        content_spec: |
+          Include skill-contribution workflow_run events and map the proof lane
+          to skill-contribution with a contribution-specific summary.
+    acceptance_criteria:
+      - id: "ac3_1"
+        type: "boundary"
+        description: "Workflow YAML parses"
+        command: "python3 - <<'PY'\nimport yaml\nfor p in ['.github/workflows/skill-contribution.yml', '.github/workflows/publish-public-evidence.yml']:\n    yaml.safe_load(open(p))\nprint('workflow ok')\nPY"
+        expected: "workflow ok"
+    status: "pending"
+  - id: "phase4"
+    name: "Automaton docs and checks"
+    objective: "Document the lane and make it part of automaton's required files and Sourcey site."
+    changes:
+      - file: "docs/skill-contribution.md"
+        action: "create"
+        lines: "all"
+        content_spec: |
+          Add operator docs covering boundary, artifacts, workflow inputs, dogfood
+          target, public language rules, credible public references, local
+          dogfood, and publish command.
+      - file: "docs/sourcey.config.ts"
+        action: "update"
+        lines: "all"
+        content_spec: "Expose skill-contribution page in the Operate navigation group."
+      - file: "docs/flows.md"
+        action: "update"
+        lines: "all"
+        content_spec: "Describe the hosted skill-contribution workflow."
+      - file: "docs/run-catalog.md"
+        action: "update"
+        lines: "all"
+        content_spec: "Add skill-contribution to the live mutation/comment lanes."
+      - file: "docs/operations.md"
+        action: "update"
+        lines: "all"
+        content_spec: "Document credentials and draft-PR policy."
+      - file: "docs/backlog.md"
+        action: "update"
+        lines: "all"
+        content_spec: "Replace catalog-first gap with contribution packet and watcher gaps."
+      - file: "docs/dogfood.md"
+        action: "update"
+        lines: "all"
+        content_spec: "Add upstream SKILL.md contribution to the dogfood trajectory."
+      - file: "scripts/check.mjs"
+        action: "update"
+        lines: "all"
+        content_spec: "Require new docs, schema, scripts, and workflow."
+    acceptance_criteria:
+      - id: "ac4_1"
+        type: "test"
+        description: "Repo check passes"
+        command: "npm run check"
+        expected: "automaton check passed"
+      - id: "ac4_2"
+        type: "documentation"
+        description: "Sourcey docs build"
+        command: "npm run docs:build"
+        expected: "exit code 0"
+    status: "pending"
+  - id: "phase5"
+    name: "Deployment"
+    objective: "Commit and push runx and automaton changes so the hosted lane is live."
+    changes:
+      - file: "../runx"
+        action: "update"
+        lines: "all"
+        content_spec: "Commit and push runx plan/spec changes."
+      - file: "."
+        action: "update"
+        lines: "all"
+        content_spec: "Commit and push automaton workflow, docs, schema, and script changes without unrelated dirty files."
+    acceptance_criteria:
+      - id: "ac5_1"
+        type: "integration"
+        description: "Runx changes pushed"
+        command: "git -C ../runx log --oneline -1"
+        expected: "commit docs(skill): define contribution stack"
+      - id: "ac5_2"
+        type: "integration"
+        description: "Automaton changes pushed"
+        command: "git log --oneline -1"
+        expected: "commit feat(skill): add upstream contribution lane"
+    status: "pending"
+
+rollback:
+  strategy: "per_phase"
+  commands:
+    phase1: "git -C ../runx revert 4d16d92"
+    phase2: "git checkout HEAD^ -- scripts/prepare-skill-contribution.mjs scripts/validate-skill-contribution.mjs schemas/skill-contribution-artifacts.schema.json"
+    phase3: "git checkout HEAD^ -- .github/workflows/skill-contribution.yml .github/workflows/publish-public-evidence.yml"
+    phase4: "git checkout HEAD^ -- docs scripts/check.mjs"
+    phase5: "git revert 775b601"

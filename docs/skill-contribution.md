@@ -100,6 +100,22 @@ Do not use strategy language in public PRs or generated files:
 - growth loop
 - trojan horse
 
+## PR Pitch References
+
+The upstream PR body should explain why `SKILL.md` is a credible format, not
+just why this repo could use one.
+
+Reference these public sources:
+
+- Agent Skills specification: `https://agentskills.io/specification`
+- Agent Skills overview: `https://agentskills.io/`
+- Anthropic public skills repository: `https://github.com/anthropics/skills`
+- Claude Skills overview: `https://claude.com/docs/skills/overview`
+
+Do not call the format an "Anthropic RFC" unless a canonical RFC URL is present
+in the source material. The stronger phrasing is: "The Agent Skills format was
+originally developed by Anthropic and is documented as an open specification."
+
 ## Local Dogfood
 
 From the `automaton` repo:

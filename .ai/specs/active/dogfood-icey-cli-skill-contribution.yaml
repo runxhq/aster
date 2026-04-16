@@ -1,0 +1,280 @@
+spec_version: "1.1"
+task_id: "dogfood-icey-cli-skill-contribution"
+created: "2026-04-16T00:57:01Z"
+updated: "2026-04-16T01:02:55Z"
+status: "in_progress"
+
+task:
+  title: "Dogfood skill contribution on nilstate icey-cli"
+  summary: >
+    Execute the deployed skill-contribution lane against nilstate/icey-cli as it
+    will run in production: from the GitHub Actions workflow on auscaster/automaton,
+    checking out the remote target repo, generating a portable SKILL.md, validating
+    the artifact packet, and publishing or updating a draft PR in the target repo.
+    Local generation may be used only as preflight evidence; the acceptance gate
+    is the remote workflow run.
+  size: "medium"
+  risk_level: "medium"
+  context:
+    packages:
+      - "automaton/.github/workflows/skill-contribution.yml"
+      - "automaton/scripts"
+      - "nilstate/icey-cli"
+    files_impacted:
+      - path: "../icey-cli/SKILL.md"
+        lines: "all"
+        reason: "Portable upstream skill file generated for the dogfood target"
+      - path: ".artifacts/skill-contribution/icey-cli"
+        lines: "all"
+        reason: "Local preflight artifact packet for comparison with hosted run"
+      - path: ".github/workflows/skill-contribution.yml"
+        lines: "all"
+        reason: "Hosted execution path under test"
+    invariants:
+      - "domain_boundaries"
+      - "public_api_stable"
+      - "config_from_env"
+    related_docs:
+      - "docs/skill-contribution.md"
+      - "../runx/docs/skill-learning-contribution-spec.md"
+    cwd: "/home/kam/dev/automaton"
+  objectives:
+    - "Generate a repo-grounded portable SKILL.md for nilstate/icey-cli"
+    - "Validate public-language, evidence, and artifact gates"
+    - "Publish or update a draft upstream PR containing only SKILL.md"
+    - "Execute the same path from the deployed GitHub Actions workflow after code is pushed"
+    - "Confirm the upstream PR and target CI state"
+  scope:
+    in_scope:
+      - "nilstate/icey-cli as first upstream contribution target"
+      - "SKILL.md only in the target repo"
+      - "Draft PR publication"
+      - "Hosted workflow dispatch and result verification"
+      - "Public evidence relay through automaton workflow_run"
+    out_of_scope:
+      - "Merging the upstream PR"
+      - "Changing nilstate/icey core repo"
+      - "Adding runx x.yaml or registry binding before upstream acceptance"
+      - "Publishing a runx registry skill"
+  dependencies:
+    - "auscaster/automaton main contains skill-contribution workflow"
+    - "GitHub Actions can dispatch workflow_dispatch events"
+    - "The configured token can write a branch/PR to nilstate/icey-cli when publish=true"
+    - "nilstate/icey-cli CI can run on the generated draft PR"
+  assumptions:
+    - "nilstate/icey-cli does not already have SKILL.md on main"
+    - "The branch runx/add-skill-md is acceptable for repeated dogfood updates"
+    - "The PR should remain draft until reviewed"
+    - "If hosted publish credentials fail, the validation-only workflow result still proves the deployed preparation/validation path but publication remains blocked"
+  touchpoints:
+    - area: "target repo"
+      description: "nilstate/icey-cli receives SKILL.md"
+      owners: ["nilstate/icey-cli"]
+    - area: "automaton workflow"
+      description: "skill-contribution workflow runs remotely with target_repo nilstate/icey-cli"
+      owners: ["automaton"]
+    - area: "upstream PR"
+      description: "Draft PR #2 carries the portable skill contribution"
+      owners: ["nilstate/icey-cli"]
+    - area: "public evidence"
+      description: "publish-public-evidence receives workflow_run for skill-contribution"
+      owners: ["automaton", "runx/cloud"]
+  risks:
+    - description: "Remote workflow cannot push to nilstate/icey-cli because token is scoped only to automaton"
+      impact: "high"
+      mitigation: "Use UPSTREAM_CONTRIBUTION_TOKEN or RUNX_WORKSPACE_PAT; if missing, rerun with publish=false and record publication as blocked"
+    - description: "Generated SKILL.md is too broad or stale"
+      impact: "medium"
+      mitigation: "Validate against current README, Makefile, CMake, workflows, packaging, Docker, VERSION, and ICEY_VERSION"
+    - description: "Target CI may take longer than the operator wait window"
+      impact: "medium"
+      mitigation: "Record in-progress state and provide run URL; do not mark remote dogfood complete until workflow result is known"
+  acceptance:
+    validation_profile: "strict"
+    definition_of_done:
+      - id: "dod1"
+        description: "Local preflight generated nilstate/icey-cli SKILL.md and artifact packet"
+        status: "pending"
+      - id: "dod2"
+        description: "Local validator passed against generated SKILL.md and artifacts"
+        status: "pending"
+      - id: "dod3"
+        description: "Draft upstream PR exists, contains only SKILL.md, and uses credible Agent Skills references in the PR body"
+        status: "pending"
+      - id: "dod4"
+        description: "Hosted skill-contribution workflow was dispatched from auscaster/automaton main"
+        status: "pending"
+      - id: "dod5"
+        description: "Hosted workflow completed successfully or records a concrete credential blocker"
+        status: "pending"
+      - id: "dod6"
+        description: "Upstream PR CI result is checked and recorded"
+        status: "pending"
+      - id: "dod7"
+        description: "Public evidence relay for skill-contribution is checked"
+        status: "pending"
+    validation:
+      - id: "v1"
+        type: "integration"
+        description: "Prepare target contribution locally as preflight"
+        command: "node scripts/prepare-skill-contribution.mjs --target-repo-dir /home/kam/dev/icey-cli --target-repo nilstate/icey-cli --output-dir .artifacts/skill-contribution/icey-cli --workflow operator-bringup --mode requested"
+        expected: "state contribution_ready"
+      - id: "v2"
+        type: "test"
+        description: "Validate local contribution packet"
+        command: "node scripts/validate-skill-contribution.mjs --target-repo-dir /home/kam/dev/icey-cli --artifacts-dir .artifacts/skill-contribution/icey-cli"
+        expected: "13 checks passed"
+      - id: "v3"
+        type: "integration"
+        description: "Upstream draft PR exists and cites public Agent Skills references"
+        command: "gh pr view 2 --repo nilstate/icey-cli --json number,state,isDraft,headRefName,url,body"
+        expected: "OPEN draft PR on runx/add-skill-md with agentskills.io and anthropics/skills references"
+      - id: "v4"
+        type: "integration"
+        description: "Remote workflow dispatch succeeds"
+        command: "gh workflow run skill-contribution.yml --repo auscaster/automaton -f target_repo=nilstate/icey-cli -f target_ref=main -f workflow=operator-bringup -f mode=requested -f publish=true -f force=false"
+        expected: "workflow_dispatch accepted"
+      - id: "v5"
+        type: "integration"
+        description: "Remote skill-contribution run completes"
+        command: "gh run list --repo auscaster/automaton --workflow skill-contribution.yml --limit 1 --json databaseId,status,conclusion,url"
+        expected: "status completed and conclusion success, or concrete credential blocker recorded"
+      - id: "v6"
+        type: "integration"
+        description: "Target PR CI checked"
+        command: "gh pr view 2 --repo nilstate/icey-cli --json statusCheckRollup"
+        expected: "CI state recorded"
+  constraints:
+    approvals_required: []
+    non_goals:
+      - "No merge"
+      - "No registry binding"
+      - "No upstream files other than SKILL.md"
+  info_sources:
+    - "nilstate/icey-cli README.md"
+    - "nilstate/icey-cli Makefile"
+    - "nilstate/icey-cli CMakeLists.txt"
+    - "nilstate/icey-cli CMakePresets.json"
+    - "nilstate/icey-cli .github/workflows/*.yml"
+    - "nilstate/icey-cli docker/README.md"
+    - "nilstate/icey-cli packaging/README.md"
+  notes: >
+    This dogfood spec intentionally requires the deployed GitHub workflow to run.
+    Local publication is not sufficient proof.
+
+planning_log:
+  - timestamp: "2026-04-16T00:57:01Z"
+    actor: "user"
+    summary: "User required remote dogfood execution from deployed code, not local-only execution."
+  - timestamp: "2026-04-16T00:58:45Z"
+    actor: "agent"
+    summary: "Expanded the dogfood task spec around nilstate/icey-cli, upstream PR #2, and hosted workflow dispatch acceptance."
+
+  - timestamp: "2026-04-16T01:02:55Z"
+    actor: "cli"
+    summary: "Spec approved"
+  - timestamp: "2026-04-16T01:02:55Z"
+    actor: "cli"
+    summary: "Execution started"
+phases:
+  - id: "phase1"
+    name: "Local preflight"
+    objective: "Generate and validate the nilstate/icey-cli contribution locally before remote dispatch."
+    changes:
+      - file: "../icey-cli/SKILL.md"
+        action: "create"
+        lines: "all"
+        content_spec: |
+          Add a portable SKILL.md grounded in nilstate/icey-cli README, CMake,
+          Makefile, workflows, Docker docs, packaging docs, VERSION, and
+          ICEY_VERSION. The file must be useful without runx and mention runx
+          only as optional compatible tooling.
+      - file: ".artifacts/skill-contribution/icey-cli"
+        action: "create"
+        lines: "all"
+        content_spec: |
+          Store skill_opportunity, skill_research_report, skill_candidate,
+          contribution_packet, public_feed_event, and pr-body artifacts.
+    acceptance_criteria:
+      - id: "ac1_1"
+        type: "integration"
+        description: "Prepare script returns contribution_ready"
+        command: "node scripts/prepare-skill-contribution.mjs --target-repo-dir /home/kam/dev/icey-cli --target-repo nilstate/icey-cli --output-dir .artifacts/skill-contribution/icey-cli --workflow operator-bringup --mode requested"
+        expected: "contribution_ready"
+      - id: "ac1_2"
+        type: "test"
+        description: "Validator passes"
+        command: "node scripts/validate-skill-contribution.mjs --target-repo-dir /home/kam/dev/icey-cli --artifacts-dir .artifacts/skill-contribution/icey-cli"
+        expected: "13 checks passed"
+    status: "pending"
+  - id: "phase2"
+    name: "Upstream draft PR"
+    objective: "Publish the portable SKILL.md as a draft upstream PR."
+    changes:
+      - file: "../icey-cli"
+        action: "update"
+        lines: "all"
+        content_spec: |
+          Use scripts/publish-runx-pr.mjs from the target repo to push branch
+          runx/add-skill-md and create or update a draft PR containing SKILL.md.
+    acceptance_criteria:
+      - id: "ac2_1"
+        type: "integration"
+        description: "Draft PR exists and body has public references"
+        command: "gh pr view 2 --repo nilstate/icey-cli --json number,state,isDraft,headRefName,url,body"
+        expected: "OPEN draft PR on runx/add-skill-md with agentskills.io and anthropics/skills references"
+    status: "pending"
+  - id: "phase3"
+    name: "Remote workflow dogfood"
+    objective: "Run the deployed automaton workflow against nilstate/icey-cli."
+    changes:
+      - file: "GitHub Actions"
+        action: "update"
+        lines: "all"
+        content_spec: |
+          Dispatch skill-contribution.yml on auscaster/automaton main with
+          target_repo=nilstate/icey-cli and publish=true. Wait for the run result.
+    acceptance_criteria:
+      - id: "ac3_1"
+        type: "integration"
+        description: "Workflow dispatch accepted"
+        command: "gh workflow run skill-contribution.yml --repo auscaster/automaton -f target_repo=nilstate/icey-cli -f target_ref=main -f workflow=operator-bringup -f mode=requested -f publish=true -f force=false"
+        expected: "exit code 0"
+      - id: "ac3_2"
+        type: "integration"
+        description: "Remote workflow conclusion recorded"
+        command: "gh run list --repo auscaster/automaton --workflow skill-contribution.yml --limit 1 --json databaseId,status,conclusion,url"
+        expected: "completed success or concrete blocker"
+    status: "pending"
+  - id: "phase4"
+    name: "PR CI and evidence check"
+    objective: "Check target PR CI and public evidence relay state."
+    changes:
+      - file: "nilstate/icey-cli#2"
+        action: "update"
+        lines: "all"
+        content_spec: "Inspect PR CI result and record the state."
+      - file: "runx.ai live feed"
+        action: "update"
+        lines: "all"
+        content_spec: "Confirm skill-contribution workflow_run evidence relay state when available."
+    acceptance_criteria:
+      - id: "ac4_1"
+        type: "integration"
+        description: "PR CI state checked"
+        command: "gh pr view 2 --repo nilstate/icey-cli --json statusCheckRollup"
+        expected: "state recorded"
+      - id: "ac4_2"
+        type: "integration"
+        description: "Evidence relay checked"
+        command: "gh run list --repo auscaster/automaton --workflow publish-public-evidence.yml --limit 5 --json databaseId,status,conclusion,displayTitle,url"
+        expected: "skill-contribution relay visible or pending"
+    status: "pending"
+
+rollback:
+  strategy: "manual"
+  commands:
+    phase1: "git -C /home/kam/dev/icey-cli checkout main && git -C /home/kam/dev/icey-cli clean -f SKILL.md"
+    phase2: "gh pr close 2 --repo nilstate/icey-cli --comment 'Closing dogfood draft PR by operator request.'"
+    phase3: "gh run cancel <run-id> --repo auscaster/automaton"
+    phase4: "No code rollback; record failed evidence state."
