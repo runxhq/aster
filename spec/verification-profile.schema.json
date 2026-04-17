@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://runx.ai/spec/verification-profile.schema.json",
+  "$id": "https://runx.ai/spec/governance/verification-profile.schema.json",
   "title": "runx Verification Profile Catalog",
   "description": "Canonical prerelease v1 schema for verification profile catalogs used by governed workers.",
   "type": "object",

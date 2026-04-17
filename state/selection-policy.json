@@ -25,7 +25,13 @@
   "selection_contract": {
     "preferred_default": "no_op",
     "max_priority_queue": 3,
-    "dispatch_count_per_cycle": 1
+    "dispatch_count_per_cycle": 1,
+    "portfolio_budget": {
+      "window_cycles": 10,
+      "thesis_work": 0.7,
+      "context_improvement": 0.2,
+      "runtime_proof_work": 0.1
+    }
   },
   "public_comment_policy": {
     "blocked_author_patterns": [

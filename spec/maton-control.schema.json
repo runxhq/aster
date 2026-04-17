@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://runx.ai/spec/maton-control.schema.json",
+  "$id": "urn:maton:schema:maton-control:v1",
   "title": "runx Maton Control Objects",
   "description": "Canonical prerelease v1 schema for persisted maton operator state.",
   "type": "object",
@@ -38,6 +38,275 @@
   },
   "additionalProperties": false,
   "$defs": {
+    "budgetBucket": {
+      "type": "string",
+      "enum": [
+        "thesis_work",
+        "context_improvement",
+        "runtime_proof_work"
+      ]
+    },
+    "budgetCounts": {
+      "type": "object",
+      "properties": {
+        "thesis_work": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "context_improvement": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "runtime_proof_work": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "thesis_work",
+        "context_improvement",
+        "runtime_proof_work"
+      ],
+      "additionalProperties": false
+    },
+    "budgetSnapshot": {
+      "type": "object",
+      "properties": {
+        "window_size": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "current_counts": {
+          "$ref": "#/$defs/budgetCounts"
+        },
+        "projected_counts": {
+          "$ref": "#/$defs/budgetCounts"
+        },
+        "target_mix": {
+          "type": "object",
+          "properties": {
+            "thesis_work": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "context_improvement": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "runtime_proof_work": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            }
+          },
+          "required": [
+            "thesis_work",
+            "context_improvement",
+            "runtime_proof_work"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "window_size",
+        "current_counts",
+        "projected_counts",
+        "target_mix"
+      ],
+      "additionalProperties": false
+    },
+    "approvalMode": {
+      "type": "string",
+      "enum": [
+        "none",
+        "lane_preapproved",
+        "workflow_gate",
+        "pr_review"
+      ]
+    },
+    "authorityScope": {
+      "type": "string",
+      "enum": [
+        "none",
+        "internal_proof",
+        "public_triage",
+        "draft_pr"
+      ]
+    },
+    "authority": {
+      "type": "object",
+      "properties": {
+        "scope": {
+          "$ref": "#/$defs/authorityScope"
+        },
+        "approval_mode": {
+          "$ref": "#/$defs/approvalMode"
+        },
+        "requires_human_approval": {
+          "type": "boolean"
+        },
+        "policy_basis": {
+          "type": "string",
+          "minLength": 1
+        },
+        "target_repo": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"
+        }
+      },
+      "required": [
+        "scope",
+        "approval_mode",
+        "requires_human_approval",
+        "policy_basis",
+        "target_repo"
+      ],
+      "additionalProperties": false
+    },
+    "dispatch": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "no_dispatch",
+            "ready",
+            "dispatched"
+          ]
+        },
+        "workflow": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "ref": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "target_repo": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"
+        },
+        "subject_locator": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "score": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        },
+        "inputs": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string",
+            "minLength": 1
+          },
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "status",
+        "workflow",
+        "ref",
+        "target_repo",
+        "subject_locator",
+        "score",
+        "inputs"
+      ],
+      "additionalProperties": false
+    },
+    "targetLifecycle": {
+      "type": "object",
+      "properties": {
+        "last_evaluated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "last_selected_at": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "last_dispatched_at": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "last_cycle_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        },
+        "last_cycle_status": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "selected",
+            "no_op",
+            "dispatched",
+            "completed",
+            null
+          ]
+        },
+        "last_transition_reason": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "evaluated_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "selected_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "dispatched_count": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "last_evaluated_at",
+        "last_selected_at",
+        "last_dispatched_at",
+        "last_cycle_id",
+        "last_cycle_status",
+        "last_transition_reason",
+        "evaluated_count",
+        "selected_count",
+        "dispatched_count"
+      ],
+      "additionalProperties": false
+    },
     "target": {
       "type": "object",
       "properties": {
@@ -66,12 +335,16 @@
             "type": "string",
             "minLength": 1
           }
+        },
+        "lifecycle": {
+          "$ref": "#/$defs/targetLifecycle"
         }
       },
       "required": [
         "target_id",
         "repo",
-        "state"
+        "state",
+        "lifecycle"
       ],
       "additionalProperties": false
     },
@@ -134,6 +407,18 @@
           "type": "string",
           "minLength": 1
         },
+        "budget_bucket": {
+          "$ref": "#/$defs/budgetBucket"
+        },
+        "authority_cost": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "evidence_at": {
+          "type": "string",
+          "format": "date-time"
+        },
         "thesis_score": {
           "$ref": "#/$defs/thesisScore"
         }
@@ -143,7 +428,10 @@
         "target_id",
         "subject_locator",
         "lane",
-        "source"
+        "source",
+        "budget_bucket",
+        "authority_cost",
+        "evidence_at"
       ],
       "additionalProperties": false
     },
@@ -176,13 +464,45 @@
         "reason": {
           "type": "string",
           "minLength": 1
+        },
+        "budget_bucket": {
+          "$ref": "#/$defs/budgetBucket"
+        },
+        "authority_cost": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "proof_strength": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "tractability": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "evidence_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "authority": {
+          "$ref": "#/$defs/authority"
         }
       },
       "required": [
         "priority_id",
         "opportunity_id",
         "status",
-        "score"
+        "score",
+        "reason",
+        "budget_bucket",
+        "authority_cost",
+        "proof_strength",
+        "tractability",
+        "evidence_at",
+        "authority"
       ],
       "additionalProperties": false
     },
@@ -232,6 +552,13 @@
           ],
           "minLength": 1
         },
+        "priority_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
         "status": {
           "type": "string",
           "enum": [
@@ -241,6 +568,31 @@
             "completed"
           ]
         },
+        "reason": {
+          "type": "string",
+          "minLength": 1
+        },
+        "selected_bucket": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "thesis_work",
+            "context_improvement",
+            "runtime_proof_work",
+            null
+          ]
+        },
+        "budget_snapshot": {
+          "$ref": "#/$defs/budgetSnapshot"
+        },
+        "authority": {
+          "$ref": "#/$defs/authority"
+        },
+        "dispatch": {
+          "$ref": "#/$defs/dispatch"
+        },
         "generated_at": {
           "type": "string",
           "format": "date-time"
@@ -249,6 +601,12 @@
       "required": [
         "cycle_id",
         "status",
+        "reason",
+        "priority_ids",
+        "selected_bucket",
+        "budget_snapshot",
+        "authority",
+        "dispatch",
         "generated_at"
       ],
       "additionalProperties": false

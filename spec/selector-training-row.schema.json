@@ -1,0 +1,203 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:maton:schema:selector-training-row:v1",
+  "title": "runx Maton Selector Training Row",
+  "description": "Canonical prerelease v1 schema for one labeled maton selector decision row.",
+  "type": "object",
+  "properties": {
+    "kind": {
+      "const": "runx.maton-selector-training-row.v1"
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "cycle_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "repo": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"
+    },
+    "policy_version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "minimum_select_score": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "candidates": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/candidate"
+      }
+    },
+    "priority_queue": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "selection_status": {
+      "type": "string",
+      "enum": [
+        "selected",
+        "no_op"
+      ]
+    },
+    "selection_reason": {
+      "type": "string",
+      "minLength": 1
+    },
+    "selected_priority_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "selected_opportunity_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "selected_bucket": {
+      "anyOf": [
+        {
+          "$ref": "urn:maton:schema:maton-control:v1#/$defs/budgetBucket"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "budget_snapshot": {
+      "$ref": "urn:maton:schema:maton-control:v1#/$defs/budgetSnapshot"
+    },
+    "authority": {
+      "$ref": "urn:maton:schema:maton-control:v1#/$defs/authority"
+    },
+    "dispatch": {
+      "$ref": "urn:maton:schema:maton-control:v1#/$defs/dispatch"
+    }
+  },
+  "required": [
+    "kind",
+    "generated_at",
+    "cycle_id",
+    "repo",
+    "policy_version",
+    "minimum_select_score",
+    "candidates",
+    "priority_queue",
+    "selection_status",
+    "selection_reason",
+    "selected_priority_id",
+    "selected_opportunity_id",
+    "selected_bucket",
+    "budget_snapshot",
+    "authority",
+    "dispatch"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "candidate": {
+      "type": "object",
+      "properties": {
+        "opportunity_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "subject_locator": {
+          "type": "string",
+          "minLength": 1
+        },
+        "target_repo": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"
+        },
+        "lane": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source": {
+          "type": "string",
+          "minLength": 1
+        },
+        "budget_bucket": {
+          "$ref": "urn:maton:schema:maton-control:v1#/$defs/budgetBucket"
+        },
+        "authority_cost": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "evidence_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "thesis_score": {
+          "$ref": "urn:maton:schema:maton-control:v1#/$defs/thesisScore"
+        },
+        "score": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "vetoed": {
+          "type": "boolean"
+        },
+        "veto_reasons": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "within_v1_scope": {
+          "type": "boolean"
+        },
+        "lane_allowed": {
+          "type": "boolean"
+        },
+        "cooldown_active": {
+          "type": "boolean"
+        },
+        "cooldown_reason": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "authority": {
+          "$ref": "urn:maton:schema:maton-control:v1#/$defs/authority"
+        }
+      },
+      "required": [
+        "opportunity_id",
+        "subject_locator",
+        "target_repo",
+        "lane",
+        "source",
+        "budget_bucket",
+        "authority_cost",
+        "evidence_at",
+        "thesis_score",
+        "score",
+        "vetoed",
+        "veto_reasons",
+        "within_v1_scope",
+        "lane_allowed",
+        "cooldown_active",
+        "cooldown_reason",
+        "authority"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

@@ -47,6 +47,18 @@ export async function readRepoDoc(relativePath) {
   return doc;
 }
 
+export async function readJsonFile(relativePath) {
+  const absolutePath = path.resolve(repoRoot, relativePath);
+  if (!existsSync(absolutePath)) {
+    return null;
+  }
+  try {
+    return JSON.parse(await readFile(absolutePath, "utf8"));
+  } catch {
+    return null;
+  }
+}
+
 /**
  * @param {string} relativeDir
  * @param {{ limit?: number }} [options]
@@ -125,6 +137,10 @@ export async function readPublicModel() {
     reflections,
     targets,
   };
+}
+
+export async function readMatonControl() {
+  return readJsonFile("state/maton-control.json");
 }
 
 export function targetHref(doc) {

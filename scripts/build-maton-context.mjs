@@ -45,6 +45,7 @@ export async function buildContextBundle(options = {}) {
     includeContent: true,
     repoRoot,
   });
+  const control = await readOptionalJson(path.join(repoRoot, "state", "maton-control.json"));
   const priorities = await readMarkdownDocument(path.join(repoRoot, "state", "priorities.md"), repoRoot);
   const capabilities = await readMarkdownDocument(path.join(repoRoot, "state", "capabilities.md"), repoRoot);
   const target = await readMarkdownDocument(
@@ -70,6 +71,7 @@ export async function buildContextBundle(options = {}) {
     },
     doctrine,
     state: {
+      control,
       priorities,
       capabilities,
       target,
@@ -129,8 +131,12 @@ export function renderContextPrompt(bundle) {
     ["Target Dossier", bundle.state.target],
   ].filter(([, value]) => Boolean(value));
 
-  if (stateDocs.length > 0) {
+  if (stateDocs.length > 0 || bundle.state.control || bundle.state.target_summary) {
     lines.push("", "## Current State");
+    if (bundle.state.control) {
+      lines.push("", "### Live Control", "");
+      lines.push(...renderControlSummaryLines(bundle.state.control));
+    }
     if (bundle.state.target_summary) {
       lines.push("", "### Target Summary", "");
       lines.push(...renderTargetSummaryLines(bundle.state.target_summary));
@@ -339,6 +345,44 @@ function renderTargetSummaryLines(summary) {
     for (const note of summary.trust_notes.slice(0, 3)) {
       lines.push(`  - ${note}`);
     }
+  }
+  return lines;
+}
+
+function renderControlSummaryLines(control) {
+  const latestCycle = Array.isArray(control?.cycle_records) ? control.cycle_records.at(-1) : null;
+  const priorityCount = Array.isArray(control?.priorities) ? control.priorities.length : 0;
+  const lines = [`- persisted priorities: \`${priorityCount}\``];
+  if (!latestCycle) {
+    lines.push("- latest cycle: none");
+    return lines;
+  }
+  lines.push(`- latest cycle status: \`${firstString(latestCycle.status) || "unknown"}\``);
+  lines.push(`- latest cycle reason: ${firstString(latestCycle.reason) || "unknown"}`);
+  if (latestCycle.selected_bucket) {
+    lines.push(`- latest cycle bucket: \`${latestCycle.selected_bucket}\``);
+  }
+  if (latestCycle.authority?.scope) {
+    lines.push(`- latest authority scope: \`${firstString(latestCycle.authority.scope) || "none"}\``);
+  }
+  if (latestCycle.authority?.approval_mode) {
+    lines.push(`- latest approval mode: \`${firstString(latestCycle.authority.approval_mode) || "none"}\``);
+  }
+  if (latestCycle.dispatch?.status) {
+    lines.push(`- latest dispatch status: \`${firstString(latestCycle.dispatch.status) || "no_dispatch"}\``);
+  }
+  if (latestCycle.dispatch?.target_repo) {
+    lines.push(`- latest dispatch target: \`${firstString(latestCycle.dispatch.target_repo)}\``);
+  }
+  lines.push(`- latest cycle generated_at: \`${firstString(latestCycle.generated_at) || "unknown"}\``);
+
+  const selectedTarget = Array.isArray(control?.targets)
+    ? control.targets.find((entry) => firstString(entry?.repo) === firstString(latestCycle.dispatch?.target_repo))
+    : null;
+  if (selectedTarget?.lifecycle) {
+    lines.push(`- selected target evaluations: \`${Number(selectedTarget.lifecycle.evaluated_count ?? 0)}\``);
+    lines.push(`- selected target selections: \`${Number(selectedTarget.lifecycle.selected_count ?? 0)}\``);
+    lines.push(`- selected target dispatches: \`${Number(selectedTarget.lifecycle.dispatched_count ?? 0)}\``);
   }
   return lines;
 }

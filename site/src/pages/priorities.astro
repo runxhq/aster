@@ -1,11 +1,135 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import RichDoc from "../components/RichDoc.astro";
-import { readRepoDoc } from "../lib/content.js";
+import { readMatonControl, readRepoDoc } from "../lib/content.js";
+
+type PriorityEntry = {
+  priority_id: string;
+  status?: unknown;
+  score?: unknown;
+  budget_bucket?: unknown;
+  reason?: unknown;
+};
+
+type TargetEntry = {
+  repo?: unknown;
+  lifecycle?: {
+    evaluated_count?: unknown;
+    selected_count?: unknown;
+    dispatched_count?: unknown;
+  };
+};
+
+function isPriorityEntry(value: PriorityEntry | undefined): value is PriorityEntry {
+  return Boolean(value);
+}
 
 const priorities = await readRepoDoc("state/priorities.md");
+const control = await readMatonControl();
+const latestCycle = Array.isArray(control?.cycle_records) ? control.cycle_records.at(-1) ?? null : null;
+const persistedPriorities: PriorityEntry[] = Array.isArray(control?.priorities)
+  ? control.priorities as PriorityEntry[]
+  : [];
+const priorityIndex = new Map<string, PriorityEntry>(
+  persistedPriorities.map((entry) => [entry.priority_id, entry]),
+);
+const latestPriorities: PriorityEntry[] = Array.isArray(latestCycle?.priority_ids)
+  ? latestCycle.priority_ids
+      .map((id: unknown) => priorityIndex.get(String(id)))
+      .filter(isPriorityEntry)
+  : [];
+const persistedTargets: TargetEntry[] = Array.isArray(control?.targets)
+  ? control.targets as TargetEntry[]
+  : [];
+const selectedTarget = latestCycle?.dispatch?.target_repo
+  ? persistedTargets.find((entry) => entry.repo === latestCycle.dispatch.target_repo) ?? null
+  : null;
+
+function bucketLabel(value: unknown) {
+  return String(value ?? "none")
+    .replaceAll("_", " ")
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function valueLabel(value: unknown, fallback = "none") {
+  const normalized = String(value ?? "").trim();
+  return normalized.length > 0 ? normalized : fallback;
+}
 ---
 
 <BaseLayout title="Priorities" description="Current operator priorities." current="priorities">
+  <section class="grid two">
+    <section class="panel">
+      <div class="panel-inner">
+        <p class="eyebrow">Live Control</p>
+        <h2>Latest Cycle</h2>
+        {latestCycle ? (
+          <div class="prose">
+            <p><strong>Status:</strong> {latestCycle.status}</p>
+            <p><strong>Reason:</strong> {latestCycle.reason}</p>
+            <p><strong>Generated:</strong> {latestCycle.generated_at}</p>
+            <p><strong>Budget bucket:</strong> {bucketLabel(latestCycle.selected_bucket)}</p>
+            <p><strong>Priority count:</strong> {latestCycle.priority_ids.length}</p>
+            <p><strong>Authority scope:</strong> {valueLabel(latestCycle.authority?.scope)}</p>
+            <p><strong>Approval mode:</strong> {valueLabel(latestCycle.authority?.approval_mode)}</p>
+            <p><strong>Dispatch status:</strong> {valueLabel(latestCycle.dispatch?.status, "no dispatch")}</p>
+            <p><strong>Dispatch target:</strong> {valueLabel(latestCycle.dispatch?.target_repo)}</p>
+            {selectedTarget?.lifecycle ? (
+              <>
+                <p><strong>Target evaluations:</strong> {selectedTarget.lifecycle.evaluated_count}</p>
+                <p><strong>Target selections:</strong> {selectedTarget.lifecycle.selected_count}</p>
+                <p><strong>Target dispatches:</strong> {selectedTarget.lifecycle.dispatched_count}</p>
+              </>
+            ) : null}
+          </div>
+        ) : (
+          <div class="prose">
+            <p>No persisted cycle projection exists yet. The selector has no durable queue to show.</p>
+          </div>
+        )}
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-inner">
+        <p class="eyebrow">Priority Queue</p>
+        <h2>Controlling Priorities</h2>
+        {latestPriorities.length > 0 ? (
+          <ul class="priority-list">
+            {latestPriorities.map((entry) => (
+              <li>
+                <strong>{entry.status}</strong> · score {entry.score} · {bucketLabel(entry.budget_bucket)}
+                <br />
+                <span>{entry.reason}</span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <div class="prose">
+            <p>The latest cycle did not persist any queue entries.</p>
+          </div>
+        )}
+      </div>
+    </section>
+  </section>
+
   <RichDoc doc={priorities} />
 </BaseLayout>
+
+<style>
+  .priority-list {
+    margin: 0;
+    padding-left: 1.2rem;
+    display: grid;
+    gap: var(--space-3);
+  }
+
+  .priority-list li {
+    color: var(--color-ink);
+    line-height: var(--line-height-relaxed);
+  }
+
+  .priority-list span {
+    color: var(--color-ink-dim);
+  }
+</style>

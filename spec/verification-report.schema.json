@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://runx.ai/spec/verification-report.schema.json",
+  "$id": "https://runx.ai/spec/governance/verification-report.schema.json",
   "title": "runx Verification Report",
   "description": "Canonical prerelease v1 schema for structured verification reports emitted before publication.",
   "type": "object",

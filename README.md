@@ -133,6 +133,8 @@ the draft-first observability lanes continue to run.
 - [docs/evolution.md](./docs/evolution.md): the intended evolutionary path
 - [docs/operating-model.md](./docs/operating-model.md): the governance model
   for gradual self-improvement
+- [docs/llm-training-spec.md](./docs/llm-training-spec.md): the selector and
+  labeling contract for `maton` training rows
 - [docs/run-catalog.md](./docs/run-catalog.md): each hosted lane, trigger, and
   emitted artifact
 - [docs/backlog.md](./docs/backlog.md): the next bounded improvements worth
@@ -142,6 +144,9 @@ the draft-first observability lanes continue to run.
 - [scripts/build-maton-context.mjs](./scripts/build-maton-context.mjs):
   assembles doctrine, state, history, reflections, and artifact signals into a
   bounded context bundle before the bridge calls the model
+- [scripts/maton-cycle.mjs](./scripts/maton-cycle.mjs): the learned selector,
+  durable control-state writer, and selector-training-row emitter for
+  prerelease `v1`
 - [scripts/maton-core.mjs](./scripts/maton-core.mjs): the unified lane
   runtime that assembles context, invokes the bridge, and writes promotion
   drafts

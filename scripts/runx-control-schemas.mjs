@@ -8,28 +8,32 @@ const defaultRepoRoot = path.resolve(scriptDir, "..");
 
 export const RUNX_CONTROL_SCHEMA_ARTIFACTS = {
   verification_profile_catalog: {
-    ref: "https://runx.ai/spec/verification-profile.schema.json",
+    ref: "https://runx.ai/spec/governance/verification-profile.schema.json",
     file: "spec/verification-profile.schema.json",
   },
   workspace_change_plan_request: {
-    ref: "https://runx.ai/spec/workspace-change-plan-request.schema.json",
+    ref: "urn:maton:schema:workspace-change-plan-request:v1",
     file: "spec/workspace-change-plan-request.schema.json",
   },
   issue_to_pr_request: {
-    ref: "https://runx.ai/spec/issue-to-pr-request.schema.json",
+    ref: "urn:maton:schema:issue-to-pr-request:v1",
     file: "spec/issue-to-pr-request.schema.json",
   },
   worker_request: {
-    ref: "https://runx.ai/spec/worker-request.schema.json",
+    ref: "urn:maton:schema:worker-request:v1",
     file: "spec/worker-request.schema.json",
   },
   verification_report: {
-    ref: "https://runx.ai/spec/verification-report.schema.json",
+    ref: "https://runx.ai/spec/governance/verification-report.schema.json",
     file: "spec/verification-report.schema.json",
   },
   maton_control: {
-    ref: "https://runx.ai/spec/maton-control.schema.json",
+    ref: "urn:maton:schema:maton-control:v1",
     file: "spec/maton-control.schema.json",
+  },
+  selector_training_row: {
+    ref: "urn:maton:schema:selector-training-row:v1",
+    file: "spec/selector-training-row.schema.json",
   },
 };
 
@@ -236,16 +240,20 @@ function resolveSchemaRef(ref, state) {
     };
   }
 
-  const artifactEntry = Object.values(RUNX_CONTROL_SCHEMA_ARTIFACTS).find((artifact) => artifact.ref === ref)
-    ?? Object.values(RUNX_CONTROL_SCHEMA_ARTIFACTS).find((artifact) => artifact.file.endsWith(path.basename(ref)));
+  const [baseRef, pointer] = ref.split("#", 2);
+  const artifactEntry = Object.values(RUNX_CONTROL_SCHEMA_ARTIFACTS).find((artifact) => artifact.ref === baseRef)
+    ?? Object.values(RUNX_CONTROL_SCHEMA_ARTIFACTS).find((artifact) => artifact.file.endsWith(path.basename(baseRef)));
   if (!artifactEntry) {
     throw new Error(`unsupported schema reference '${ref}'.`);
   }
 
-  const schema = JSON.parse(readFileSync(path.join(path.resolve(state.repoRoot), artifactEntry.file), "utf8"));
+  const rootSchema = JSON.parse(readFileSync(path.join(path.resolve(state.repoRoot), artifactEntry.file), "utf8"));
+  const pointerRef = pointer
+    ? `#${pointer.startsWith("/") ? pointer : `/${pointer}`}`
+    : null;
   return {
-    schema,
-    rootSchema: schema,
+    schema: pointerRef ? resolveJsonPointer(rootSchema, pointerRef) : rootSchema,
+    rootSchema,
   };
 }
 

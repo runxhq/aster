@@ -11,6 +11,7 @@ import { assertMatchesRunxControlSchema } from "./runx-control-schemas.mjs";
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const defaultRepoRoot = path.resolve(scriptDir, "..");
+const defaultControlStateRelativePath = path.join("state", "maton-control.json");
 
 async function main(argv = process.argv.slice(2)) {
   const options = parseArgs(argv);
@@ -21,6 +22,12 @@ async function main(argv = process.argv.slice(2)) {
   if (options.summaryOutput) {
     await writeFile(path.resolve(options.summaryOutput), `${renderCycleSummary(result)}\n`);
   }
+  if (options.trainingOutput) {
+    await writeFile(
+      path.resolve(options.trainingOutput),
+      `${JSON.stringify(buildSelectorTrainingRow(result), null, 2)}\n`,
+    );
+  }
   process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
 }
 
@@ -28,7 +35,9 @@ export async function runMatonCycle(options = {}) {
   const repoRoot = path.resolve(options.repoRoot ?? defaultRepoRoot);
   const repo = options.repo ?? "nilstate/maton";
   const now = options.now ? new Date(options.now) : new Date();
+  const controlStatePath = path.join(repoRoot, defaultControlStateRelativePath);
   const policy = await loadSelectionPolicy(path.join(repoRoot, "state", "selection-policy.json"));
+  const persistedControl = await loadPersistedMatonControl(controlStatePath, repoRoot);
   const dossiers = await loadTargetDossiers(path.join(repoRoot, "state", "targets"));
   const targetRepos = unique([
     repo,
@@ -70,28 +79,52 @@ export async function runMatonCycle(options = {}) {
   const selection = selectOpportunity({
     scored,
     policy,
+    persistedControl,
   });
+  const generatedAt = now.toISOString();
+  const cycleId = cycleIdForGeneratedAt(generatedAt);
   const dispatchPlan = buildDispatchPlan({
     repo,
     selection,
     dispatchRef: options.dispatchRef ?? "main",
   });
-  const dispatchResult = options.dispatch
-    ? dispatchLane(dispatchPlan)
-    : dispatchPlan;
-  const generatedAt = now.toISOString();
-  const matonControl = buildMatonControlState({
+  const preDispatchControl = buildMatonControlState({
     repo,
     dossiers,
     memory,
     scored,
     selection,
-    dispatch: dispatchResult,
+    dispatch: dispatchPlan,
     generatedAt,
+    cycleId,
+    previousControl: persistedControl,
   });
+  if (options.persistState !== false) {
+    await writeMatonControlState(controlStatePath, preDispatchControl);
+  }
+  const dispatchResult = options.dispatch
+    ? dispatchLane(dispatchPlan)
+    : dispatchPlan;
+  const matonControl = dispatchResult.status === dispatchPlan.status
+    ? preDispatchControl
+    : buildMatonControlState({
+        repo,
+        dossiers,
+        memory,
+        scored,
+        selection,
+        dispatch: dispatchResult,
+        generatedAt,
+        cycleId,
+        previousControl: persistedControl,
+      });
+  if (options.persistState !== false && dispatchResult.status !== dispatchPlan.status) {
+    await writeMatonControlState(controlStatePath, matonControl);
+  }
 
   return {
     generated_at: generatedAt,
+    cycle_id: cycleId,
     repo,
     policy,
     opportunity_count: scored.length,
@@ -132,6 +165,12 @@ export async function loadSelectionPolicy(filePath) {
       preferred_default: String(raw.selection_contract?.preferred_default ?? "no_op"),
       max_priority_queue: Number(raw.selection_contract?.max_priority_queue ?? 3),
       dispatch_count_per_cycle: Number(raw.selection_contract?.dispatch_count_per_cycle ?? 1),
+      portfolio_budget: {
+        window_cycles: Number(raw.selection_contract?.portfolio_budget?.window_cycles ?? 10),
+        thesis_work: Number(raw.selection_contract?.portfolio_budget?.thesis_work ?? 0.7),
+        context_improvement: Number(raw.selection_contract?.portfolio_budget?.context_improvement ?? 0.2),
+        runtime_proof_work: Number(raw.selection_contract?.portfolio_budget?.runtime_proof_work ?? 0.1),
+      },
     },
     public_comment_policy: raw.public_comment_policy ?? {},
   };
@@ -221,7 +260,7 @@ export function discoverOpportunities({ repo, discovery, dossiers, memory, now }
 }
 
 export function scoreOpportunities({
-  repo,
+  repo = "nilstate/maton",
   opportunities,
   dossiers,
   memory,
@@ -239,11 +278,11 @@ export function scoreOpportunities({
       now,
       openOperatorMemoryBranches,
     }))
-    .sort((left, right) => right.score - left.score);
+    .sort(compareSelectionCandidates);
 }
 
 export function scoreOpportunity({
-  repo,
+  repo = "nilstate/maton",
   opportunity,
   dossiers,
   memory,
@@ -274,6 +313,9 @@ export function scoreOpportunity({
     ),
     maintenance_efficiency: computeMaintenanceEfficiency(opportunity),
   };
+  const budgetBucket = budgetBucketForOpportunity(opportunity);
+  const authorityCost = computeAuthorityCost(opportunity);
+  const evidenceAt = normalizeEvidenceAt(opportunity.updated_at, now.toISOString());
 
   const cooldown = computeCooldown({
     lane: opportunity.lane,
@@ -329,6 +371,9 @@ export function scoreOpportunity({
 
   return {
     ...opportunity,
+    budget_bucket: budgetBucket,
+    authority_cost: authorityCost,
+    evidence_at: evidenceAt,
     lane_allowed,
     within_v1_scope,
     metrics,
@@ -339,33 +384,64 @@ export function scoreOpportunity({
   };
 }
 
-export function selectOpportunity({ scored, policy }) {
-  const priorities = scored.slice(0, policy.selection_contract?.max_priority_queue ?? 3);
-  const eligible = scored.filter((entry) => !entry.vetoed);
-  if (eligible.length === 0) {
+export function selectOpportunity({ scored, policy, persistedControl = emptyMatonControlState() }) {
+  const thresholdEligible = scored.filter((entry) => {
+    return !entry.vetoed && entry.score >= policy.thresholds.minimum_select_score;
+  });
+  const budgetState = buildPortfolioBudgetState(policy, persistedControl);
+
+  if (thresholdEligible.length === 0) {
     return {
       status: "no_op",
-      reason: "all_candidates_vetoed",
-      priorities,
+      reason: scored.some((entry) => !entry.vetoed)
+        ? "top_candidate_below_selection_threshold"
+        : "all_candidates_vetoed",
+      priorities: buildPriorityQueue({
+        scored,
+        maxPriorityQueue: policy.selection_contract?.max_priority_queue ?? 3,
+      }),
       selected: null,
+      budget_state: projectBudgetState({
+        budgetState,
+        selectedBucket: null,
+      }),
     };
   }
 
-  const [top] = eligible;
-  if (top.score < policy.thresholds.minimum_select_score) {
+  const budgetEligible = filterBudgetEligibleCandidates(thresholdEligible, budgetState);
+  if (budgetEligible.length === 0) {
     return {
       status: "no_op",
-      reason: "top_candidate_below_selection_threshold",
-      priorities,
+      reason: policy.selection_contract?.preferred_default ?? "no_op",
+      priorities: buildPriorityQueue({
+        scored,
+        maxPriorityQueue: policy.selection_contract?.max_priority_queue ?? 3,
+      }),
       selected: null,
+      budget_state: projectBudgetState({
+        budgetState,
+        selectedBucket: null,
+      }),
     };
   }
+  const [top] = budgetEligible;
+  const priorities = buildPriorityQueue({
+    scored,
+    selected: top,
+    maxPriorityQueue: policy.selection_contract?.max_priority_queue ?? 3,
+  });
 
   return {
     status: "selected",
-    reason: "highest_non_vetoed_score",
+    reason: budgetEligible.length === thresholdEligible.length
+      ? "highest_non_vetoed_score"
+      : "selected_after_portfolio_budget",
     priorities,
     selected: top,
+    budget_state: projectBudgetState({
+      budgetState,
+      selectedBucket: top.budget_bucket,
+    }),
   };
 }
 
@@ -411,6 +487,7 @@ export function buildDispatchPlan({ repo, selection, dispatchRef }) {
     workflow,
     repo,
     ref: dispatchRef,
+    target_repo: candidate.target_repo ?? null,
     inputs,
     subject_locator: candidate.subject_locator,
     score: candidate.score,
@@ -480,22 +557,72 @@ export function buildMatonControlState({
   selection,
   dispatch,
   generatedAt,
+  cycleId,
+  previousControl = emptyMatonControlState(),
 }) {
   const targetRepos = unique([
     repo,
-    ...Object.values(dossiers ?? {}).map((entry) => firstString(entry?.subject_locator)).filter(Boolean),
+    ...Object.values(dossiers ?? {})
+      .map((entry) => firstString(entry?.subject_locator))
+      .filter(Boolean)
+      .filter(isPrereleaseEligibleTargetRepo),
     ...scored.map((entry) => firstString(entry?.target_repo)).filter(Boolean),
-    ...normalizeCollection(memory?.reflections).map((entry) => repoFromSubjectLocator(entry?.subject_locator) || firstString(entry?.target_repo)).filter(Boolean),
+    ...normalizeCollection(memory?.reflections)
+      .map((entry) => repoFromSubjectLocator(entry?.subject_locator) || firstString(entry?.target_repo))
+      .filter(Boolean)
+      .filter(isPrereleaseEligibleTargetRepo),
   ]);
   const targetIdByRepo = Object.fromEntries(
     targetRepos.map((targetRepo) => [targetRepo, slugifyRepoLike(targetRepo)]),
   );
-  const selectedPriorityId = selection?.selected ? priorityIdForOpportunity(selection.selected) : null;
+  const previousTargetsByRepo = Object.fromEntries(
+    normalizeCollection(previousControl?.targets).map((entry) => [entry?.repo, entry]),
+  );
+  const currentPriorities = buildPersistentPriorityRecords({
+    cycleId,
+    entries: selection?.priorities ?? [],
+    selection,
+    dispatch,
+  });
+  const priorityIdByOpportunityId = Object.fromEntries(
+    currentPriorities.map((entry) => [entry.opportunity_id, entry.priority_id]),
+  );
+  const selectedPriorityId = selection?.selected
+    ? priorityIdByOpportunityId[selection.selected.id] ?? null
+    : null;
   const cycleStatus = dispatch?.status === "dispatched"
     ? "dispatched"
     : selection?.status === "selected"
       ? "selected"
       : "no_op";
+  const cycleReason = firstString(selection?.reason)
+    || firstString(dispatch?.reason)
+    || (selection?.selected ? "selected_for_dispatch" : "no_op");
+  const cycleAuthority = buildAuthorityForSelection(selection);
+  const cycleDispatch = buildDispatchRecord({
+    dispatch,
+    selection,
+    repo,
+  });
+  const currentCycleRecord = {
+    cycle_id: cycleId,
+    selected_priority_id: selectedPriorityId,
+    priority_ids: currentPriorities.map((entry) => entry.priority_id),
+    status: cycleStatus,
+    reason: cycleReason,
+    selected_bucket: selection?.selected?.budget_bucket ?? null,
+    budget_snapshot: selection?.budget_state ?? projectBudgetState({
+      budgetState: buildPortfolioBudgetState({
+        selection_contract: {
+          portfolio_budget: defaultPortfolioBudget(),
+        },
+      }, previousControl),
+      selectedBucket: selection?.selected?.budget_bucket ?? null,
+    }),
+    authority: cycleAuthority,
+    dispatch: cycleDispatch,
+    generated_at: generatedAt,
+  };
 
   const controlState = {
     targets: targetRepos.map((targetRepo) => ({
@@ -508,6 +635,16 @@ export function buildMatonControlState({
         selection,
       }),
       default_lanes: dossiers?.[slugifyRepoLike(targetRepo)]?.default_lanes ?? [],
+      lifecycle: buildTargetLifecycle({
+        previousTarget: previousTargetsByRepo[targetRepo] ?? null,
+        targetRepo,
+        generatedAt,
+        cycleId,
+        cycleStatus,
+        cycleReason,
+        selection,
+        dispatch,
+      }),
     })),
     opportunities: scored.map((entry) => ({
       opportunity_id: entry.id,
@@ -515,28 +652,76 @@ export function buildMatonControlState({
       subject_locator: entry.subject_locator,
       lane: entry.lane,
       source: entry.source,
+      budget_bucket: entry.budget_bucket,
+      authority_cost: entry.authority_cost,
+      evidence_at: entry.evidence_at,
       thesis_score: entry.metrics,
     })),
-    priorities: scored.map((entry) => ({
-      priority_id: priorityIdForOpportunity(entry),
-      opportunity_id: entry.id,
-      status: resolvePriorityStatus(entry, selection, dispatch),
-      score: entry.score,
-      reason: resolvePriorityReason(entry, selection),
-    })),
+    priorities: mergeRecentRecords(previousControl.priorities, currentPriorities, {
+      idKey: "priority_id",
+      maxItems: 48,
+    }),
     reflection_entries: buildReflectionEntries(memory?.reflections, targetIdByRepo, generatedAt),
-    cycle_records: [
-      {
-        cycle_id: cycleIdForGeneratedAt(generatedAt),
-        selected_priority_id: selectedPriorityId,
-        status: cycleStatus,
-        generated_at: generatedAt,
-      },
-    ],
+    cycle_records: mergeRecentRecords(previousControl.cycle_records, [currentCycleRecord], {
+      idKey: "cycle_id",
+      maxItems: 48,
+    }),
   };
 
   return assertMatchesRunxControlSchema("maton_control", controlState, {
     label: "maton_control",
+  });
+}
+
+export function buildSelectorTrainingRow(result) {
+  const latestCycleRecord = normalizeCollection(result?.maton_control?.cycle_records).at(-1) ?? null;
+  const priorities = normalizeCollection(result?.maton_control?.priorities);
+  const selectedPriority = priorities.find((entry) => entry?.priority_id === latestCycleRecord?.selected_priority_id) ?? null;
+  const row = {
+    kind: "runx.maton-selector-training-row.v1",
+    generated_at: firstString(result?.generated_at) ?? new Date().toISOString(),
+    cycle_id: firstString(result?.cycle_id)
+      ?? firstString(latestCycleRecord?.cycle_id)
+      ?? cycleIdForGeneratedAt(firstString(result?.generated_at) ?? new Date().toISOString()),
+    repo: firstString(result?.repo) ?? "nilstate/maton",
+    policy_version: Number(result?.policy?.version ?? 1),
+    minimum_select_score: Number(result?.policy?.thresholds?.minimum_select_score ?? 0),
+    candidates: normalizeCollection(result?.opportunities).map((entry) => ({
+      opportunity_id: entry.id,
+      subject_locator: entry.subject_locator,
+      target_repo: entry.target_repo,
+      lane: entry.lane,
+      source: entry.source,
+      budget_bucket: entry.budget_bucket,
+      authority_cost: entry.authority_cost,
+      evidence_at: entry.evidence_at,
+      thesis_score: entry.metrics ?? {},
+      score: entry.score,
+      vetoed: Boolean(entry.vetoed),
+      veto_reasons: normalizeCollection(entry.veto_reasons).map(String),
+      within_v1_scope: Boolean(entry.within_v1_scope),
+      lane_allowed: Boolean(entry.lane_allowed),
+      cooldown_active: Boolean(entry.cooldown?.active),
+      cooldown_reason: entry.cooldown?.reason ?? null,
+      authority: buildAuthorityForOpportunity(entry),
+    })),
+    priority_queue: normalizeCollection(latestCycleRecord?.priority_ids).map(String),
+    selection_status: firstString(result?.selection?.status) ?? "no_op",
+    selection_reason: firstString(result?.selection?.reason) ?? "no_op",
+    selected_priority_id: latestCycleRecord?.selected_priority_id ?? null,
+    selected_opportunity_id: result?.selection?.selected?.id ?? selectedPriority?.opportunity_id ?? null,
+    selected_bucket: latestCycleRecord?.selected_bucket ?? result?.selection?.selected?.budget_bucket ?? null,
+    budget_snapshot: latestCycleRecord?.budget_snapshot ?? result?.selection?.budget_state,
+    authority: latestCycleRecord?.authority ?? buildAuthorityForSelection(result?.selection),
+    dispatch: latestCycleRecord?.dispatch ?? buildDispatchRecord({
+      dispatch: result?.dispatch,
+      selection: result?.selection,
+      repo: result?.repo,
+    }),
+  };
+
+  return assertMatchesRunxControlSchema("selector_training_row", row, {
+    label: "selector_training_row",
   });
 }
 
@@ -833,6 +1018,14 @@ function parseArgs(argv) {
       options.summaryOutput = requireValue(argv, ++index, token);
       continue;
     }
+    if (token === "--training-output") {
+      options.trainingOutput = requireValue(argv, ++index, token);
+      continue;
+    }
+    if (token === "--no-persist-state") {
+      options.persistState = false;
+      continue;
+    }
     throw new Error(`Unknown argument: ${token}`);
   }
   return options;
@@ -853,6 +1046,35 @@ function run(command, args) {
   });
 }
 
+function projectSelectorTrainingDispatch(dispatch) {
+  if (!dispatch) {
+    return { status: "no_dispatch" };
+  }
+
+  const projected = {
+    status: dispatch.status,
+  };
+  if (dispatch.reason) {
+    projected.reason = dispatch.reason;
+  }
+  if (dispatch.lane) {
+    projected.lane = dispatch.lane;
+  }
+  if (dispatch.workflow) {
+    projected.workflow = dispatch.workflow;
+  }
+  if (dispatch.ref) {
+    projected.ref = dispatch.ref;
+  }
+  if (dispatch.subject_locator) {
+    projected.subject_locator = dispatch.subject_locator;
+  }
+  if (typeof dispatch.score === "number") {
+    projected.score = dispatch.score;
+  }
+  return projected;
+}
+
 function normalizeCollection(value) {
   return Array.isArray(value) ? value : [];
 }
@@ -868,8 +1090,219 @@ function roundScore(value) {
   return Math.round(value * 1000) / 1000;
 }
 
-function priorityIdForOpportunity(opportunity) {
-  return `priority-${opportunity.id}`;
+function emptyMatonControlState() {
+  return {
+    targets: [],
+    opportunities: [],
+    priorities: [],
+    reflection_entries: [],
+    cycle_records: [],
+  };
+}
+
+async function loadPersistedMatonControl(filePath, repoRoot) {
+  if (!existsSync(filePath)) {
+    return emptyMatonControlState();
+  }
+  const value = JSON.parse(await readFile(filePath, "utf8"));
+  return assertMatchesRunxControlSchema("maton_control", value, {
+    label: "maton_control",
+  });
+}
+
+async function writeMatonControlState(filePath, controlState) {
+  await writeFile(filePath, `${JSON.stringify(controlState, null, 2)}\n`);
+}
+
+function defaultPortfolioBudget() {
+  return {
+    window_cycles: 10,
+    thesis_work: 0.7,
+    context_improvement: 0.2,
+    runtime_proof_work: 0.1,
+  };
+}
+
+function budgetBucketForOpportunity(opportunity) {
+  if (opportunity.lane === "proving-ground") {
+    return "runtime_proof_work";
+  }
+  if (opportunity.lane === "skill-lab") {
+    return "context_improvement";
+  }
+  return "thesis_work";
+}
+
+function computeAuthorityCost(opportunity) {
+  if (opportunity.lane === "proving-ground") {
+    return 0.08;
+  }
+  if (opportunity.lane === "skill-lab") {
+    return 0.28;
+  }
+  if (opportunity.source === "github_pull_request") {
+    return 0.56;
+  }
+  if (opportunity.source === "github_issue") {
+    return 0.48;
+  }
+  return 0.32;
+}
+
+function normalizeEvidenceAt(value, fallback) {
+  const candidate = firstString(value);
+  if (!candidate) {
+    return fallback;
+  }
+  return Number.isNaN(Date.parse(candidate)) ? fallback : new Date(candidate).toISOString();
+}
+
+function compareSelectionCandidates(left, right) {
+  if (right.score !== left.score) {
+    return right.score - left.score;
+  }
+  if ((right.metrics?.proof_strength ?? 0) !== (left.metrics?.proof_strength ?? 0)) {
+    return (right.metrics?.proof_strength ?? 0) - (left.metrics?.proof_strength ?? 0);
+  }
+  if ((left.authority_cost ?? 1) !== (right.authority_cost ?? 1)) {
+    return (left.authority_cost ?? 1) - (right.authority_cost ?? 1);
+  }
+  if ((right.metrics?.tractability ?? 0) !== (left.metrics?.tractability ?? 0)) {
+    return (right.metrics?.tractability ?? 0) - (left.metrics?.tractability ?? 0);
+  }
+  return Date.parse(right.evidence_at ?? 0) - Date.parse(left.evidence_at ?? 0);
+}
+
+function buildPriorityQueue({ scored, selected = null, maxPriorityQueue = 3 }) {
+  const queue = [];
+  if (selected) {
+    queue.push(selected);
+  }
+  for (const entry of scored) {
+    if (selected?.id === entry.id) {
+      continue;
+    }
+    queue.push(entry);
+    if (queue.length >= maxPriorityQueue) {
+      break;
+    }
+  }
+  return queue.slice(0, maxPriorityQueue);
+}
+
+function buildPortfolioBudgetState(policy, persistedControl) {
+  const configured = policy.selection_contract?.portfolio_budget ?? defaultPortfolioBudget();
+  const normalized = {
+    window_cycles: Math.max(1, Number(configured.window_cycles ?? 10)),
+    thesis_work: Number(configured.thesis_work ?? 0.7),
+    context_improvement: Number(configured.context_improvement ?? 0.2),
+    runtime_proof_work: Number(configured.runtime_proof_work ?? 0.1),
+  };
+  const historyWindow = normalized.window_cycles > 1 ? normalized.window_cycles - 1 : 0;
+  const bucketHistory = normalizeCollection(persistedControl?.cycle_records)
+    .map((entry) => entry?.selected_bucket)
+    .filter(Boolean);
+  const history = historyWindow > 0 ? bucketHistory.slice(-historyWindow) : [];
+
+  return {
+    window_size: normalized.window_cycles,
+    target_mix: {
+      thesis_work: normalized.thesis_work,
+      context_improvement: normalized.context_improvement,
+      runtime_proof_work: normalized.runtime_proof_work,
+    },
+    current_counts: countBudgetBuckets(history),
+  };
+}
+
+function filterBudgetEligibleCandidates(candidates, budgetState) {
+  const projected = candidates.map((entry) => ({
+    entry,
+    error: projectedBudgetError(budgetState, entry.budget_bucket),
+  }));
+  const minError = Math.min(...projected.map((entry) => entry.error));
+  return projected
+    .filter((entry) => entry.error === minError)
+    .map((entry) => entry.entry)
+    .sort(compareSelectionCandidates);
+}
+
+function projectedBudgetError(budgetState, selectedBucket) {
+  const projectedCounts = projectBudgetCounts(budgetState.current_counts, selectedBucket);
+  const total = Object.values(projectedCounts).reduce((sum, value) => sum + value, 0);
+  if (total === 0) {
+    return 0;
+  }
+  return roundScore(
+    Object.entries(projectedCounts).reduce((sum, [bucket, count]) => {
+      const targetShare = budgetState.target_mix[bucket] ?? 0;
+      return sum + Math.abs((count / total) - targetShare);
+    }, 0),
+  );
+}
+
+function projectBudgetState({ budgetState, selectedBucket }) {
+  return {
+    window_size: budgetState.window_size,
+    current_counts: budgetState.current_counts,
+    projected_counts: projectBudgetCounts(budgetState.current_counts, selectedBucket),
+    target_mix: budgetState.target_mix,
+  };
+}
+
+function projectBudgetCounts(currentCounts, selectedBucket) {
+  const projected = {
+    thesis_work: Number(currentCounts?.thesis_work ?? 0),
+    context_improvement: Number(currentCounts?.context_improvement ?? 0),
+    runtime_proof_work: Number(currentCounts?.runtime_proof_work ?? 0),
+  };
+  if (selectedBucket && Object.hasOwn(projected, selectedBucket)) {
+    projected[selectedBucket] += 1;
+  }
+  return projected;
+}
+
+function countBudgetBuckets(values) {
+  const counts = {
+    thesis_work: 0,
+    context_improvement: 0,
+    runtime_proof_work: 0,
+  };
+  for (const value of values) {
+    if (Object.hasOwn(counts, value)) {
+      counts[value] += 1;
+    }
+  }
+  return counts;
+}
+
+function buildPersistentPriorityRecords({ cycleId, entries, selection, dispatch }) {
+  return entries.map((entry) => ({
+    priority_id: priorityIdForOpportunity(cycleId, entry),
+    opportunity_id: entry.id,
+    status: resolvePriorityStatus(entry, selection, dispatch),
+    score: entry.score,
+    reason: resolvePriorityReason(entry, selection),
+    budget_bucket: entry.budget_bucket,
+    authority_cost: entry.authority_cost,
+    proof_strength: entry.metrics?.proof_strength ?? 0,
+    tractability: entry.metrics?.tractability ?? 0,
+    evidence_at: entry.evidence_at,
+    authority: buildAuthorityForOpportunity(entry),
+  }));
+}
+
+function mergeRecentRecords(previousRecords, currentRecords, { idKey, maxItems = 48 }) {
+  const currentIds = new Set(currentRecords.map((entry) => entry?.[idKey]).filter(Boolean));
+  const merged = [
+    ...normalizeCollection(previousRecords).filter((entry) => !currentIds.has(entry?.[idKey])),
+    ...currentRecords,
+  ];
+  return merged.slice(-maxItems);
+}
+
+function priorityIdForOpportunity(cycleId, opportunity) {
+  return `priority-${cycleId}-${slugifyRepoLike(opportunity.id)}`;
 }
 
 function cycleIdForGeneratedAt(generatedAt) {
@@ -909,6 +1342,119 @@ function resolvePriorityReason(entry, selection) {
     return entry.veto_reasons?.join(", ") || "vetoed";
   }
   return "eligible_non_selected";
+}
+
+function buildAuthorityForSelection(selection) {
+  if (selection?.selected) {
+    return buildAuthorityForOpportunity(selection.selected);
+  }
+  return {
+    scope: "none",
+    approval_mode: "none",
+    requires_human_approval: false,
+    policy_basis: firstString(selection?.reason) || "no_selection",
+    target_repo: null,
+  };
+}
+
+function buildAuthorityForOpportunity(opportunity) {
+  const lane = firstString(opportunity?.lane) || "unknown";
+  const targetRepo = firstString(opportunity?.target_repo) || null;
+  if (lane === "proving-ground") {
+    return {
+      scope: "internal_proof",
+      approval_mode: "lane_preapproved",
+      requires_human_approval: false,
+      policy_basis: "prerelease_proving_ground_lane",
+      target_repo: targetRepo,
+    };
+  }
+  if (lane === "issue-triage") {
+    return {
+      scope: "public_triage",
+      approval_mode: "workflow_gate",
+      requires_human_approval: true,
+      policy_basis: "issue_triage_public_routing_with_workflow_gates",
+      target_repo: targetRepo,
+    };
+  }
+  if (lane === "skill-lab") {
+    return {
+      scope: "draft_pr",
+      approval_mode: "pr_review",
+      requires_human_approval: true,
+      policy_basis: "skill_lab_draft_pr_review",
+      target_repo: targetRepo,
+    };
+  }
+  return {
+    scope: "draft_pr",
+    approval_mode: "workflow_gate",
+    requires_human_approval: true,
+    policy_basis: `bounded_${lane}_workflow_gate`,
+    target_repo: targetRepo,
+  };
+}
+
+function buildDispatchRecord({ dispatch, selection, repo }) {
+  return {
+    status: firstString(dispatch?.status) || "no_dispatch",
+    workflow: firstString(dispatch?.workflow) || null,
+    ref: firstString(dispatch?.ref) || null,
+    target_repo: firstString(dispatch?.target_repo)
+      || firstString(dispatch?.inputs?.target_repo)
+      || firstString(selection?.selected?.target_repo)
+      || null,
+    subject_locator: firstString(dispatch?.subject_locator)
+      || firstString(selection?.selected?.subject_locator)
+      || null,
+    score: typeof dispatch?.score === "number"
+      ? dispatch.score
+      : typeof selection?.selected?.score === "number"
+        ? selection.selected.score
+        : null,
+    inputs: Object.fromEntries(
+      Object.entries(dispatch?.inputs ?? {})
+        .map(([key, value]) => [key, String(value)])
+        .filter(([, value]) => value.length > 0),
+    ),
+  };
+}
+
+function buildTargetLifecycle({
+  previousTarget,
+  targetRepo,
+  generatedAt,
+  cycleId,
+  cycleStatus,
+  cycleReason,
+  selection,
+  dispatch,
+}) {
+  const previousLifecycle = isPlainRecord(previousTarget?.lifecycle) ? previousTarget.lifecycle : {};
+  const selectedTarget = firstString(selection?.selected?.target_repo) === targetRepo;
+  const dispatchedTarget = selectedTarget && dispatch?.status === "dispatched";
+  return {
+    last_evaluated_at: generatedAt,
+    last_selected_at: selectedTarget
+      ? generatedAt
+      : firstString(previousLifecycle.last_selected_at) || null,
+    last_dispatched_at: dispatchedTarget
+      ? generatedAt
+      : firstString(previousLifecycle.last_dispatched_at) || null,
+    last_cycle_id: selectedTarget
+      ? cycleId
+      : firstString(previousLifecycle.last_cycle_id) || null,
+    last_cycle_status: selectedTarget
+      ? cycleStatus
+      : firstString(previousLifecycle.last_cycle_status) || null,
+    last_transition_reason: selectedTarget
+      ? cycleReason
+      : firstString(previousLifecycle.last_transition_reason) || null,
+    evaluated_count: Number(previousLifecycle.evaluated_count ?? 0) + 1,
+    selected_count: Number(previousLifecycle.selected_count ?? 0) + (selectedTarget ? 1 : 0),
+    dispatched_count: Number(previousLifecycle.dispatched_count ?? 0) + (dispatchedTarget ? 1 : 0),
+  };
 }
 
 function buildReflectionEntries(reflections, targetIdByRepo, generatedAt) {
@@ -971,6 +1517,10 @@ function isInternalAssociation(value) {
 
 function isRepoLocator(value) {
   return /^[^/\s]+\/[^/\s]+$/.test(String(value ?? "").trim());
+}
+
+function isPlainRecord(value) {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
 function clamp(value, min = 0, max = 1) {

@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://runx.ai/spec/workspace-change-plan-request.schema.json",
+  "$id": "urn:maton:schema:workspace-change-plan-request:v1",
   "title": "runx Workspace Change Plan Request",
   "description": "Canonical prerelease v1 schema for objective-decompose requests before any repo worker starts.",
   "type": "object",

@@ -2,9 +2,10 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import os from "node:os";
 import path from "node:path";
-import { mkdtemp, mkdir, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, readFile, writeFile } from "node:fs/promises";
 
 import {
+  buildSelectorTrainingRow,
   buildDispatchPlan,
   discoverOpportunities,
   loadSelectionPolicy,
@@ -41,6 +42,12 @@ const baseSelectionPolicy = {
     preferred_default: "no_op",
     max_priority_queue: 3,
     dispatch_count_per_cycle: 1,
+    portfolio_budget: {
+      window_cycles: 10,
+      thesis_work: 0.7,
+      context_improvement: 0.2,
+      runtime_proof_work: 0.1,
+    },
   },
 };
 
@@ -80,6 +87,161 @@ test("loadSelectionPolicy parses weights, thresholds, and cooldowns", async () =
   assert.equal(policy.thresholds.minimum_select_score, 0.68);
   assert.equal(policy.cooldown_hours.success, 72);
   assert.equal(policy.cooldown_hours.ignored, 168);
+  assert.equal(policy.selection_contract.portfolio_budget.window_cycles, 10);
+  assert.equal(policy.selection_contract.portfolio_budget.context_improvement, 0.2);
+});
+
+test("selectOpportunity applies the published tie-break order", () => {
+  const policy = structuredClone(baseSelectionPolicy);
+  const selectedByProof = selectOpportunity({
+    scored: [
+      {
+        id: "a",
+        score: 0.81,
+        vetoed: false,
+        budget_bucket: "thesis_work",
+        authority_cost: 0.48,
+        evidence_at: "2026-04-16T00:00:00Z",
+        metrics: { proof_strength: 0.82, tractability: 0.7 },
+      },
+      {
+        id: "b",
+        score: 0.81,
+        vetoed: false,
+        budget_bucket: "thesis_work",
+        authority_cost: 0.48,
+        evidence_at: "2026-04-16T00:00:00Z",
+        metrics: { proof_strength: 0.91, tractability: 0.7 },
+      },
+    ],
+    policy,
+  });
+  assert.equal(selectedByProof.selected?.id, "b");
+
+  const selectedByAuthority = selectOpportunity({
+    scored: [
+      {
+        id: "a",
+        score: 0.81,
+        vetoed: false,
+        budget_bucket: "thesis_work",
+        authority_cost: 0.52,
+        evidence_at: "2026-04-16T00:00:00Z",
+        metrics: { proof_strength: 0.91, tractability: 0.7 },
+      },
+      {
+        id: "b",
+        score: 0.81,
+        vetoed: false,
+        budget_bucket: "thesis_work",
+        authority_cost: 0.31,
+        evidence_at: "2026-04-16T00:00:00Z",
+        metrics: { proof_strength: 0.91, tractability: 0.7 },
+      },
+    ],
+    policy,
+  });
+  assert.equal(selectedByAuthority.selected?.id, "b");
+
+  const selectedByTractability = selectOpportunity({
+    scored: [
+      {
+        id: "a",
+        score: 0.81,
+        vetoed: false,
+        budget_bucket: "thesis_work",
+        authority_cost: 0.31,
+        evidence_at: "2026-04-16T00:00:00Z",
+        metrics: { proof_strength: 0.91, tractability: 0.64 },
+      },
+      {
+        id: "b",
+        score: 0.81,
+        vetoed: false,
+        budget_bucket: "thesis_work",
+        authority_cost: 0.31,
+        evidence_at: "2026-04-16T00:00:00Z",
+        metrics: { proof_strength: 0.91, tractability: 0.79 },
+      },
+    ],
+    policy,
+  });
+  assert.equal(selectedByTractability.selected?.id, "b");
+
+  const selectedByEvidence = selectOpportunity({
+    scored: [
+      {
+        id: "a",
+        score: 0.81,
+        vetoed: false,
+        budget_bucket: "thesis_work",
+        authority_cost: 0.31,
+        evidence_at: "2026-04-15T00:00:00Z",
+        metrics: { proof_strength: 0.91, tractability: 0.79 },
+      },
+      {
+        id: "b",
+        score: 0.81,
+        vetoed: false,
+        budget_bucket: "thesis_work",
+        authority_cost: 0.31,
+        evidence_at: "2026-04-16T00:00:00Z",
+        metrics: { proof_strength: 0.91, tractability: 0.79 },
+      },
+    ],
+    policy,
+  });
+  assert.equal(selectedByEvidence.selected?.id, "b");
+});
+
+test("selectOpportunity enforces the portfolio budget before final ranking", () => {
+  const policy = structuredClone(baseSelectionPolicy);
+  const persistedControl = {
+    targets: [],
+    opportunities: [],
+    priorities: [],
+    reflection_entries: [],
+    cycle_records: [
+      { cycle_id: "1", selected_priority_id: "p1", priority_ids: ["p1"], status: "selected", reason: "ok", selected_bucket: "thesis_work", budget_snapshot: { window_size: 10, current_counts: { thesis_work: 0, context_improvement: 0, runtime_proof_work: 0 }, projected_counts: { thesis_work: 1, context_improvement: 0, runtime_proof_work: 0 }, target_mix: { thesis_work: 0.7, context_improvement: 0.2, runtime_proof_work: 0.1 } }, generated_at: "2026-04-10T00:00:00Z" },
+      { cycle_id: "2", selected_priority_id: "p2", priority_ids: ["p2"], status: "selected", reason: "ok", selected_bucket: "thesis_work", budget_snapshot: { window_size: 10, current_counts: { thesis_work: 1, context_improvement: 0, runtime_proof_work: 0 }, projected_counts: { thesis_work: 2, context_improvement: 0, runtime_proof_work: 0 }, target_mix: { thesis_work: 0.7, context_improvement: 0.2, runtime_proof_work: 0.1 } }, generated_at: "2026-04-11T00:00:00Z" },
+      { cycle_id: "3", selected_priority_id: "p3", priority_ids: ["p3"], status: "selected", reason: "ok", selected_bucket: "thesis_work", budget_snapshot: { window_size: 10, current_counts: { thesis_work: 2, context_improvement: 0, runtime_proof_work: 0 }, projected_counts: { thesis_work: 3, context_improvement: 0, runtime_proof_work: 0 }, target_mix: { thesis_work: 0.7, context_improvement: 0.2, runtime_proof_work: 0.1 } }, generated_at: "2026-04-12T00:00:00Z" },
+      { cycle_id: "4", selected_priority_id: "p4", priority_ids: ["p4"], status: "selected", reason: "ok", selected_bucket: "thesis_work", budget_snapshot: { window_size: 10, current_counts: { thesis_work: 3, context_improvement: 0, runtime_proof_work: 0 }, projected_counts: { thesis_work: 4, context_improvement: 0, runtime_proof_work: 0 }, target_mix: { thesis_work: 0.7, context_improvement: 0.2, runtime_proof_work: 0.1 } }, generated_at: "2026-04-13T00:00:00Z" },
+      { cycle_id: "5", selected_priority_id: "p5", priority_ids: ["p5"], status: "selected", reason: "ok", selected_bucket: "thesis_work", budget_snapshot: { window_size: 10, current_counts: { thesis_work: 4, context_improvement: 0, runtime_proof_work: 0 }, projected_counts: { thesis_work: 5, context_improvement: 0, runtime_proof_work: 0 }, target_mix: { thesis_work: 0.7, context_improvement: 0.2, runtime_proof_work: 0.1 } }, generated_at: "2026-04-14T00:00:00Z" },
+      { cycle_id: "6", selected_priority_id: "p6", priority_ids: ["p6"], status: "selected", reason: "ok", selected_bucket: "thesis_work", budget_snapshot: { window_size: 10, current_counts: { thesis_work: 5, context_improvement: 0, runtime_proof_work: 0 }, projected_counts: { thesis_work: 6, context_improvement: 0, runtime_proof_work: 0 }, target_mix: { thesis_work: 0.7, context_improvement: 0.2, runtime_proof_work: 0.1 } }, generated_at: "2026-04-15T00:00:00Z" },
+      { cycle_id: "7", selected_priority_id: "p7", priority_ids: ["p7"], status: "selected", reason: "ok", selected_bucket: "thesis_work", budget_snapshot: { window_size: 10, current_counts: { thesis_work: 6, context_improvement: 0, runtime_proof_work: 0 }, projected_counts: { thesis_work: 7, context_improvement: 0, runtime_proof_work: 0 }, target_mix: { thesis_work: 0.7, context_improvement: 0.2, runtime_proof_work: 0.1 } }, generated_at: "2026-04-16T00:00:00Z" },
+      { cycle_id: "8", selected_priority_id: "p8", priority_ids: ["p8"], status: "selected", reason: "ok", selected_bucket: "runtime_proof_work", budget_snapshot: { window_size: 10, current_counts: { thesis_work: 7, context_improvement: 0, runtime_proof_work: 0 }, projected_counts: { thesis_work: 7, context_improvement: 0, runtime_proof_work: 1 }, target_mix: { thesis_work: 0.7, context_improvement: 0.2, runtime_proof_work: 0.1 } }, generated_at: "2026-04-17T00:00:00Z" },
+    ],
+  };
+
+  const selection = selectOpportunity({
+    policy,
+    persistedControl,
+    scored: [
+      {
+        id: "high-score-thesis",
+        score: 0.91,
+        vetoed: false,
+        budget_bucket: "thesis_work",
+        authority_cost: 0.4,
+        evidence_at: "2026-04-18T00:00:00Z",
+        metrics: { proof_strength: 0.93, tractability: 0.8 },
+      },
+      {
+        id: "needed-context",
+        score: 0.84,
+        vetoed: false,
+        budget_bucket: "context_improvement",
+        authority_cost: 0.25,
+        evidence_at: "2026-04-18T00:00:00Z",
+        metrics: { proof_strength: 0.88, tractability: 0.78 },
+      },
+    ],
+  });
+
+  assert.equal(selection.status, "selected");
+  assert.equal(selection.reason, "selected_after_portfolio_budget");
+  assert.equal(selection.selected?.id, "needed-context");
+  assert.equal(selection.budget_state.projected_counts.context_improvement, 1);
 });
 
 test("discover, score, and select curated prerelease targets inside nilstate scope", async () => {
@@ -178,6 +340,182 @@ test("discover, score, and select curated prerelease targets inside nilstate sco
   assert.equal(result.maton_control.opportunities[0].opportunity_id, result.opportunities[0].id);
   assert.equal(result.maton_control.cycle_records[0].status, "selected");
   assert.equal(result.maton_control.priorities[0].status, "selected");
+  assert.equal(result.maton_control.cycle_records[0].authority.scope, "public_triage");
+  assert.equal(result.maton_control.cycle_records[0].dispatch.status, "ready");
+  assert.equal(result.maton_control.cycle_records[0].dispatch.target_repo, "nilstate/runx");
+  assert.equal(
+    result.maton_control.targets.find((entry) => entry.repo === "nilstate/runx")?.lifecycle.selected_count,
+    1,
+  );
+  assert.equal(
+    result.maton_control.targets.find((entry) => entry.repo === "nilstate/runx")?.lifecycle.evaluated_count,
+    1,
+  );
+});
+
+test("runMatonCycle persists durable priority and cycle objects", async () => {
+  const tempRoot = await mkdtemp(path.join(os.tmpdir(), "maton-persisted-control-"));
+  const repoRoot = path.join(tempRoot, "repo");
+  await mkdir(path.join(repoRoot, "doctrine"), { recursive: true });
+  await mkdir(path.join(repoRoot, "state", "targets"), { recursive: true });
+  await mkdir(path.join(repoRoot, "history"), { recursive: true });
+  await mkdir(path.join(repoRoot, "reflections"), { recursive: true });
+
+  await writeSelectionPolicy(path.join(repoRoot, "state", "selection-policy.json"));
+  await writeFile(path.join(repoRoot, "state", "maton-control.json"), `${JSON.stringify({
+    targets: [],
+    opportunities: [],
+    priorities: [],
+    reflection_entries: [],
+    cycle_records: [],
+  }, null, 2)}\n`);
+
+  await writeFile(
+    path.join(repoRoot, "state", "targets", "nilstate-runx.md"),
+    [
+      "---",
+      "title: Target Dossier — nilstate/runx",
+      "subject_locator: nilstate/runx",
+      "---",
+      "",
+      "# nilstate/runx",
+      "",
+      "## Default Lanes",
+      "",
+      "- `issue-triage`",
+      "",
+    ].join("\n"),
+  );
+
+  const discoveryPath = path.join(repoRoot, "discovery.json");
+  await writeFile(
+    discoveryPath,
+    `${JSON.stringify(
+      {
+        "nilstate/runx": {
+          issues: [
+            {
+              number: 42,
+              title: "docs: repair stale hosted example",
+              body: "Bounded public issue.",
+              url: "https://github.com/nilstate/runx/issues/42",
+              authorAssociation: "NONE",
+              author: { login: "outside-dev" },
+              updatedAt: "2026-04-17T00:00:00Z",
+            },
+          ],
+          prs: [],
+        },
+      },
+      null,
+      2,
+    )}\n`,
+  );
+
+  const result = await runMatonCycle({
+    repoRoot,
+    repo: "nilstate/maton",
+    discoveryInput: discoveryPath,
+    now: "2026-04-18T12:00:00Z",
+  });
+  const persisted = JSON.parse(await readFile(path.join(repoRoot, "state", "maton-control.json"), "utf8"));
+
+  assert.equal(result.selection.status, "selected");
+  assert.equal(persisted.priorities.length >= 1, true);
+  assert.equal(persisted.cycle_records.length, 1);
+  assert.equal(persisted.cycle_records[0].selected_priority_id, persisted.priorities[0].priority_id);
+  assert.equal(persisted.cycle_records[0].priority_ids[0], persisted.priorities[0].priority_id);
+  assert.equal(persisted.cycle_records[0].selected_bucket, "thesis_work");
+  assert.equal(persisted.cycle_records[0].authority.approval_mode, "workflow_gate");
+  assert.equal(persisted.cycle_records[0].dispatch.status, "ready");
+  assert.equal(
+    persisted.targets.find((entry) => entry.repo === "nilstate/runx")?.lifecycle.last_selected_at,
+    "2026-04-18T12:00:00.000Z",
+  );
+  assert.equal(
+    persisted.targets.find((entry) => entry.repo === "nilstate/runx")?.lifecycle.dispatched_count,
+    0,
+  );
+});
+
+test("buildSelectorTrainingRow projects a schema-valid labeled selector row", async () => {
+  const tempRoot = await mkdtemp(path.join(os.tmpdir(), "maton-selector-training-"));
+  const repoRoot = path.join(tempRoot, "repo");
+  await mkdir(path.join(repoRoot, "doctrine"), { recursive: true });
+  await mkdir(path.join(repoRoot, "state", "targets"), { recursive: true });
+  await mkdir(path.join(repoRoot, "history"), { recursive: true });
+  await mkdir(path.join(repoRoot, "reflections"), { recursive: true });
+
+  await writeSelectionPolicy(path.join(repoRoot, "state", "selection-policy.json"));
+  await writeFile(path.join(repoRoot, "state", "maton-control.json"), `${JSON.stringify({
+    targets: [],
+    opportunities: [],
+    priorities: [],
+    reflection_entries: [],
+    cycle_records: [],
+  }, null, 2)}\n`);
+
+  await writeFile(
+    path.join(repoRoot, "state", "targets", "nilstate-runx.md"),
+    [
+      "---",
+      "title: Target Dossier — nilstate/runx",
+      "subject_locator: nilstate/runx",
+      "---",
+      "",
+      "# nilstate/runx",
+      "",
+      "## Default Lanes",
+      "",
+      "- `issue-triage`",
+      "",
+    ].join("\n"),
+  );
+
+  const discoveryPath = path.join(repoRoot, "discovery.json");
+  await writeFile(
+    discoveryPath,
+    `${JSON.stringify(
+      {
+        "nilstate/runx": {
+          issues: [
+            {
+              number: 42,
+              title: "docs: repair stale hosted example",
+              body: "Bounded public issue.",
+              url: "https://github.com/nilstate/runx/issues/42",
+              authorAssociation: "NONE",
+              author: { login: "outside-dev" },
+              updatedAt: "2026-04-17T00:00:00Z",
+            },
+          ],
+          prs: [],
+        },
+      },
+      null,
+      2,
+    )}\n`,
+  );
+
+  const result = await runMatonCycle({
+    repoRoot,
+    repo: "nilstate/maton",
+    discoveryInput: discoveryPath,
+    now: "2026-04-18T12:00:00Z",
+  });
+  const trainingRow = buildSelectorTrainingRow(result);
+
+  assert.equal(trainingRow.kind, "runx.maton-selector-training-row.v1");
+  assert.equal(trainingRow.cycle_id, result.cycle_id);
+  assert.equal(trainingRow.selection_status, "selected");
+  assert.equal(trainingRow.selected_bucket, "thesis_work");
+  assert.equal(trainingRow.selected_opportunity_id, result.selection.selected?.id ?? null);
+  assert.equal(trainingRow.priority_queue.length >= 1, true);
+  assert.equal(trainingRow.candidates[0].target_repo, "nilstate/runx");
+  assert.equal(trainingRow.candidates[0].vetoed, false);
+  assert.equal(trainingRow.candidates[0].authority.scope, "public_triage");
+  assert.equal(trainingRow.authority.approval_mode, "workflow_gate");
+  assert.equal(trainingRow.dispatch.status, "ready");
 });
 
 test("runMatonCycle vetoes curated external targets outside prerelease v1 scope", async () => {
