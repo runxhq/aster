@@ -21,7 +21,7 @@ jobs:
         with:
           repository: nilstate/runx-platform
           path: runx
-          token: ${{ secrets.MATON_GH_TOKEN }}
+          token: ${{ secrets.ASTER_GH_TOKEN }}
 
       - name: Set up Node.js
         uses: actions/setup-node@v6
@@ -39,8 +39,8 @@ jobs:
       - name: Install site dependencies
         run: npm --prefix site install
 
-      - name: Check maton site
+      - name: Check aster site
         run: npm run site:check
 
-      - name: Build maton site
+      - name: Build aster site
         run: npm run site:build

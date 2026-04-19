@@ -1,5 +1,5 @@
 name: Skill Proposal
-description: Propose a new runx skill or lane that maton should learn.
+description: Propose a new runx skill or lane that aster should learn.
 title: "[skill] "
 body:
   - type: textarea

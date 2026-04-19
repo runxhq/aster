@@ -9,18 +9,18 @@ import {
 
 test("classifyRepoPath separates constitutional, learned, and public surfaces", () => {
   assert.equal(classifyRepoPath("doctrine/VOICE.md"), "doctrine");
-  assert.equal(classifyRepoPath("state/targets/nilstate-maton.md"), "learned_state");
+  assert.equal(classifyRepoPath("state/targets/nilstate-aster.md"), "learned_state");
   assert.equal(classifyRepoPath("history/2026-04-17-entry.md"), "public_history");
   assert.equal(classifyRepoPath("reflections/2026-04-17-note.md"), "reflections");
   assert.equal(classifyRepoPath("site/src/pages/index.astro"), "public_face");
   assert.equal(classifyRepoPath("docs/run-catalog.md"), "working_docs");
-  assert.equal(classifyRepoPath("scripts/maton-core.mjs"), "automation_runtime");
+  assert.equal(classifyRepoPath("scripts/aster-core.mjs"), "automation_runtime");
   assert.equal(classifyRepoPath("README.md"), "repo_meta");
 });
 
 test("summarizeChangeSurfaces groups files by surface", () => {
   const summary = summarizeChangeSurfaces([
-    "doctrine/MATON.md",
+    "doctrine/ASTER.md",
     "state/priorities.md",
     "site/src/pages/index.astro",
   ]);
@@ -33,8 +33,8 @@ test("summarizeChangeSurfaces groups files by surface", () => {
 test("evaluateLaneChangeSurfacePolicy blocks doctrine and learned-state writes for docs-pr", () => {
   const policy = evaluateLaneChangeSurfacePolicy({
     lane: "docs-pr",
-    repo: "nilstate/maton",
-    ownerRepo: "nilstate/maton",
+    repo: "nilstate/aster",
+    ownerRepo: "nilstate/aster",
     files: [
       "docs/architecture.md",
       "doctrine/AUTHORITY.md",
@@ -51,10 +51,10 @@ test("evaluateLaneChangeSurfacePolicy blocks doctrine and learned-state writes f
 test("evaluateLaneChangeSurfacePolicy allows issue-triage operator-memory surfaces", () => {
   const policy = evaluateLaneChangeSurfacePolicy({
     lane: "issue-triage",
-    repo: "nilstate/maton",
-    ownerRepo: "nilstate/maton",
+    repo: "nilstate/aster",
+    ownerRepo: "nilstate/aster",
     files: [
-      "state/targets/nilstate-maton.md",
+      "state/targets/nilstate-aster.md",
       "history/2026-04-17-entry.md",
       "reflections/2026-04-17-reflection.md",
     ],
@@ -68,7 +68,7 @@ test("evaluateLaneChangeSurfacePolicy reports only for external repos", () => {
   const policy = evaluateLaneChangeSurfacePolicy({
     lane: "fix-pr",
     repo: "vercel/next.js",
-    ownerRepo: "nilstate/maton",
+    ownerRepo: "nilstate/aster",
     files: ["docs/app-router.md", "src/app.ts"],
   });
 

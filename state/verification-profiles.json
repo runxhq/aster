@@ -1,12 +1,12 @@
 {
   "version": "runx.verification_profile_catalog.v1",
   "repo_defaults": {
-    "nilstate/maton": "maton.site-ci"
+    "nilstate/aster": "aster.site-ci"
   },
   "profiles": {
-    "maton.site-ci": {
-      "repo": "nilstate/maton",
-      "description": "Full repo contract checks for maton changes before draft PR publication.",
+    "aster.site-ci": {
+      "repo": "nilstate/aster",
+      "description": "Full repo contract checks for aster changes before draft PR publication.",
       "commands": [
         "npm run site:ci"
       ]

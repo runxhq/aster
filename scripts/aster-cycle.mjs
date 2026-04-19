@@ -4,18 +4,18 @@ import { readdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { slugifyRepoLike } from "./build-maton-context.mjs";
-import { isPrereleaseEligibleTargetRepo } from "./maton-v1-contracts.mjs";
+import { slugifyRepoLike } from "./build-aster-context.mjs";
+import { isPrereleaseEligibleTargetRepo } from "./aster-v1-contracts.mjs";
 import { evaluatePublicCommentOpportunity } from "./public-work-policy.mjs";
 import { assertMatchesRunxControlSchema } from "./runx-control-schemas.mjs";
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const defaultRepoRoot = path.resolve(scriptDir, "..");
-const defaultControlStateRelativePath = path.join("state", "maton-control.json");
+const defaultControlStateRelativePath = path.join("state", "aster-control.json");
 
 async function main(argv = process.argv.slice(2)) {
   const options = parseArgs(argv);
-  const result = await runMatonCycle(options);
+  const result = await runAsterCycle(options);
   if (options.output) {
     await writeFile(path.resolve(options.output), `${JSON.stringify(result, null, 2)}\n`);
   }
@@ -31,13 +31,13 @@ async function main(argv = process.argv.slice(2)) {
   process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
 }
 
-export async function runMatonCycle(options = {}) {
+export async function runAsterCycle(options = {}) {
   const repoRoot = path.resolve(options.repoRoot ?? defaultRepoRoot);
-  const repo = options.repo ?? "nilstate/maton";
+  const repo = options.repo ?? "nilstate/aster";
   const now = options.now ? new Date(options.now) : new Date();
   const controlStatePath = path.join(repoRoot, defaultControlStateRelativePath);
   const policy = await loadSelectionPolicy(path.join(repoRoot, "state", "selection-policy.json"));
-  const persistedControl = await loadPersistedMatonControl(controlStatePath, repoRoot);
+  const persistedControl = await loadPersistedAsterControl(controlStatePath, repoRoot);
   const dossiers = await loadTargetDossiers(path.join(repoRoot, "state", "targets"));
   const targetRepos = unique([
     repo,
@@ -88,7 +88,7 @@ export async function runMatonCycle(options = {}) {
     selection,
     dispatchRef: options.dispatchRef ?? "main",
   });
-  const preDispatchControl = buildMatonControlState({
+  const preDispatchControl = buildAsterControlState({
     repo,
     dossiers,
     memory,
@@ -100,14 +100,14 @@ export async function runMatonCycle(options = {}) {
     previousControl: persistedControl,
   });
   if (options.persistState !== false) {
-    await writeMatonControlState(controlStatePath, preDispatchControl);
+    await writeAsterControlState(controlStatePath, preDispatchControl);
   }
   const dispatchResult = options.dispatch
     ? dispatchLane(dispatchPlan)
     : dispatchPlan;
-  const matonControl = dispatchResult.status === dispatchPlan.status
+  const asterControl = dispatchResult.status === dispatchPlan.status
     ? preDispatchControl
-    : buildMatonControlState({
+    : buildAsterControlState({
         repo,
         dossiers,
         memory,
@@ -119,7 +119,7 @@ export async function runMatonCycle(options = {}) {
         previousControl: persistedControl,
       });
   if (options.persistState !== false && dispatchResult.status !== dispatchPlan.status) {
-    await writeMatonControlState(controlStatePath, matonControl);
+    await writeAsterControlState(controlStatePath, asterControl);
   }
 
   return {
@@ -131,14 +131,14 @@ export async function runMatonCycle(options = {}) {
     opportunities: scored,
     selection,
     dispatch: dispatchResult,
-    maton_control: matonControl,
+    aster_control: asterControl,
   };
 }
 
 export async function loadSelectionPolicy(filePath) {
   const raw = JSON.parse(await readFile(filePath, "utf8"));
   return {
-    title: String(raw.title ?? "Maton Selection Policy"),
+    title: String(raw.title ?? "Aster Selection Policy"),
     version: Number(raw.version ?? 1),
     updated: String(raw.updated ?? ""),
     weights: {
@@ -260,7 +260,7 @@ export function discoverOpportunities({ repo, discovery, dossiers, memory, now }
 }
 
 export function scoreOpportunities({
-  repo = "nilstate/maton",
+  repo = "nilstate/aster",
   opportunities,
   dossiers,
   memory,
@@ -282,7 +282,7 @@ export function scoreOpportunities({
 }
 
 export function scoreOpportunity({
-  repo = "nilstate/maton",
+  repo = "nilstate/aster",
   opportunity,
   dossiers,
   memory,
@@ -384,7 +384,7 @@ export function scoreOpportunity({
   };
 }
 
-export function selectOpportunity({ scored, policy, persistedControl = emptyMatonControlState() }) {
+export function selectOpportunity({ scored, policy, persistedControl = emptyAsterControlState() }) {
   const thresholdEligible = scored.filter((entry) => {
     return !entry.vetoed && entry.score >= policy.thresholds.minimum_select_score;
   });
@@ -504,7 +504,7 @@ export function dispatchLane(plan, runner = run) {
     "run",
     plan.workflow,
     "--repo",
-    plan.repo ?? "nilstate/maton",
+    plan.repo ?? "nilstate/aster",
     "--ref",
     plan.ref,
   ];
@@ -521,7 +521,7 @@ export function dispatchLane(plan, runner = run) {
 
 export function renderCycleSummary(result) {
   const lines = [
-    "# Maton Cycle",
+    "# Aster Cycle",
     "",
     `- generated_at: \`${result.generated_at}\``,
     `- opportunities: \`${result.opportunity_count}\``,
@@ -549,7 +549,7 @@ export function renderCycleSummary(result) {
   return lines.join("\n").trim();
 }
 
-export function buildMatonControlState({
+export function buildAsterControlState({
   repo,
   dossiers,
   memory,
@@ -558,7 +558,7 @@ export function buildMatonControlState({
   dispatch,
   generatedAt,
   cycleId,
-  previousControl = emptyMatonControlState(),
+  previousControl = emptyAsterControlState(),
 }) {
   const targetRepos = unique([
     repo,
@@ -668,22 +668,22 @@ export function buildMatonControlState({
     }),
   };
 
-  return assertMatchesRunxControlSchema("maton_control", controlState, {
-    label: "maton_control",
+  return assertMatchesRunxControlSchema("aster_control", controlState, {
+    label: "aster_control",
   });
 }
 
 export function buildSelectorTrainingRow(result) {
-  const latestCycleRecord = normalizeCollection(result?.maton_control?.cycle_records).at(-1) ?? null;
-  const priorities = normalizeCollection(result?.maton_control?.priorities);
+  const latestCycleRecord = normalizeCollection(result?.aster_control?.cycle_records).at(-1) ?? null;
+  const priorities = normalizeCollection(result?.aster_control?.priorities);
   const selectedPriority = priorities.find((entry) => entry?.priority_id === latestCycleRecord?.selected_priority_id) ?? null;
   const row = {
-    kind: "runx.maton-selector-training-row.v1",
+    kind: "runx.aster-selector-training-row.v1",
     generated_at: firstString(result?.generated_at) ?? new Date().toISOString(),
     cycle_id: firstString(result?.cycle_id)
       ?? firstString(latestCycleRecord?.cycle_id)
       ?? cycleIdForGeneratedAt(firstString(result?.generated_at) ?? new Date().toISOString()),
-    repo: firstString(result?.repo) ?? "nilstate/maton",
+    repo: firstString(result?.repo) ?? "nilstate/aster",
     policy_version: Number(result?.policy?.version ?? 1),
     minimum_select_score: Number(result?.policy?.thresholds?.minimum_select_score ?? 0),
     candidates: normalizeCollection(result?.opportunities).map((entry) => ({
@@ -876,7 +876,7 @@ function computeProofStrength(opportunity) {
 
 function computeCompoundingValue(opportunity, dossier) {
   let score = 0.68;
-  if (opportunity.target_repo === "nilstate/maton") {
+  if (opportunity.target_repo === "nilstate/aster") {
     score += 0.09;
   }
   if (opportunity.target_repo === "nilstate/runx") {
@@ -1090,7 +1090,7 @@ function roundScore(value) {
   return Math.round(value * 1000) / 1000;
 }
 
-function emptyMatonControlState() {
+function emptyAsterControlState() {
   return {
     targets: [],
     opportunities: [],
@@ -1100,17 +1100,17 @@ function emptyMatonControlState() {
   };
 }
 
-async function loadPersistedMatonControl(filePath, repoRoot) {
+async function loadPersistedAsterControl(filePath, repoRoot) {
   if (!existsSync(filePath)) {
-    return emptyMatonControlState();
+    return emptyAsterControlState();
   }
   const value = JSON.parse(await readFile(filePath, "utf8"));
-  return assertMatchesRunxControlSchema("maton_control", value, {
-    label: "maton_control",
+  return assertMatchesRunxControlSchema("aster_control", value, {
+    label: "aster_control",
   });
 }
 
-async function writeMatonControlState(filePath, controlState) {
+async function writeAsterControlState(filePath, controlState) {
   await writeFile(filePath, `${JSON.stringify(controlState, null, 2)}\n`);
 }
 

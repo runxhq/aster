@@ -1,7 +1,7 @@
 ---
 import "@runx-tokens/layers.css";
 import "@runx-tokens/tokens.css";
-import "@runx-tokens/themes/maton.css";
+import "@runx-tokens/themes/aster.css";
 import "@runx-tokens/reset.css";
 import "@runx-tokens/base.css";
 import "@runx-tokens/effects/dither.css";
@@ -14,7 +14,7 @@ import "@runx-ui/LiveFeed/LiveFeedContent.css";
 import "@runx-ui/LiveFeed/LiveFeedHeader.css";
 
 const {
-  title = "maton",
+  title = "aster",
   description = "A public operator built on runx.",
   current = "",
 } = Astro.props;
@@ -34,11 +34,11 @@ const ditherPattern = "░▒▓".repeat(76) + "\n" + "▓░▒".repeat(76);
 ---
 
 <!doctype html>
-<html lang="en" data-theme="maton">
+<html lang="en" data-theme="aster">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>{title} · maton</title>
+    <title>{title} · aster</title>
     <meta name="description" content={description} />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -56,7 +56,7 @@ const ditherPattern = "░▒▓".repeat(76) + "\n" + "▓░▒".repeat(76);
     <div class="layout-shell">
       <header class="site-header">
         <div class="brand-block">
-          <a class="brand-mark" href="/">maton</a>
+          <a class="brand-mark" href="/">aster</a>
           <p class="brand-subline">a public operator built on runx</p>
         </div>
         <nav class="site-nav" aria-label="primary">
@@ -73,7 +73,7 @@ const ditherPattern = "░▒▓".repeat(76) + "\n" + "▓░▒".repeat(76);
       <footer class="site-footer">
         <p>
           Canonical receipts live on <a href="https://runx.ai">runx.ai</a>. This
-          site renders maton-owned doctrine, state, history, reflections, and
+          site renders aster-owned doctrine, state, history, reflections, and
           split activity surfaces.
         </p>
       </footer>

@@ -5,11 +5,11 @@ import path from "node:path";
 import { mkdtemp, mkdir, readFile, writeFile } from "node:fs/promises";
 
 import {
-  applyMatonPromotions,
+  applyAsterPromotions,
   assertManagedPromotionTarget,
   upsertFrontmatterField,
   upsertRecentOutcomesSection,
-} from "./apply-maton-promotions.mjs";
+} from "./apply-aster-promotions.mjs";
 
 test("upsertRecentOutcomesSection prepends and dedupes recent outcomes", () => {
   const initial = "# Target\n\n## Why It Matters\n\ntext\n";
@@ -37,8 +37,8 @@ test("assertManagedPromotionTarget rejects doctrine writes", () => {
   );
 });
 
-test("applyMatonPromotions copies drafts and updates target dossier", async () => {
-  const tempRoot = await mkdtemp(path.join(os.tmpdir(), "maton-promotions-"));
+test("applyAsterPromotions copies drafts and updates target dossier", async () => {
+  const tempRoot = await mkdtemp(path.join(os.tmpdir(), "aster-promotions-"));
   const repoRoot = path.join(tempRoot, "repo");
   const artifactRoot = path.join(tempRoot, "artifacts");
   await mkdir(path.join(repoRoot, "history"), { recursive: true });
@@ -63,7 +63,7 @@ test("applyMatonPromotions copies drafts and updates target dossier", async () =
         receipt_id: "rcpt_123",
         summary: "README command drift",
         subject: {
-          target_repo: "nilstate/maton",
+          target_repo: "nilstate/aster",
         },
       },
       null,
@@ -85,12 +85,12 @@ test("applyMatonPromotions copies drafts and updates target dossier", async () =
     )}\n`,
   );
 
-  const result = await applyMatonPromotions({
+  const result = await applyAsterPromotions({
     repoRoot,
     summary: summaryPath,
   });
 
-  const dossier = await readFile(path.join(repoRoot, "state", "targets", "nilstate-maton.md"), "utf8");
+  const dossier = await readFile(path.join(repoRoot, "state", "targets", "nilstate-aster.md"), "utf8");
   assert.equal(result.status, "applied");
   assert.match(dossier, /updated: 2026-04-16/);
   assert.match(dossier, /## Recent Outcomes/);

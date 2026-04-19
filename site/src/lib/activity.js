@@ -1,7 +1,7 @@
 const apiBaseUrl = (process.env.RUNX_PUBLIC_EVIDENCE_API_BASE_URL || "https://api.runx.ai").replace(/\/+$/, "");
 
 export async function readActivityModel({ limit = 48 } = {}) {
-  const feed = await readMatonFeed(limit);
+  const feed = await readAsterFeed(limit);
   const mainFeed = [];
   const opsFeed = [];
 
@@ -20,9 +20,9 @@ export async function readActivityModel({ limit = 48 } = {}) {
   };
 }
 
-async function readMatonFeed(limit) {
+async function readAsterFeed(limit) {
   try {
-    const response = await fetch(`${apiBaseUrl}/v1/feed?lane=maton&limit=${limit}`, {
+    const response = await fetch(`${apiBaseUrl}/v1/feed?lane=aster&limit=${limit}`, {
       headers: {
         accept: "application/json",
       },
@@ -59,10 +59,10 @@ function dedupeFeedItems(items) {
 
 function normalizeFeedItem(item) {
   const metadata = recordMetadata(item.metadata);
-  const workflow = stringMetadata(metadata, "workflow") ?? item.workflow ?? "maton";
+  const workflow = stringMetadata(metadata, "workflow") ?? item.workflow ?? "aster";
   const channel = feedChannelForItem(item);
   const proofLane = stringMetadata(metadata, "lane") ?? workflow;
-  const repo = normalizeMatonAlias(item.repo ?? stringMetadata(metadata, "target_repo") ?? item.target ?? "");
+  const repo = normalizeAsterAlias(item.repo ?? stringMetadata(metadata, "target_repo") ?? item.target ?? "");
   const reference = item.receipt_id
     ? `/r/${item.receipt_id.slice(-8)}`
     : item.run_id
@@ -71,8 +71,8 @@ function normalizeFeedItem(item) {
 
   return {
     id: item.id ?? `${workflow}:${item.run_id ?? item.timestamp ?? item.title}`,
-    title: normalizeMatonAlias(item.title ?? workflow),
-    summary: normalizeMatonAlias(item.summary ?? `${workflow} finished with ${item.status ?? "unknown"}.`),
+    title: normalizeAsterAlias(item.title ?? workflow),
+    summary: normalizeAsterAlias(item.summary ?? `${workflow} finished with ${item.status ?? "unknown"}.`),
     status: feedStatus(item.status),
     workflow,
     channel,
@@ -80,11 +80,11 @@ function normalizeFeedItem(item) {
     repo,
     timestamp: formatTimestamp(item.timestamp),
     timestampIso: item.timestamp,
-    url: normalizeMatonAlias(item.url) ?? null,
+    url: normalizeAsterAlias(item.url) ?? null,
     reference,
-    artifactUrl: normalizeMatonAlias(stringMetadata(metadata, "artifact_url")),
+    artifactUrl: normalizeAsterAlias(stringMetadata(metadata, "artifact_url")),
     commitShort: stringMetadata(metadata, "commit_short") ?? shortCommit(item.commit),
-    failureReason: normalizeMatonAlias(stringMetadata(metadata, "failure_reason")),
+    failureReason: normalizeAsterAlias(stringMetadata(metadata, "failure_reason")),
   };
 }
 
@@ -127,13 +127,11 @@ function shortCommit(value) {
   return typeof value === "string" && value.trim() ? value.trim().slice(0, 12) : null;
 }
 
-function normalizeMatonAlias(value) {
+function normalizeAsterAlias(value) {
   if (typeof value !== "string" || value.length === 0) {
     return value ?? null;
   }
-  return value
-    .replaceAll("nilstate/automaton", "nilstate/maton")
-    .replaceAll("automaton.runx.ai", "maton.runx.ai");
+  return value;
 }
 
 function formatTimestamp(value) {

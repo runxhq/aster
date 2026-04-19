@@ -4,21 +4,21 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { buildContextBundle, renderContextPrompt } from "./build-maton-context.mjs";
-import { buildPromotionDrafts, writePromotionDrafts } from "./promote-maton-state.mjs";
+import { buildContextBundle, renderContextPrompt } from "./build-aster-context.mjs";
+import { buildPromotionDrafts, writePromotionDrafts } from "./promote-aster-state.mjs";
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const defaultRepoRoot = path.resolve(scriptDir, "..");
 
 async function main(argv = process.argv.slice(2)) {
   const options = parseArgs(argv);
-  const outputs = await runMatonCore(options);
+  const outputs = await runAsterCore(options);
   process.stdout.write(`${JSON.stringify(outputs, null, 2)}\n`);
 }
 
-export async function runMatonCore(options) {
+export async function runAsterCore(options) {
   if (!options.runxArgs?.length) {
-    throw new Error("maton-core requires a runx invocation after --.");
+    throw new Error("aster-core requires a runx invocation after --.");
   }
 
   const repoRoot = path.resolve(options.repoRoot ?? defaultRepoRoot);

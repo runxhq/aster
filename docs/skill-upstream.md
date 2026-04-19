@@ -59,7 +59,7 @@ Manual dispatch inputs:
 - `publish`: whether to open or update a draft PR
 - `force`: whether to overwrite an existing `SKILL.md` in the checkout
 
-The workflow checks out `maton`, checks out the target repo, prepares the
+The workflow checks out `aster`, checks out the target repo, prepares the
 portable skill contribution, validates the public-language and artifact gates,
 and optionally publishes a draft PR.
 
@@ -137,7 +137,7 @@ originally developed by Anthropic and is documented as an open specification."
 
 ## Local Proving-Ground
 
-From the `maton` repo:
+From the `aster` repo:
 
 ```bash
 node scripts/prepare-skill-upstream.mjs \
@@ -168,11 +168,11 @@ Publish only after reviewing the generated `SKILL.md` and PR body:
 ```bash
 (
   cd /home/kam/dev/icey-cli
-  node /home/kam/dev/maton/scripts/publish-runx-pr.mjs \
+  node /home/kam/dev/aster/scripts/publish-runx-pr.mjs \
     --repo nilstate/icey-cli \
     --branch runx/add-skill-md \
     --title "Add portable SKILL.md" \
     --commit-message "docs: add portable SKILL.md" \
-    --body-file /home/kam/dev/maton/.artifacts/skill-upstream/icey-cli/pr-body.md
+    --body-file /home/kam/dev/aster/.artifacts/skill-upstream/icey-cli/pr-body.md
 )
 ```

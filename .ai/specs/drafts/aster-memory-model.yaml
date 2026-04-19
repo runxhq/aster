@@ -1,14 +1,14 @@
 spec_version: "1.1"
-task_id: "maton-memory-model"
+task_id: "aster-memory-model"
 created: "2026-04-16T12:00:00Z"
 updated: "2026-04-16T12:00:00Z"
 status: "draft"
 
 task:
-  title: "Define maton memory model and SQL threshold"
+  title: "Define aster memory model and SQL threshold"
   summary: >
-    Specify how maton manages context over time without baking
-    maton-specific schemas into runx. The design must start from receipts
+    Specify how aster manages context over time without baking
+    aster-specific schemas into runx. The design must start from receipts
     and the current .artifacts-backed repo reality, allow a generic hosted
     memory substrate later, and define exactly when SQL becomes justified.
   size: "medium"
@@ -28,7 +28,7 @@ task:
     invariants:
       - "receipts_stay_canonical"
       - "derived_memory_is_rebuildable"
-      - "generic_memory_in_runx_has_no_maton_nouns"
+      - "generic_memory_in_runx_has_no_aster_nouns"
   objectives:
     - "Define layered memory growth from receipt-grounded context to hosted generic memory."
     - "Ground layer 0 explicitly in today's .artifacts and receipt bundles."
@@ -41,9 +41,9 @@ task:
     - area: "memory"
       description: "Keep the first store simple and evidence-grounded."
     - area: "hosted boundary"
-      description: "Allow a generic hosted memory service without moving maton semantics into runx."
+      description: "Allow a generic hosted memory service without moving aster semantics into runx."
     - area: "operator projections"
-      description: "Define targets, priorities, and capabilities as maton-owned meanings."
+      description: "Define targets, priorities, and capabilities as aster-owned meanings."
   scope:
     in_scope:
       - "Memory layers"
@@ -58,12 +58,12 @@ task:
       - "Adding embeddings or vector search"
       - "Choosing a final local cache format"
   dependencies:
-    - "maton-operator-architecture"
+    - "aster-operator-architecture"
   acceptance:
     validation_profile: "standard"
     definition_of_done:
       - id: "dod1"
-        description: "The plan explains how maton can operate before SQL."
+        description: "The plan explains how aster can operate before SQL."
         status: "pending"
       - id: "dod2"
         description: "The plan defines generic hosted memory primitives and keeps operator semantics outside runx."
@@ -84,7 +84,7 @@ task:
       - id: "v1"
         type: "documentation"
         description: "Architecture page contains the memory layers, API, subject identity, governance rules, and SQL threshold."
-        command: "rg -n \"Layer 0|\\.artifacts/|Subject Identity|Memory API Contract|Retention Policy|Provenance, Redaction, Audit|Rebuild And Compaction|Recovery Drills|Layer 1|Layer 2|Layer 3|Layer 4|Does Maton Need SQL\\?\" docs/architecture.md"
+        command: "rg -n \"Layer 0|\\.artifacts/|Subject Identity|Memory API Contract|Retention Policy|Provenance, Redaction, Audit|Rebuild And Compaction|Recovery Drills|Layer 1|Layer 2|Layer 3|Layer 4|Does Aster Need SQL\\?\" docs/architecture.md"
         expected: "all memory layers and SQL section found"
       - id: "v2"
         type: "documentation"
@@ -96,7 +96,7 @@ planning_log:
   - timestamp: "2026-04-16T12:00:00Z"
     actor: "codex"
     summary: >
-      Created to answer the direct planning question: whether maton needs
+      Created to answer the direct planning question: whether aster needs
       SQL or can manage its own context first, and how hosted generic memory
       fits without crossing the boundary.
 

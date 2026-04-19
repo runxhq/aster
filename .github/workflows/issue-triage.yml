@@ -49,7 +49,7 @@ jobs:
       }}
     runs-on: ubuntu-latest
     env:
-      GH_TOKEN: ${{ secrets.MATON_GH_TOKEN != '' && secrets.MATON_GH_TOKEN || secrets.RUNX_REPOSITORY_PAT || github.token }}
+      GH_TOKEN: ${{ secrets.ASTER_GH_TOKEN != '' && secrets.ASTER_GH_TOKEN || secrets.RUNX_REPOSITORY_PAT || github.token }}
       RUNX_CALLER_MODEL: ${{ vars.RUNX_CALLER_MODEL || 'gpt-5.4' }}
       RUNX_CALLER_REASONING_EFFORT: ${{ vars.RUNX_CALLER_REASONING_EFFORT || 'xhigh' }}
       RUNX_CALLER_MAX_ATTEMPTS: ${{ vars.RUNX_CALLER_MAX_ATTEMPTS || '3' }}
@@ -66,7 +66,7 @@ jobs:
             echo "enabled=true" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Check out maton
+      - name: Check out aster
         if: ${{ steps.preflight.outputs.enabled == 'true' }}
         uses: actions/checkout@v6
         with:
@@ -189,7 +189,7 @@ jobs:
           ISSUE_TITLE: ${{ steps.issue.outputs.title }}
           ISSUE_BODY: ${{ steps.issue.outputs.body }}
         run: |
-          node scripts/maton-core.mjs \
+          node scripts/aster-core.mjs \
             --lane issue-triage \
             --runx-root "$GITHUB_WORKSPACE/.runx/runx" \
             --artifact-root "$GITHUB_WORKSPACE/.artifacts/issue-triage/issue" \
@@ -209,14 +209,14 @@ jobs:
             --source "github_issue" \
             --source_id "${{ steps.issue.outputs.number }}" \
             --source_url "${{ steps.issue.outputs.url }}" \
-            --product_context "maton public proving-ground repository" \
+            --product_context "aster public proving-ground repository" \
             --operator_context "Act as the issue-triage gate. Always draft a user-facing triage comment. Approve issue-to-pr only when the work is bounded to one repo-scoped governed PR. Use action_decision=proceed_to_plan when objective-decompose should freeze a shared plan before mutation. Use action_decision=request_review when the issue needs discussion before planning or mutation."
           node scripts/prepare-issue-triage-decision.mjs \
             --input "$GITHUB_WORKSPACE/.artifacts/issue-triage/issue/triage-result.json" \
             --repo-root "$GITHUB_WORKSPACE" \
             --default-repo "${{ steps.issue.outputs.target_repo }}" \
             --output "$GITHUB_WORKSPACE/.artifacts/issue-triage/issue/triage-decision.json"
-          node scripts/apply-maton-promotions.mjs \
+          node scripts/apply-aster-promotions.mjs \
             --repo-root "$GITHUB_WORKSPACE" \
             --summary "$GITHUB_WORKSPACE/.artifacts/issue-triage/issue/core-summary.json" \
             --output "$GITHUB_WORKSPACE/.artifacts/issue-triage/issue/promotion-apply.json"
@@ -341,7 +341,7 @@ jobs:
               --arg commit "${{ github.sha }}" \
               --arg url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
               '{events: [{
-                kind: "maton_run",
+                kind: "aster_run",
                 source: "github-actions",
                 status: (if $status == "success" then "success" else "failure" end),
                 title: $title,
@@ -371,7 +371,7 @@ jobs:
       }}
     runs-on: ubuntu-latest
     env:
-      GH_TOKEN: ${{ secrets.MATON_GH_TOKEN != '' && secrets.MATON_GH_TOKEN || github.token }}
+      GH_TOKEN: ${{ secrets.ASTER_GH_TOKEN != '' && secrets.ASTER_GH_TOKEN || github.token }}
       RUNX_CALLER_MODEL: ${{ vars.RUNX_CALLER_MODEL || 'gpt-5.4' }}
       RUNX_CALLER_REASONING_EFFORT: ${{ vars.RUNX_CALLER_REASONING_EFFORT || 'xhigh' }}
       RUNX_CALLER_MAX_ATTEMPTS: ${{ vars.RUNX_CALLER_MAX_ATTEMPTS || '3' }}
@@ -388,7 +388,7 @@ jobs:
             echo "enabled=true" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Check out maton
+      - name: Check out aster
         if: ${{ steps.preflight.outputs.enabled == 'true' }}
         uses: actions/checkout@v6
 
@@ -488,7 +488,7 @@ jobs:
         run: |
           TARGET_REPO="${{ github.event.inputs.target_repo || github.repository }}"
           TARGET_SLUG="$(printf '%s' "$TARGET_REPO" | tr '[:upper:]/' '[:lower:]-')"
-          node scripts/maton-core.mjs \
+          node scripts/aster-core.mjs \
             --lane issue-triage \
             --runx-root "$GITHUB_WORKSPACE/.runx/runx" \
             --artifact-root "$GITHUB_WORKSPACE/.artifacts/issue-triage/pr" \
@@ -506,8 +506,8 @@ jobs:
             --runner respond \
             --objective "Draft the next high-signal maintainer comment for this pull request" \
             --issue_snapshot "$(cat "$GITHUB_WORKSPACE/.artifacts/issue-triage/pr/pr-snapshot.json")" \
-            --maintainer_context "Comment as the maton operator only when there is one concrete missing validation, reproduction gap, scope mismatch, or next unblock that is not already obvious in the thread. If the highest-value action is no public comment, keep it internal and do not invent a reply. This is a pull request thread, not a user support issue."
-          node scripts/apply-maton-promotions.mjs \
+            --maintainer_context "Comment as the aster operator only when there is one concrete missing validation, reproduction gap, scope mismatch, or next unblock that is not already obvious in the thread. If the highest-value action is no public comment, keep it internal and do not invent a reply. This is a pull request thread, not a user support issue."
+          node scripts/apply-aster-promotions.mjs \
             --repo-root "$GITHUB_WORKSPACE" \
             --summary "$GITHUB_WORKSPACE/.artifacts/issue-triage/pr/core-summary.json" \
             --output "$GITHUB_WORKSPACE/.artifacts/issue-triage/pr/promotion-apply.json"

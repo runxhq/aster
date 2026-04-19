@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:maton:schema:worker-request:v1",
+  "$id": "urn:aster:schema:worker-request:v1",
   "title": "runx Worker Request",
   "description": "Canonical prerelease v1 discriminated union for governed worker packets.",
   "oneOf": [

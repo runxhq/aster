@@ -4,7 +4,7 @@ import { pathToFileURL } from "node:url";
 
 import { evaluateLaneChangeSurfacePolicy } from "./change-surface-governance.mjs";
 import { ensureGeneratedPrPolicyBlock } from "./generated-pr-policy.mjs";
-import { normalizeAutomationBranchName } from "./maton-v1-contracts.mjs";
+import { normalizeAutomationBranchName } from "./aster-v1-contracts.mjs";
 
 async function main() {
   const options = parseArgs(process.argv.slice(2));
@@ -12,7 +12,7 @@ async function main() {
   const base = options.base ?? defaultBranch(options.repo);
   const existingPr = findExistingPr(options.repo, options.branch);
   const remoteLease = ensureRemoteLease(options.branch);
-  const ownerRepo = options.ownerRepo ?? process.env.GITHUB_REPOSITORY ?? "nilstate/maton";
+  const ownerRepo = options.ownerRepo ?? process.env.GITHUB_REPOSITORY ?? "nilstate/aster";
 
   if (!hasWorkingTreeChanges()) {
     process.stdout.write(

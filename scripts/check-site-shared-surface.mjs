@@ -18,10 +18,10 @@ const forbiddenRunxTargets = [
   "agent-runner",
   "receipts-store",
   "mcp-hosted",
-  "maton",
+  "aster",
 ];
 
-export async function assertMatonSiteSharedSurface(options = {}) {
+export async function assertAsterSiteSharedSurface(options = {}) {
   const repoRoot = path.resolve(options.repoRoot ?? defaultRepoRoot);
   const siteRoot = path.join(repoRoot, "site");
   const astroConfigPath = path.join(siteRoot, "astro.config.mjs");
@@ -112,6 +112,6 @@ function describeForbiddenSpecifier(specifier) {
 }
 
 if (process.argv[1] && import.meta.url === new URL(`file://${process.argv[1]}`).href) {
-  await assertMatonSiteSharedSurface();
-  process.stdout.write("maton site shared surface check passed\n");
+  await assertAsterSiteSharedSurface();
+  process.stdout.write("aster site shared surface check passed\n");
 }

@@ -7,7 +7,7 @@ import {
   loadVerificationProfileCatalogSync,
   normalizeIssueToPrRequest,
   resolveVerificationPlan,
-} from "./maton-v1-contracts.mjs";
+} from "./aster-v1-contracts.mjs";
 import { evaluateGeneratedPr } from "./evaluate-generated-pr.mjs";
 import {
   buildInlineRepoSnapshot,
@@ -82,7 +82,7 @@ export async function runGovernedPrLane(options) {
     await writeFile(repoSnapshotPath, `${JSON.stringify(repoSnapshot, null, 2)}\n`);
 
     const coreArgs = [
-      path.join(repoRoot, "scripts", "maton-core.mjs"),
+      path.join(repoRoot, "scripts", "aster-core.mjs"),
       "--lane",
       executionLane,
       "--runx-root",
@@ -279,8 +279,8 @@ export function buildLanePrBody({
 }) {
   const validationSection = validationCommands.map((command) => `- \`${command}\``).join("\n");
   const intent = lane === "docs-pr"
-    ? "This draft PR was opened by the `maton` docs-pr lane to make one bounded explanation/docs improvement."
-    : "This draft PR was opened by the `maton` fix-pr lane to make one bounded bugfix in one repo surface.";
+    ? "This draft PR was opened by the `aster` docs-pr lane to make one bounded explanation/docs improvement."
+    : "This draft PR was opened by the `aster` fix-pr lane to make one bounded bugfix in one repo surface.";
   const lines = [
     "## Summary",
     "",

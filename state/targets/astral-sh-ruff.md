@@ -12,7 +12,7 @@ subject_locator: astral-sh/ruff
 
 `ruff` is a fast-moving public developer tool with a large issue surface and
 frequent external contributor traffic. It is a good proving ground for whether
-maton can leave bounded, useful review or issue-routing comments in a
+aster can leave bounded, useful review or issue-routing comments in a
 high-signal engineering repo.
 
 ## Default Lanes

@@ -7,12 +7,12 @@ import {
   buildContextBundle,
   renderContextPrompt,
   slugifyRepoLike,
-} from "./build-maton-context.mjs";
+} from "./build-aster-context.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
 test("slugifyRepoLike normalizes repo locators", () => {
-  assert.equal(slugifyRepoLike("nilstate/maton"), "nilstate-maton");
+  assert.equal(slugifyRepoLike("nilstate/aster"), "nilstate-aster");
 });
 
 test("buildContextBundle loads doctrine, state, and target dossier", async () => {
@@ -20,18 +20,18 @@ test("buildContextBundle loads doctrine, state, and target dossier", async () =>
     repoRoot,
     lane: "issue-triage",
     subjectKind: "github_issue",
-    subjectLocator: "nilstate/maton#issue/42",
-    repo: "nilstate/maton",
-    targetRepo: "nilstate/maton",
+    subjectLocator: "nilstate/aster#issue/42",
+    repo: "nilstate/aster",
+    targetRepo: "nilstate/aster",
   });
 
   assert.equal(bundle.lane, "issue-triage");
   assert.equal(bundle.subject.kind, "github_issue");
   assert.ok(bundle.state.control);
-  assert.equal(bundle.state.target?.title, "Target Dossier — nilstate/maton");
+  assert.equal(bundle.state.target?.title, "Target Dossier — nilstate/aster");
   assert.ok(bundle.state.target_summary?.default_lanes.includes("issue-triage"));
   assert.ok(bundle.state.target_summary?.current_opportunities.length >= 1);
-  assert.ok(bundle.doctrine.some((doc) => doc.title === "Maton Thesis"));
+  assert.ok(bundle.doctrine.some((doc) => doc.title === "Aster Thesis"));
   assert.ok(bundle.history.length >= 1);
   assert.ok(bundle.reflections.length >= 1);
 });
@@ -41,13 +41,13 @@ test("renderContextPrompt includes doctrine and state sections", async () => {
     repoRoot,
     lane: "issue-triage",
     subjectKind: "github_pull_request",
-    subjectLocator: "nilstate/maton#pr/7",
-    repo: "nilstate/maton",
+    subjectLocator: "nilstate/aster#pr/7",
+    repo: "nilstate/aster",
     targetRepo: "nilstate/runx",
   });
 
   const prompt = renderContextPrompt(bundle);
-  assert.match(prompt, /# Maton Context Bundle/);
+  assert.match(prompt, /# Aster Context Bundle/);
   assert.match(prompt, /## Doctrine/);
   assert.match(prompt, /## Current State/);
   assert.match(prompt, /### Live Control/);
@@ -62,7 +62,7 @@ test("renderContextPrompt surfaces authority and dispatch state from control rec
     subject: {
       kind: "github_issue",
       locator: "nilstate/runx#issue/42",
-      repo: "nilstate/maton",
+      repo: "nilstate/aster",
       target_repo: "nilstate/runx",
       issue_number: "42",
       pr_number: null,

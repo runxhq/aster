@@ -1,11 +1,11 @@
-export const GENERATED_PR_POLICY_MARKER = "<!-- maton:generated-pr-policy";
+export const GENERATED_PR_POLICY_MARKER = "<!-- aster:generated-pr-policy";
 
 export function buildGeneratedPrPolicyMarker({ lane, mergePolicy = "human_review", draftOnly = true }) {
   return `${GENERATED_PR_POLICY_MARKER} lane=${lane} merge=${mergePolicy} draft_only=${draftOnly ? "true" : "false"} -->`;
 }
 
 export function parseGeneratedPrPolicy(body) {
-  const match = String(body ?? "").match(/<!-- maton:generated-pr-policy\s+lane=([^\s]+)\s+merge=([^\s]+)\s+draft_only=(true|false)\s*-->/);
+  const match = String(body ?? "").match(/<!-- aster:generated-pr-policy\s+lane=([^\s]+)\s+merge=([^\s]+)\s+draft_only=(true|false)\s*-->/);
   if (!match) {
     return null;
   }
@@ -55,7 +55,7 @@ export function ensureGeneratedPrPolicyBlock(body, { lane, changeSurfacePolicy =
     ? [
         "## Change Surface Policy",
         "",
-        `- Repo scope: ${changeSurfacePolicy.internal_repo ? "`maton` parity enforced" : "`external` report-only"}`,
+        `- Repo scope: ${changeSurfacePolicy.internal_repo ? "`aster` parity enforced" : "`external` report-only"}`,
         `- Policy status: \`${changeSurfacePolicy.status}\``,
         `- Surfaces touched: ${(changeSurfacePolicy.surfaces ?? []).map((surface) => `\`${surface}\``).join(", ") || "`none`"}`,
         ...(Array.isArray(changeSurfacePolicy.reasons) && changeSurfacePolicy.reasons.length > 0

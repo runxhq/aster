@@ -20,7 +20,7 @@ test("buildIssueCommentPlan passes a bounded structured issue comment", () => {
   });
 
   assert.equal(plan.status, "ready");
-  assert.match(plan.comment_body, /maton:runx-issue-triage/);
+  assert.match(plan.comment_body, /aster:runx-issue-triage/);
 });
 
 test("buildIssueCommentPlan noops on thin issue comments", () => {

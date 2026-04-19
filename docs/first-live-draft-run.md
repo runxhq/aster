@@ -7,7 +7,7 @@ This repo has already been exercised as a real `runx` target in draft mode.
 - date: 2026-04-13
 - runner host: local workspace
 - source repo: `/home/kam/dev/runx`
-- target repo: `maton`
+- target repo: `aster`
 - result: 6 live runs, 6 clean `needs_resolution` boundaries, 0 unexpected failures
 
 ## Runs
@@ -31,7 +31,7 @@ This repo has already been exercised as a real `runx` target in draft mode.
 
 ## What This Proves
 
-- `maton` is a valid live target for real `runx` executions today.
+- `aster` is a valid live target for real `runx` executions today.
 - the governed boundary story is honest: runs stop at explicit caller
   boundaries instead of pretending to be fully autonomous
 - the repo is already useful for receipts, envelopes, and future gradual

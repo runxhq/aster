@@ -1,4 +1,4 @@
-name: maton-cycle
+name: aster-cycle
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -15,16 +15,16 @@ permissions:
   issues: write
 
 concurrency:
-  group: maton-cycle
+  group: aster-cycle
   cancel-in-progress: true
 
 jobs:
-  maton-cycle:
+  aster-cycle:
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ secrets.MATON_GH_TOKEN != '' && secrets.MATON_GH_TOKEN || github.token }}
     steps:
-      - name: Check out maton
+      - name: Check out aster
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
@@ -36,21 +36,21 @@ jobs:
 
       - name: Run assess-discover-score-select cycle
         run: |
-          mkdir -p .artifacts/maton-cycle
-          node scripts/maton-cycle.mjs \
+          mkdir -p .artifacts/aster-cycle
+          node scripts/aster-cycle.mjs \
             --repo-root "$GITHUB_WORKSPACE" \
             --repo "${{ github.repository }}" \
             --dispatch \
             --dispatch-ref "${{ github.ref_name || 'main' }}" \
-            --output "$GITHUB_WORKSPACE/.artifacts/maton-cycle/result.json" \
-            --summary-output "$GITHUB_WORKSPACE/.artifacts/maton-cycle/summary.md"
-          cat "$GITHUB_WORKSPACE/.artifacts/maton-cycle/result.json"
+            --output "$GITHUB_WORKSPACE/.artifacts/aster-cycle/result.json" \
+            --summary-output "$GITHUB_WORKSPACE/.artifacts/aster-cycle/summary.md"
+          cat "$GITHUB_WORKSPACE/.artifacts/aster-cycle/result.json"
 
       - name: Append workflow summary
-        run: cat .artifacts/maton-cycle/summary.md >> "$GITHUB_STEP_SUMMARY"
+        run: cat .artifacts/aster-cycle/summary.md >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload cycle artifacts
         uses: actions/upload-artifact@v7
         with:
-          name: maton-cycle
-          path: .artifacts/maton-cycle
+          name: aster-cycle
+          path: .artifacts/aster-cycle

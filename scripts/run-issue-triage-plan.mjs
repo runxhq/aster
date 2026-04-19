@@ -3,7 +3,7 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { isPrereleaseEligibleTargetRepo } from "./maton-v1-contracts.mjs";
+import { isPrereleaseEligibleTargetRepo } from "./aster-v1-contracts.mjs";
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(scriptDir, "..");
@@ -26,7 +26,7 @@ async function main(argv = process.argv.slice(2)) {
   const outputPath = path.resolve(options.output);
   const bridgeOutput = `${outputPath}.bridge.json`;
   const artifactRoot = path.dirname(outputPath);
-  const repo = process.env.GITHUB_REPOSITORY || "nilstate/maton";
+  const repo = process.env.GITHUB_REPOSITORY || "nilstate/aster";
   const targetRepo = options.targetRepo ?? repo;
   if (!isPrereleaseEligibleTargetRepo(targetRepo)) {
     throw new Error(`target repo '${targetRepo}' is outside prerelease v1 scope.`);
@@ -37,7 +37,7 @@ async function main(argv = process.argv.slice(2)) {
 
   const runxRoot = path.resolve(options.runxRoot);
   const coreArgs = [
-    path.join(repoRoot, "scripts", "maton-core.mjs"),
+    path.join(repoRoot, "scripts", "aster-core.mjs"),
     "--lane",
     "issue-triage-plan",
     "--runx-root",

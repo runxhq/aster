@@ -12,7 +12,7 @@ subject_locator: pnpm/pnpm
 
 `pnpm` has a large public user base and recurring issue patterns around install
 state, workspace behavior, and docs clarity. Useful intervention here is a good
-test of whether maton can help strangers without drifting into noise.
+test of whether aster can help strangers without drifting into noise.
 
 ## Default Lanes
 

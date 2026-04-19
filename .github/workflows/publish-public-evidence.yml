@@ -4,7 +4,7 @@ on:
   workflow_run:
     workflows:
       - ci
-      - maton-cycle
+      - aster-cycle
       - site-pages
       - generated-pr-policy
       - rollback
@@ -51,12 +51,12 @@ jobs:
       }}
     runs-on: ubuntu-latest
     steps:
-      - name: Publish maton evidence
+      - name: Publish aster evidence
         shell: bash
         env:
           RUNX_PUBLIC_EVIDENCE_API_BASE_URL: ${{ vars.RUNX_PUBLIC_EVIDENCE_API_BASE_URL || 'https://api.runx.ai' }}
           RUNX_PUBLIC_EVIDENCE_TOKEN: ${{ secrets.RUNX_PUBLIC_EVIDENCE_TOKEN }}
-          RUNX_PUBLIC_EVIDENCE_KIND: maton_run
+          RUNX_PUBLIC_EVIDENCE_KIND: aster_run
           RUNX_PUBLIC_EVIDENCE_STATUS: ${{ github.event_name == 'workflow_dispatch' && inputs.status || (github.event.workflow_run.conclusion == 'timed_out' && 'failure') || github.event.workflow_run.conclusion }}
           RUNX_PUBLIC_EVIDENCE_TITLE: ${{ github.event_name == 'workflow_dispatch' && inputs.workflow_name || '' }}
           RUNX_PUBLIC_EVIDENCE_SUMMARY: ${{ github.event_name == 'workflow_dispatch' && inputs.summary || '' }}
@@ -104,7 +104,7 @@ jobs:
               name = (workflow or "").lower()
               if name == "ci":
                   return "ci"
-              if name == "maton-cycle":
+              if name == "aster-cycle":
                   return "ops"
               if name == "site-pages":
                   return "docs"
@@ -152,14 +152,14 @@ jobs:
                   return f"Merge-watch finished with {status}; merge state and registry-binding evidence are linked from workflow artifacts."
               if workflow == "proving-ground":
                   return f"Proving-ground finished with {status}; workflow artifacts carry the receipt trail and catalog summary."
-              if workflow == "maton-cycle":
+              if workflow == "aster-cycle":
                   return f"Selector cycle finished with {status}; artifacts record the assessed queue, thesis scores, and dispatched next lane."
               if workflow == "generated-pr-policy":
                   return f"Generated-PR policy enforcement finished with {status}; workflow artifacts show whether draft-only and review policy were corrected."
               if workflow == "rollback":
                   return f"Rollback finished with {status}; workflow artifacts show the corrective comment or PR closure action."
               if lane == "docs":
-                  return f"Maton public site workflow finished with {status}; {checks} recorded."
+                  return f"Aster public site workflow finished with {status}; {checks} recorded."
               if lane == "ci":
                   return f"Repo checks and public-site build finished with {status}; {checks} recorded."
               if lane == "proving-ground":
@@ -169,8 +169,8 @@ jobs:
               if lane == "merge-watch":
                   return f"Merge-watch finished with {status}; artifacts carry the PR transition and registry-binding request when merged."
               if channel == "main":
-                  return f"{workflow or 'maton workflow'} finished with {status}; the linked workflow artifacts carry the public proof and receipt trail."
-              return f"{workflow or 'maton workflow'} finished with {status}; {checks} recorded."
+                  return f"{workflow or 'aster workflow'} finished with {status}; the linked workflow artifacts carry the public proof and receipt trail."
+              return f"{workflow or 'aster workflow'} finished with {status}; {checks} recorded."
 
           github_run_url = None
           if trim(os.environ.get("GITHUB_SERVER_URL")) and trim(os.environ.get("GITHUB_REPOSITORY")) and trim(os.environ.get("GITHUB_RUN_ID")):
@@ -202,10 +202,10 @@ jobs:
           }
 
           event = {
-              "kind": trim(os.environ.get("RUNX_PUBLIC_EVIDENCE_KIND")) or "maton_run",
+              "kind": trim(os.environ.get("RUNX_PUBLIC_EVIDENCE_KIND")) or "aster_run",
               "source": trim(os.environ.get("RUNX_PUBLIC_EVIDENCE_SOURCE")) or "github-actions",
               "status": status,
-              "title": trim(os.environ.get("RUNX_PUBLIC_EVIDENCE_TITLE")) or workflow or "maton event",
+              "title": trim(os.environ.get("RUNX_PUBLIC_EVIDENCE_TITLE")) or workflow or "aster event",
               "timestamp": trim(os.environ.get("RUNX_PUBLIC_EVIDENCE_TIMESTAMP")) or datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
               "summary": trim(os.environ.get("RUNX_PUBLIC_EVIDENCE_SUMMARY")) or summary_for(workflow, status, metadata),
               "repo": trim(os.environ.get("RUNX_PUBLIC_EVIDENCE_REPO")) or trim(os.environ.get("GITHUB_REPOSITORY")),

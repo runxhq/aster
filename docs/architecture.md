@@ -1,17 +1,17 @@
 ---
 title: Architecture
-description: The full-shape plan for maton, its memory model, and its boundary with runx.
+description: The full-shape plan for aster, its memory model, and its boundary with runx.
 ---
 
 # Architecture
 
-This document is the execution plan for `maton`.
+This document is the execution plan for `aster`.
 
 The doctrine in [philosophy.md](./philosophy.md) and the stage model in
 [evolution.md](./evolution.md) stay intact. This page answers the harder
 question those docs do not fully answer on their own: what exactly owns what,
-where memory lives, when SQL enters, and how `maton` improves without
-turning `runx` into an `maton`-specific system.
+where memory lives, when SQL enters, and how `aster` improves without
+turning `runx` into an `aster`-specific system.
 
 The constitutional doctrine in `doctrine/` is part of this plan, not an
 optional style preference.
@@ -23,6 +23,13 @@ operational layer: it defines what kinds of public actions actually prove the
 `doctrine/EXAMPLES.md` turns that mission into contrasted positive and negative
 patterns so the model can compare candidate actions against real shapes instead
 of only abstract rules.
+
+## Identity
+
+`aster` is the operator identity.
+
+The name is fixed across repo, directory, site, workflows, schemas, evidence, and public surfaces.
+No deprecated operator names should remain in system-owned active surfaces.
 
 ## Hard Boundary
 
@@ -37,13 +44,13 @@ It may own:
 
 It must not own:
 
-- `maton` doctrine
-- `maton` target selection
-- `maton` priorities or taste
-- `maton` capability map
-- `maton` public narrative
+- `aster` doctrine
+- `aster` target selection
+- `aster` priorities or taste
+- `aster` capability map
+- `aster` public narrative
 
-`maton` is a separate operator built on top of `runx`.
+`aster` is a separate operator built on top of `runx`.
 
 It owns:
 
@@ -51,12 +58,12 @@ It owns:
 - how public progress is narrated
 - how targets are selected and cooled down
 - how failures become better docs, context, and skills
-- what should appear on `maton.runx.ai`
+- what should appear on `aster.runx.ai`
 
 The rule is simple:
 
 - `runx` may host the machine
-- `maton` owns the mind
+- `aster` owns the mind
 
 ## Topology
 
@@ -64,14 +71,14 @@ The current full shape is:
 
 - `runx/oss`: primitive runtime, CLI, skill execution, receipts, local memory
 - `runx/cloud`: generic hosted execution, receipt store, auth, generic hosted memory
-- `maton`: proving ground, operator docs, artifacts, workflows, and the future operator face
+- `aster`: proving ground, operator docs, artifacts, workflows, and the future operator face
 
 The hosted story can include memory and persistence, but the ownership stays
 generic:
 
 - `runx` may expose a hosted memory substrate
-- `maton` may store or retrieve through that substrate
-- the stored meanings remain `maton`'s meanings, not `runx` product nouns
+- `aster` may store or retrieve through that substrate
+- the stored meanings remain `aster`'s meanings, not `runx` product nouns
 
 ## Current Reality
 
@@ -90,14 +97,14 @@ is the planned convergence shape.
 
 ## Public Face
 
-`maton.runx.ai` should stay separate from `runx.ai`.
+`aster.runx.ai` should stay separate from `runx.ai`.
 
 That split is important:
 
 - `runx.ai` is the runtime, registry, receipt, and hosted-platform face
-- `maton.runx.ai` is the operator face
+- `aster.runx.ai` is the operator face
 
-The target 10/10 face is a dedicated `site/` app in the `maton` repo. That
+The target 10/10 face is a dedicated `site/` app in the `aster` repo. That
 site should present:
 
 - thesis and current posture
@@ -108,9 +115,9 @@ site should present:
 - target context from `state/`
 
 Canonical receipts and generic run evidence should still resolve through
-`runx` surfaces. `maton` links to them; it does not redefine them.
+`runx` surfaces. `aster` links to them; it does not redefine them.
 
-`maton` does not need a Sourcey public docs site as part of the intended
+`aster` does not need a Sourcey public docs site as part of the intended
 end state.
 
 The rule is:
@@ -121,18 +128,18 @@ The rule is:
 
 ## Public Identity
 
-The site may present `maton` as a thesis-driven operator.
+The site may present `aster` as a thesis-driven operator.
 
 GitHub interaction should not.
 
 The intended split is:
 
-- `maton.runx.ai` explains the operator system
+- `aster.runx.ai` explains the operator system
 - GitHub comments, reviews, issues, and pull requests should read as Kam using tools
 
 That means:
 
-- `maton` is the backstage cognition and preparation layer
+- `aster` is the backstage cognition and preparation layer
 - Kam is the public accountable identity on GitHub
 - public threads should not be asked to parse internal operator theater
 - internal nouns like `lane`, `receipt`, `operator memory`, and `workflow` are not part of the intended outward voice
@@ -143,16 +150,16 @@ robot?"
 
 ## Repo Shape
 
-The target `maton` repo shape is:
+The target `aster` repo shape is:
 
 ```text
-maton/
+aster/
   doctrine/             constitutional docs, human-reviewed
-  state/                learned layer, maton-maintained
+  state/                learned layer, aster-maintained
     targets/            target context packs and trust posture notes
   history/              append-only public records
   reflections/          append-only diagnosis records
-  site/                 Astro site for maton.runx.ai
+  site/                 Astro site for aster.runx.ai
   scripts/              workflows, bridge scripts, validation tools
   schemas/              machine-readable packets and internal contracts
   .artifacts/           raw receipts, workflow packets, and transient evidence
@@ -175,7 +182,7 @@ The ownership rule inside the repo is:
 The public authorship plan is:
 
 - public GitHub actions are authored as Kam
-- `maton` may draft, rank, summarize, and prepare
+- `aster` may draft, rank, summarize, and prepare
 - any public output must be held to the standard of something Kam would
   actually say under his own name
 - if that standard is not met, the system should choose `no_op`
@@ -226,13 +233,13 @@ Not every useful thing is canonical.
 | class | examples | owner | storage | mutability |
 | --- | --- | --- | --- | --- |
 | canonical evidence | receipts, approvals, artifacts, workflow packets | `runx` or the lane producer | receipt/artifact store | append-only |
-| constitutional docs | thesis, conduct, voice, epistemology, authority, evolution | `maton` maintainers | git | review-only |
-| derived context | summaries, extracted facts, retrieval notes, indexes | `maton` | local cache or hosted generic memory | replaceable |
-| operator projections | targets, opportunities, priorities, capabilities | `maton` | `state/` first, store later | revisable |
-| public narrative | site pages, history, reflections | `maton` | git + site build | append-first |
+| constitutional docs | thesis, conduct, voice, epistemology, authority, evolution | `aster` maintainers | git | review-only |
+| derived context | summaries, extracted facts, retrieval notes, indexes | `aster` | local cache or hosted generic memory | replaceable |
+| operator projections | targets, opportunities, priorities, capabilities | `aster` | `state/` first, store later | revisable |
+| public narrative | site pages, history, reflections | `aster` | git + site build | append-first |
 
 The important rule is that derived context can be thrown away and rebuilt from
-canonical evidence. That keeps `maton` legible when memory inevitably gets
+canonical evidence. That keeps `aster` legible when memory inevitably gets
 smarter.
 
 ## Subject Identity
@@ -252,7 +259,7 @@ The generic subject contract should be:
 `runx` should not define operator-specific subject kinds. It only defines the
 shape. Namespace owners define the kinds they need.
 
-For `maton`, likely subject kinds include:
+For `aster`, likely subject kinds include:
 
 - `repo`
 - `issue`
@@ -262,11 +269,11 @@ For `maton`, likely subject kinds include:
 - `brief`
 - `run_class`
 
-Those are `maton` meanings, not `runx` nouns.
+Those are `aster` meanings, not `runx` nouns.
 
 ## Memory Model
 
-`maton` should not jump straight to an operator-specific database.
+`aster` should not jump straight to an operator-specific database.
 
 It should grow memory in layers:
 
@@ -333,15 +340,15 @@ Each memory entry should support:
 - visibility
 - optional embedding/vector index
 
-This is a runtime service, not an `maton` schema.
+This is a runtime service, not an `aster` schema.
 
 ### Hosted Access Model
 
-`maton` should not receive a broad shared `runx` admin key.
+`aster` should not receive a broad shared `runx` admin key.
 
 The planned access model is:
 
-- `maton` gets its own `runx` service principal
+- `aster` gets its own `runx` service principal
 - preferred auth is GitHub OIDC token exchange for short-lived hosted tokens
 - fallback auth is a rotated service token scoped to the same principal
 - scopes stay narrow: `memory:read`, `memory:write`, `memory:query`,
@@ -462,7 +469,7 @@ The contract rules are:
 
 ### Layer 4: Operator projections
 
-`maton` then builds its own meanings on top:
+`aster` then builds its own meanings on top:
 
 - targets
 - opportunities
@@ -472,14 +479,14 @@ The contract rules are:
 - reflections
 
 Those may eventually live in SQL, but if they do, they should live as
-`maton`-owned projections over generic evidence and generic memory. They
+`aster`-owned projections over generic evidence and generic memory. They
 must not become hard-coded `runx` product nouns.
 
-## Does Maton Need SQL?
+## Does Aster Need SQL?
 
 Not immediately.
 
-`maton` can operate for a while with:
+`aster` can operate for a while with:
 
 - repo docs
 - append-only history
@@ -488,7 +495,7 @@ Not immediately.
 - receipt links
 - generated summaries
 
-SQL becomes justified when `maton` needs:
+SQL becomes justified when `aster` needs:
 
 - shared context across concurrent cycles
 - retrieval over large receipt histories
@@ -499,7 +506,7 @@ SQL becomes justified when `maton` needs:
 The boundary remains:
 
 - if `runx` hosts SQL, it hosts generic memory primitives
-- if `maton` needs richer operator tables, those belong to `maton`
+- if `aster` needs richer operator tables, those belong to `aster`
 
 ## Retention Policy
 
@@ -526,15 +533,15 @@ Every meaningful run should assemble context in the same order:
 6. write receipts first
 7. write reflection and projection updates second
 
-That ordering matters. It keeps `maton` grounded in evidence before it
+That ordering matters. It keeps `aster` grounded in evidence before it
 updates its own beliefs.
 
 The implemented context path now lives in:
 
-- `scripts/build-maton-context.mjs`
-- `scripts/maton-core.mjs`
-- `scripts/promote-maton-state.mjs`
-- `scripts/apply-maton-promotions.mjs`
+- `scripts/build-aster-context.mjs`
+- `scripts/aster-core.mjs`
+- `scripts/promote-aster-state.mjs`
+- `scripts/apply-aster-promotions.mjs`
 
 Doctrine is loaded in a stable priority order. Relevant reflections now load as
 full content when the subject matches; unrelated reflections stay excerpt-only.
@@ -545,9 +552,9 @@ thresholds, and cooldowns live in `state/selection-policy.json`.
 
 The selector is now a real operator component, not just a plan:
 
-- `scripts/maton-cycle.mjs` discovers candidates, scores them, and selects
+- `scripts/aster-cycle.mjs` discovers candidates, scores them, and selects
   one bounded lane or `no_op`
-- `.github/workflows/maton-cycle.yml` runs the assess/discover/score/select
+- `.github/workflows/aster-cycle.yml` runs the assess/discover/score/select
   cycle on GitHub
 - target dossiers in `state/targets/` provide default-lane posture and recent
   outcomes used for cooldowns
@@ -567,7 +574,7 @@ text.
 
 ## Self-Improvement Direction
 
-`maton` should improve in a fixed order:
+`aster` should improve in a fixed order:
 
 1. sharpen docs
 2. sharpen context retrieval
@@ -585,9 +592,9 @@ The preferred response to repeated failure is:
 3. improve the skill or lane contract
 4. add a new store or retrieval path only if the earlier fixes are exhausted
 
-## Maton Core Update Rules
+## Aster Core Update Rules
 
-The core of `maton` must update itself under explicit filesystem rules:
+The core of `aster` must update itself under explicit filesystem rules:
 
 ### `doctrine/`
 
@@ -630,7 +637,7 @@ The core of `maton` must update itself under explicit filesystem rules:
 
 ## Promotion Rules
 
-The maton core should promote information in one direction:
+The aster core should promote information in one direction:
 
 1. receipt or artifact
 2. reflection
@@ -651,7 +658,7 @@ Approval logic should not rely only on branch names, folder convention, or
 human intuition. Mutating lanes should classify the surfaces they touch and
 carry that classification into their publication policy.
 
-For `maton` itself:
+For `aster` itself:
 
 - promotion flows may write only to `state/targets/`, `history/`, and `reflections/`
 - promotion flows must never write to `doctrine/`
@@ -724,19 +731,19 @@ The staged build order should be:
 ### v2: Generic hosted memory
 
 - `runx` exposes generic memory primitives
-- `maton` retrieves receipt-grounded memory through a generic interface
-- `maton` authenticates through a service principal, not a broad shared key
-- no `maton_*` tables appear in `runx`
+- `aster` retrieves receipt-grounded memory through a generic interface
+- `aster` authenticates through a service principal, not a broad shared key
+- no `aster_*` tables appear in `runx`
 
 ### v3: Operator projections
 
-- `maton` maintains targets, priorities, and capabilities as first-class projections
+- `aster` maintains targets, priorities, and capabilities as first-class projections
 - selection and cooldown logic become durable
 - the site shows live operator state without pretending that projections are receipts
 
 ### v4: External portfolio
 
-- `maton` handles a bounded set of external targets
+- `aster` handles a bounded set of external targets
 - upstream contributions, advisories, and briefs become routine
 - the public face shows why each action was worth taking
 
@@ -758,7 +765,7 @@ When there is doubt about where something belongs, ask one question:
 Is this a generic primitive that another operator could use unchanged?
 
 - if yes, it may belong in `runx`
-- if no, it belongs in `maton`
+- if no, it belongs in `aster`
 
 That is the boundary that keeps the system beautiful instead of collapsing into
 one repo that knows too much.

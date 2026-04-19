@@ -1,11 +1,11 @@
 ---
 title: Introduction
-description: What maton is, what it is not, and why it exists as the public runx target.
+description: What aster is, what it is not, and why it exists as the public runx target.
 ---
 
-# maton
+# aster
 
-`maton` is the public repo where `runx` is supposed to prove that governed
+`aster` is the public repo where `runx` is supposed to prove that governed
 automation can be useful, legible, and cumulative.
 
 It is not meant to be a vague demo repo.
@@ -27,7 +27,7 @@ focused on what the repo exists to prove.
 
 ## Core claim
 
-The core claim of `maton` is:
+The core claim of `aster` is:
 
 1. real issues can be triaged in public
 2. bounded issues can become draft PRs
@@ -35,15 +35,15 @@ The core claim of `maton` is:
 4. new capabilities can begin as governed skill proposals
 5. every step can emit receipts instead of hand-wavy claims
 
-That claim only matters if the repo remains inspectable. `maton` should get
+That claim only matters if the repo remains inspectable. `aster` should get
 more capable without becoming more mysterious.
 
 ## What belongs here
 
 The docs in this repo should describe:
 
-- the intention of `maton`
-- the architecture and memory boundary between `maton` and `runx`
+- the intention of `aster`
+- the architecture and memory boundary between `aster` and `runx`
 - the real live flows running against this repo
 - the governance boundaries around self-improvement
 - the current evolutionary stage and the next stage
@@ -57,7 +57,7 @@ The docs in the `runx` repo should describe:
 
 ## Success criteria
 
-`maton` is succeeding when the public repo shows a believable trail of
+`aster` is succeeding when the public repo shows a believable trail of
 bounded improvement:
 
 - issues do not disappear into a queue; they receive triage

@@ -1,4 +1,4 @@
-# maton - Agent Guide
+# aster - Agent Guide
 
 Canonical reference for AI coding agents working with this codebase.
 

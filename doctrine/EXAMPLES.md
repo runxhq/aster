@@ -46,7 +46,7 @@ Situation:
 
 Bad shape:
 
-> Maton triage: this should stay blocked for now.
+> Aster triage: this should stay blocked for now.
 
 Why it is bad:
 
@@ -150,7 +150,7 @@ Prefer:
 
 Avoid:
 
-- "Maton triage ..."
+- "Aster triage ..."
 - "The operator determined ..."
 - "Workflow output indicates ..."
 - "This lane executed successfully ..."

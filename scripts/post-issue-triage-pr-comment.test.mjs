@@ -10,7 +10,7 @@ test("buildCommentPlan noops for bot-authored dependency update PRs", () => {
       pr: "18991",
       sha: "981d08a",
     },
-    body: "Maton triage",
+    body: "Aster triage",
     runner() {
       return JSON.stringify({
         title: "Update Rust crate similar to v3",
@@ -54,7 +54,7 @@ test("buildCommentPlan includes marker and sha for eligible PRs", () => {
   });
 
   assert.equal(plan.status, "ready");
-  assert.match(plan.comment_body, /maton:runx-issue-triage/);
+  assert.match(plan.comment_body, /aster:runx-issue-triage/);
   assert.match(plan.comment_body, /Head SHA: abc1234/);
 });
 
@@ -80,7 +80,7 @@ test("buildCommentPlan noops when the exact marker and head sha already exist", 
         labels: [{ name: "documentation" }],
         comments: [
           {
-            body: "<!-- maton:runx-issue-triage -->\nUseful bounded comment\n\nHead SHA: abc1234",
+            body: "<!-- aster:runx-issue-triage -->\nUseful bounded comment\n\nHead SHA: abc1234",
           },
         ],
         reviews: [],

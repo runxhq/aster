@@ -4,7 +4,7 @@ import { pathToFileURL } from "node:url";
 import { buildGeneratedPrPolicyPlan } from "./generated-pr-policy.mjs";
 
 const defaultRunner = (command, args) => execFileSync(command, args, { encoding: "utf8" });
-const policyCommentMarker = "<!-- maton:generated-pr-policy-enforced -->";
+const policyCommentMarker = "<!-- aster:generated-pr-policy-enforced -->";
 
 export async function enforceGeneratedPrPolicy(argv = process.argv.slice(2), runner = defaultRunner) {
   const options = parseArgs(argv);

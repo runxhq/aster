@@ -40,7 +40,7 @@ export async function buildOperatorShakeoutReport({ repoRoot, publishEvidencePat
       fingerprint: "abc12345deadbeef",
     }),
     subjectKind: "github_issue",
-    subjectLocator: "nilstate/maton#issue/101",
+    subjectLocator: "nilstate/aster#issue/101",
   });
   const generatedBody = ensureGeneratedPrPolicyBlock("## Summary\n\nBounded PR body.", {
     lane: "docs-pr",
@@ -68,7 +68,7 @@ export async function buildOperatorShakeoutReport({ repoRoot, publishEvidencePat
     }),
     validation: {
       commands: ["npm run site:ci"],
-      verification_profile: "maton.site-ci",
+      verification_profile: "aster.site-ci",
     },
   });
   const replayIssue = buildReplayGuardPlan({
@@ -77,7 +77,7 @@ export async function buildOperatorShakeoutReport({ repoRoot, publishEvidencePat
     title: "Clarify deploy docs",
     body: "Docs drift exists.",
     comments: [],
-    operator_memory_branch: "runx/operator-memory-issue-triage-nilstate-maton-issue-101",
+    operator_memory_branch: "runx/operator-memory-issue-triage-nilstate-aster-issue-101",
     has_open_operator_memory_pr: false,
   });
   const replayPr = buildReplayGuardPlan({
@@ -85,7 +85,7 @@ export async function buildOperatorShakeoutReport({ repoRoot, publishEvidencePat
     pr: "12",
     sha: "abc1234",
     comments: [],
-    operator_memory_branch: "runx/operator-memory-issue-triage-nilstate-maton-pr-12",
+    operator_memory_branch: "runx/operator-memory-issue-triage-nilstate-aster-pr-12",
     has_open_operator_memory_pr: false,
   });
   const policyPlan = buildGeneratedPrPolicyPlan({
@@ -96,14 +96,14 @@ export async function buildOperatorShakeoutReport({ repoRoot, publishEvidencePat
   });
   const rollbackPlan = buildRollbackPlan({
     mode: "pr-comment",
-    repo: "nilstate/maton",
+    repo: "nilstate/aster",
     pr: "12",
     reason: "Superseded by a narrower correction.",
     replacementBody: "Please review only the deployment note changes.",
   });
 
   const workflowChecks = [
-    ".github/workflows/maton-cycle.yml",
+    ".github/workflows/aster-cycle.yml",
     ".github/workflows/site-pages.yml",
     ".github/workflows/generated-pr-policy.yml",
     ".github/workflows/rollback.yml",

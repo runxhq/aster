@@ -9,7 +9,7 @@ on:
       target_repo:
         description: Repo to update. Must have a declared verification profile.
         required: true
-        default: nilstate/maton
+        default: nilstate/aster
         type: string
       title:
         description: One bounded docs request title.
@@ -41,7 +41,7 @@ jobs:
   docs-pr:
     runs-on: ubuntu-latest
     env:
-      GH_TOKEN: ${{ secrets.MATON_GH_TOKEN != '' && secrets.MATON_GH_TOKEN || secrets.RUNX_REPOSITORY_PAT || github.token }}
+      GH_TOKEN: ${{ secrets.ASTER_GH_TOKEN != '' && secrets.ASTER_GH_TOKEN || secrets.RUNX_REPOSITORY_PAT || github.token }}
       RUNX_CALLER_MODEL: ${{ vars.RUNX_CALLER_MODEL || 'gpt-5.4' }}
       RUNX_CALLER_REASONING_EFFORT: ${{ vars.RUNX_CALLER_REASONING_EFFORT || 'xhigh' }}
       RUNX_CALLER_MAX_ATTEMPTS: ${{ vars.RUNX_CALLER_MAX_ATTEMPTS || '3' }}
@@ -58,7 +58,7 @@ jobs:
             echo "enabled=true" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Check out maton
+      - name: Check out aster
         if: ${{ steps.preflight.outputs.enabled == 'true' }}
         uses: actions/checkout@v6
         with:
@@ -148,7 +148,7 @@ jobs:
             --data "$(jq -n \
               --arg title "$TITLE" --arg summary "$SUMMARY" --arg status "$STATUS" \
               --arg repo "$TARGET" --arg url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
-              '{events: [{kind: "maton_run", source: "github-actions", status: (if $status == "success" then "success" else "failure" end), title: $title, summary: $summary, repo: $repo, workflow: "docs-pr", url: $url, timestamp: (now | todate), metadata: {lane: "docs-pr", feed_channel: "main", main_feed_eligible: true}}]}')" \
+              '{events: [{kind: "aster_run", source: "github-actions", status: (if $status == "success" then "success" else "failure" end), title: $title, summary: $summary, repo: $repo, workflow: "docs-pr", url: $url, timestamp: (now | todate), metadata: {lane: "docs-pr", feed_channel: "main", main_feed_eligible: true}}]}')" \
             "${RUNX_PUBLIC_EVIDENCE_API_BASE_URL%/}/v1/admin/public/evidence" || true
 
       - name: Upload artifacts

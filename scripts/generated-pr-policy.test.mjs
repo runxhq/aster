@@ -29,7 +29,7 @@ test("ensureGeneratedPrPolicyBlock appends a policy block", () => {
 test("inferGeneratedPrLane derives the lane from branch naming", () => {
   assert.equal(
     inferGeneratedPrLane({
-      headRefName: "runx/operator-memory-issue-triage-nilstate-maton-issue-9",
+      headRefName: "runx/operator-memory-issue-triage-nilstate-aster-issue-9",
       title: "[runx] update issue-triage operator memory",
       body: "",
     }),

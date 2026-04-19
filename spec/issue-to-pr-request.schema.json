@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:maton:schema:issue-to-pr-request:v1",
+  "$id": "urn:aster:schema:issue-to-pr-request:v1",
   "title": "runx Issue To PR Request",
   "description": "Canonical prerelease v1 schema for bounded issue-to-pr worker requests.",
   "type": "object",

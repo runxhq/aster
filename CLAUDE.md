@@ -1,6 +1,6 @@
 # Claude Code Integration Notes
 
-`maton` is a small governance repo, not a product app. Most work here is in
+`aster` is a small governance repo, not a product app. Most work here is in
 docs, GitHub workflows, helper scripts, and scafld-managed specs.
 
 **MUST READ:** `AGENTS.md` - the canonical agent guide covering invariants, modes, validation, and conventions. Read it before doing any work.

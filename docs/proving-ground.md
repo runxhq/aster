@@ -1,11 +1,11 @@
 ---
 title: Proving-Ground Story
-description: Why maton exists as a public proving-ground surface and how that loop should work.
+description: Why aster exists as a public proving-ground surface and how that loop should work.
 ---
 
 # Proving-Ground Story
 
-`maton` exists so `runx` can test itself on a real public target instead
+`aster` exists so `runx` can test itself on a real public target instead
 of a private benchmark or a staged demo.
 
 The repo matters because it forces the system to confront real operating
@@ -36,7 +36,7 @@ is under-specified, and where governance needs to be sharper.
 - every lane emits receipts instead of just claiming it worked
 - failures can feed back into skill hardening instead of being buried
 - project evaluators can inspect the whole system from issue intake to PR
-- `maton` can develop a visible evolutionary history rather than a static
+- `aster` can develop a visible evolutionary history rather than a static
   showcase narrative
 
 ## The intended proving-ground trajectory
@@ -52,10 +52,10 @@ The proving-ground story should grow in layers:
    the learned workflow
 7. gradually improve the repo and the governing system together
 
-That last point matters most. `maton` is not only a destination for `runx`
+That last point matters most. `aster` is not only a destination for `runx`
 workflows. It is the public record of how those workflows become trustworthy.
 
 The proving-ground loop should therefore improve two things at once:
 
-- the `maton` repo itself
+- the `aster` repo itself
 - the quality of the `runx` skills and flows acting on it

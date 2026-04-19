@@ -8,7 +8,7 @@ description: Secrets, approvals, artifacts, and what still needs hardening.
 ## Required secrets
 
 - `OPENAI_API_KEY`: external caller for `runx` `agent-step` requests
-- `MATON_GH_TOKEN`: preferred GitHub token for public outbound comments and
+- `ASTER_GH_TOKEN`: preferred GitHub token for public outbound comments and
   PRs when those actions should appear as `@auscaster` / Kam rather than as the
   default workflow token
 - `RUNX_CALLER_MODEL` (optional repo variable): pinned model snapshot for the
@@ -23,16 +23,16 @@ description: Secrets, approvals, artifacts, and what still needs hardening.
 
 ## Planned Hosted Memory Access
 
-`maton` should not use a broad shared `RUNX_API_KEY` for memory access.
+`aster` should not use a broad shared `RUNX_API_KEY` for memory access.
 
 The planned model is:
 
-- one dedicated `runx` service principal for `maton`
+- one dedicated `runx` service principal for `aster`
 - preferred authentication via GitHub OIDC exchange for short-lived tokens
 - rotated service token fallback only when OIDC is unavailable
 - narrow scopes such as `memory:read`, `memory:write`, `memory:query`,
   `memory:snapshot:publish`, and `receipt:read`
-- namespace ACLs that restrict the principal to maton-owned namespaces
+- namespace ACLs that restrict the principal to aster-owned namespaces
 
 The public site must not use privileged memory credentials from the browser.
 It should read public receipts, published public snapshots, or build-time
@@ -44,14 +44,14 @@ The intended public face is `site/`, not a Sourcey docs surface.
 
 The public interaction model is:
 
-- `maton` thinks backstage
+- `aster` thinks backstage
 - Kam speaks on GitHub
 
 This means:
 
 - public issue comments, PR comments, reviews, issues, and PRs should read as
   Kam's accountable voice
-- internal branding like `Maton triage` is not part of the intended public
+- internal branding like `Aster triage` is not part of the intended public
   surface
 - internal nouns like `lane`, `receipt`, `operator memory`, and `workflow`
   should stay out of ordinary GitHub conversation
@@ -120,7 +120,7 @@ These are no longer undefined gaps. They are explicit execution requirements.
 - generated PR lanes should record a change-surface policy alongside publication
   so reviewers can see whether the run touched doctrine, learned state, public
   memory, public face, docs, or runtime code
-- on `maton` itself, doctrine writes remain human-only and learned/public
+- on `aster` itself, doctrine writes remain human-only and learned/public
   memory writes belong to dedicated promotion flows rather than general PR lanes
 
 ### Merge and rollback

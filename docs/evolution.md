@@ -1,11 +1,11 @@
 ---
 title: Evolution
-description: The intended evolutionary path for maton as a governed self-improving repo.
+description: The intended evolutionary path for aster as a governed self-improving repo.
 ---
 
 # Evolution
 
-`maton` should not jump from "demo repo" to "full autonomous maintainer."
+`aster` should not jump from "demo repo" to "full autonomous maintainer."
 
 It should evolve through stages that are easy to inspect and hard to fake.
 
@@ -18,7 +18,7 @@ Each stage should preserve the same doctrine:
 
 ## Stage 1: Observable
 
-At the first stage, `maton` proves that the system can observe itself and
+At the first stage, `aster` proves that the system can observe itself and
 emit credible receipts.
 
 Signals at this stage:
@@ -30,7 +30,7 @@ Signals at this stage:
 
 ## Stage 2: Responsive
 
-At the second stage, `maton` stops being a passive demo surface and starts
+At the second stage, `aster` stops being a passive demo surface and starts
 responding to inbound work.
 
 Signals at this stage:
@@ -43,7 +43,7 @@ Signals at this stage:
 
 ## Stage 3: Self-Improving
 
-At the third stage, `maton` begins improving its own instructions, docs,
+At the third stage, `aster` begins improving its own instructions, docs,
 and operating surfaces through governed PRs.
 
 Signals at this stage:
@@ -54,7 +54,7 @@ Signals at this stage:
 - the repo becomes easier for future runs to understand
 
 This stage matters because self-improvement is where most systems become vague.
-`maton` should do the opposite: the more it changes itself, the more
+`aster` should do the opposite: the more it changes itself, the more
 inspectable its reasoning trail should become.
 
 ## Stage 4: Skill-Accreting
@@ -69,13 +69,13 @@ Signals at this stage:
 - proposals reference concrete receipts and repeated operator needs
 - the system gets more capable without skipping governance
 
-This is the real compounding layer. A healthy `maton` should not only solve
+This is the real compounding layer. A healthy `aster` should not only solve
 tasks. It should convert repeated classes of work into clearer future
 capability.
 
 ## Stage 5: Ecosystem-Useful
 
-The long-term goal is that `maton` becomes useful beyond itself.
+The long-term goal is that `aster` becomes useful beyond itself.
 
 Signals at this stage:
 
@@ -86,7 +86,7 @@ Signals at this stage:
 
 ## Current posture
 
-Right now `maton` is between Stage 1 and Stage 2:
+Right now `aster` is between Stage 1 and Stage 2:
 
 - the live repo and docs surface exist
 - hosted lanes are real

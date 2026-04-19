@@ -1,7 +1,7 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import RichDoc from "../components/RichDoc.astro";
-import { readMatonControl, readRepoDoc } from "../lib/content.js";
+import { readAsterControl, readRepoDoc } from "../lib/content.js";
 
 type PriorityEntry = {
   priority_id: string;
@@ -25,7 +25,7 @@ function isPriorityEntry(value: PriorityEntry | undefined): value is PriorityEnt
 }
 
 const priorities = await readRepoDoc("state/priorities.md");
-const control = await readMatonControl();
+const control = await readAsterControl();
 const latestCycle = Array.isArray(control?.cycle_records) ? control.cycle_records.at(-1) ?? null : null;
 const persistedPriorities: PriorityEntry[] = Array.isArray(control?.priorities)
   ? control.priorities as PriorityEntry[]

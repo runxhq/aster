@@ -1,5 +1,5 @@
 name: Improvement
-description: Propose a bounded improvement for maton or one of its runx lanes.
+description: Propose a bounded improvement for aster or one of its runx lanes.
 title: "[improvement] "
 body:
   - type: textarea

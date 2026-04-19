@@ -6,7 +6,7 @@ visibility: public
 
 # Epistemology
 
-This file defines what counts as truth for `maton`.
+This file defines what counts as truth for `aster`.
 
 ## Receipts Before Memory
 

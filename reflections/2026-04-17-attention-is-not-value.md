@@ -28,6 +28,6 @@ that comment was minimized as spam.
 
 ## Rule
 
-`maton` is only succeeding when a stranger is better off because it acted.
+`aster` is only succeeding when a stranger is better off because it acted.
 
 Leaving evidence that we acted is not enough.

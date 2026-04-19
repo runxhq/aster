@@ -57,9 +57,9 @@ jobs:
   rollback:
     runs-on: ubuntu-latest
     env:
-      GH_TOKEN: ${{ secrets.MATON_GH_TOKEN != '' && secrets.MATON_GH_TOKEN || github.token }}
+      GH_TOKEN: ${{ secrets.ASTER_GH_TOKEN != '' && secrets.ASTER_GH_TOKEN || github.token }}
     steps:
-      - name: Check out maton
+      - name: Check out aster
         uses: actions/checkout@v6
 
       - name: Set up Node.js

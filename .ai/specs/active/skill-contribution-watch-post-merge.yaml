@@ -8,13 +8,13 @@ task:
   title: "Watch merged upstream skill contributions"
   summary: >
     Add the post-merge watcher lane for upstream SKILL.md contributions so
-    maton can detect accepted, rejected, or stale PRs and hand merged
+    aster can detect accepted, rejected, or stale PRs and hand merged
     upstream skills to runx registry binding with pinned source metadata.
   size: "medium"
   risk_level: "medium"
   context:
     packages:
-      - "maton"
+      - "aster"
     files_impacted:
       - path: "scripts/watch-skill-contribution.mjs"
         lines: "all"
@@ -54,7 +54,7 @@ task:
     - "nilstate/icey-cli PR #2 merged"
   assumptions:
     - "GH_TOKEN can read upstream PR and contents metadata"
-    - "RUNX_PUBLIC_EVIDENCE_TOKEN is available for enriched proof publishing in maton"
+    - "RUNX_PUBLIC_EVIDENCE_TOKEN is available for enriched proof publishing in aster"
   touchpoints:
     - area: "GitHub Actions"
       description: "New scheduled/manual workflow observes upstream contribution state"
@@ -166,7 +166,7 @@ phases:
 
   - id: "phase3"
     name: "Document operator flow"
-    objective: "Make watch lane visible in maton docs and health checks."
+    objective: "Make watch lane visible in aster docs and health checks."
     dependencies:
       - "phase2"
     changes:
@@ -185,17 +185,17 @@ phases:
       - file: "scripts/check.mjs"
         action: "update"
         lines: "all"
-        content_spec: "Require watcher files in maton health check."
+        content_spec: "Require watcher files in aster health check."
     acceptance_criteria:
       - id: "ac3_1"
         type: "test"
-        description: "Maton file check passes"
+        description: "Aster file check passes"
         command: "node scripts/check.mjs"
-        expected: "maton check passed"
+        expected: "aster check passed"
         result:
           status: "pass"
           timestamp: "2026-04-16T01:29:28Z"
-          output: "maton check passed"
+          output: "aster check passed"
     status: "completed"
 
 rollback:

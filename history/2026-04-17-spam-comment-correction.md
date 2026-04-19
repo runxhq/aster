@@ -11,7 +11,7 @@ pr_number: 18991
 
 # Correct A Spam-Marked Public Comment
 
-`maton` posted a public triage comment on `astral-sh/uv#pr/18991`, a
+`aster` posted a public triage comment on `astral-sh/uv#pr/18991`, a
 bot-authored dependency-update PR. GitHub minimized that comment as spam.
 
 The correction was:

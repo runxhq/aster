@@ -6,7 +6,7 @@ const required = [
   "AGENTS.md",
   "CLAUDE.md",
   "CONVENTIONS.md",
-  "doctrine/MATON.md",
+  "doctrine/ASTER.md",
   "doctrine/MISSION.md",
   "doctrine/EXAMPLES.md",
   "doctrine/CONDUCT.md",
@@ -29,16 +29,16 @@ const required = [
   "state/priorities.md",
   "state/capabilities.md",
   "state/selection-policy.json",
-  "state/maton-control.json",
+  "state/aster-control.json",
   "state/verification-profiles.json",
   "spec/verification-profile.schema.json",
   "spec/workspace-change-plan-request.schema.json",
   "spec/issue-to-pr-request.schema.json",
   "spec/worker-request.schema.json",
   "spec/verification-report.schema.json",
-  "spec/maton-control.schema.json",
+  "spec/aster-control.schema.json",
   "spec/selector-training-row.schema.json",
-  "state/targets/nilstate-maton.md",
+  "state/targets/nilstate-aster.md",
   "state/targets/nilstate-runx.md",
   "history/README.md",
   "reflections/README.md",
@@ -57,27 +57,27 @@ const required = [
   "site/src/pages/targets/[slug].astro",
   "schemas/skill-upstream-artifacts.schema.json",
   "schemas/skill-upstream-state.schema.json",
-  "spec/maton-control.schema.json",
+  "spec/aster-control.schema.json",
   "spec/selector-training-row.schema.json",
   "spec/issue-to-pr-request.schema.json",
   "spec/verification-profile.schema.json",
   "spec/verification-report.schema.json",
   "spec/worker-request.schema.json",
   "spec/workspace-change-plan-request.schema.json",
-  "scripts/build-maton-context.mjs",
-  "scripts/build-maton-context.test.mjs",
-  "scripts/maton-cycle.mjs",
-  "scripts/maton-cycle.test.mjs",
+  "scripts/build-aster-context.mjs",
+  "scripts/build-aster-context.test.mjs",
+  "scripts/aster-cycle.mjs",
+  "scripts/aster-cycle.test.mjs",
   "scripts/check-issue-triage-pr-policy.mjs",
   "scripts/check-issue-triage-pr-policy.test.mjs",
-  "scripts/apply-maton-promotions.mjs",
-  "scripts/apply-maton-promotions.test.mjs",
-  "scripts/maton-core.mjs",
-  "scripts/maton-core.test.mjs",
+  "scripts/apply-aster-promotions.mjs",
+  "scripts/apply-aster-promotions.test.mjs",
+  "scripts/aster-core.mjs",
+  "scripts/aster-core.test.mjs",
   "scripts/change-surface-governance.mjs",
   "scripts/change-surface-governance.test.mjs",
-  "scripts/promote-maton-state.mjs",
-  "scripts/promote-maton-state.test.mjs",
+  "scripts/promote-aster-state.mjs",
+  "scripts/promote-aster-state.test.mjs",
   "scripts/proving-ground.sh",
   "scripts/runx-agent-bridge.mjs",
   "scripts/prepare-skill-upstream.mjs",
@@ -115,7 +115,7 @@ const required = [
   ".github/workflows/proving-ground.yml",
   ".github/workflows/rollback.yml",
   ".github/workflows/site-pages.yml",
-  ".github/workflows/maton-cycle.yml",
+  ".github/workflows/aster-cycle.yml",
   ".github/workflows/issue-triage.yml",
   ".github/workflows/skill-lab.yml",
   ".github/workflows/skill-upstream.yml",
@@ -131,9 +131,9 @@ for (const relativePath of required) {
   }
 }
 
-const { loadVerificationProfileCatalogSync } = await import("./maton-v1-contracts.mjs");
+const { loadVerificationProfileCatalogSync } = await import("./aster-v1-contracts.mjs");
 loadVerificationProfileCatalogSync();
-const { assertMatonSiteSharedSurface } = await import("./check-site-shared-surface.mjs");
-await assertMatonSiteSharedSurface();
+const { assertAsterSiteSharedSurface } = await import("./check-site-shared-surface.mjs");
+await assertAsterSiteSharedSurface();
 
-console.log("maton check passed");
+console.log("aster check passed");

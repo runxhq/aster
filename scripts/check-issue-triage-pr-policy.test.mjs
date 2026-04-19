@@ -7,7 +7,7 @@ import { mkdtemp, writeFile } from "node:fs/promises";
 import { checkIssueTriagePrPolicy } from "./check-issue-triage-pr-policy.mjs";
 
 test("checkIssueTriagePrPolicy blocks bot dependency PRs", async () => {
-  const tempRoot = await mkdtemp(path.join(os.tmpdir(), "maton-pr-policy-"));
+  const tempRoot = await mkdtemp(path.join(os.tmpdir(), "aster-pr-policy-"));
   const snapshotPath = path.join(tempRoot, "snapshot.json");
   await writeFile(
     snapshotPath,
@@ -30,7 +30,7 @@ test("checkIssueTriagePrPolicy blocks bot dependency PRs", async () => {
 });
 
 test("checkIssueTriagePrPolicy blocks targets in trust recovery after spam", async () => {
-  const tempRoot = await mkdtemp(path.join(os.tmpdir(), "maton-pr-policy-trust-"));
+  const tempRoot = await mkdtemp(path.join(os.tmpdir(), "aster-pr-policy-trust-"));
   const snapshotPath = path.join(tempRoot, "snapshot.json");
   const dossierPath = path.join(tempRoot, "astral-sh-uv.md");
   await writeFile(

@@ -1,11 +1,11 @@
 ---
 title: Operating Model
-description: The governance doctrine that determines how maton routes work, applies changes, and learns over time.
+description: The governance doctrine that determines how aster routes work, applies changes, and learns over time.
 ---
 
 # Operating Model
 
-`maton` is the public repo that `runx` should improve gradually over time.
+`aster` is the public repo that `runx` should improve gradually over time.
 
 The governing rule is simple: recommendation first, mutation second.
 
@@ -24,17 +24,17 @@ more hidden magic.
 
 ## Boundary
 
-`runx` is the governed runtime. `maton` is a separate operator that uses
+`runx` is the governed runtime. `aster` is a separate operator that uses
 that runtime.
 
 That means:
 
 - `runx` may own generic primitives such as receipts, approvals, artifacts, and
   generic memory
-- `maton` owns operator semantics such as priorities, targets,
+- `aster` owns operator semantics such as priorities, targets,
   reflections, and public narrative
 
-If a concept would only make sense for `maton`, it should not become a
+If a concept would only make sense for `aster`, it should not become a
 `runx` product noun.
 
 ## Phases
@@ -48,7 +48,7 @@ If a concept would only make sense for `maton`, it should not become a
 - operator update drafts
 - skill trust reports
 
-At this phase, `maton` is only collecting signal.
+At this phase, `aster` is only collecting signal.
 
 ### 2. Propose
 
@@ -67,7 +67,7 @@ That proposal layer now has explicit front doors:
 - `github-triage` for PRs
 - `objective-to-skill` for new capability proposals
 
-This proposal phase is where `maton` defends itself against vague
+This proposal phase is where `aster` defends itself against vague
 automation. If a task cannot be expressed as a bounded proposal with a clear
 artifact, the repo should not pretend it is ready for automatic execution.
 
@@ -79,7 +79,7 @@ Public or mutating work stays gated:
 - public posts require explicit approval
 - PR creation requires explicit approval
 
-In practice, `maton` uses three approval shapes:
+In practice, `aster` uses three approval shapes:
 
 1. issue or PR intake plus triage: the repo gets a public, typed routing
    decision before mutation
@@ -93,7 +93,7 @@ review into a ceremonial checkbox after the fact.
 
 ### 4. Apply
 
-Once the repo and hosted control plane are ready, `maton` graduates from
+Once the repo and hosted control plane are ready, `aster` graduates from
 draft-only to bounded local patches and then to PR publication.
 
 That progression should be gradual:
@@ -103,7 +103,7 @@ That progression should be gradual:
 3. local patch application in isolated branches
 4. PR publication after review
 
-`maton` now uses that progression concretely:
+`aster` now uses that progression concretely:
 
 - `site-pages` publishes the public site from committed repo-owned operator
   content
@@ -140,7 +140,7 @@ want to inspect and use."
 
 ## Memory And Context
 
-`maton` should grow memory in layers.
+`aster` should grow memory in layers.
 
 - first: repo files, receipts, and artifacts
 - next: append-only journals, reflections, and target dossiers

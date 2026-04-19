@@ -1,16 +1,16 @@
 spec_version: "1.1"
-task_id: "maton-public-face-and-self-documentation"
+task_id: "aster-public-face-and-self-documentation"
 created: "2026-04-16T12:00:00Z"
 updated: "2026-04-16T12:00:00Z"
 status: "draft"
 
 task:
-  title: "Define maton public face and self-documentation surfaces"
+  title: "Define aster public face and self-documentation surfaces"
   summary: >
-    Plan the separate maton.runx.ai site and the self-documentation system
+    Plan the separate aster.runx.ai site and the self-documentation system
     that feeds it. The target face is site/. Working docs may remain in the
     repo, but Sourcey is not part of the intended public architecture. The site
-    belongs to maton, pulls only selected generic live data from runx, and
+    belongs to aster, pulls only selected generic live data from runx, and
     must never masquerade derived operator narrative as canonical receipts.
   size: "medium"
   risk_level: "medium"
@@ -30,11 +30,11 @@ task:
       - "docs/operating-model.md"
       - "../runx/docs/public-website-data.md"
     invariants:
-      - "maton_site_is_separate"
+      - "aster_site_is_separate"
       - "runx_receipts_remain_canonical"
       - "public_narrative_never_overclaims"
   objectives:
-    - "Define the route surface for maton.runx.ai."
+    - "Define the route surface for aster.runx.ai."
     - "Define which repo-owned content categories feed the site."
     - "Define the migration from docs/ plus Sourcey to site/."
     - "Define which live data is linked from runx rather than copied."
@@ -42,7 +42,7 @@ task:
     - "Define the route contract and rendering contract for the public site."
   touchpoints:
     - area: "site"
-      description: "Separate maton public face."
+      description: "Separate aster public face."
     - area: "repo content"
       description: "Doctrine, state, history, reflections, and the current docs shape."
     - area: "receipt links"
@@ -59,7 +59,7 @@ task:
       - "Deploying the site"
       - "Design system implementation"
   dependencies:
-    - "maton-operator-architecture"
+    - "aster-operator-architecture"
   acceptance:
     validation_profile: "standard"
     definition_of_done:
@@ -82,7 +82,7 @@ task:
       - id: "v1"
         type: "documentation"
         description: "Architecture page contains public face, route contract, working-docs migration, and repo shape sections."
-        command: "rg -n \"Public Face|Sourcey is optional tooling|site/ is the intended public face|Site Information Architecture|Repo Shape|maton.runx.ai|doctrine/|state/|history/|reflections/|site/\" docs/architecture.md"
+        command: "rg -n \"Public Face|Sourcey is optional tooling|site/ is the intended public face|Site Information Architecture|Repo Shape|aster.runx.ai|doctrine/|state/|history/|reflections/|site/\" docs/architecture.md"
         expected: "site and repo shape sections present"
       - id: "v2"
         type: "documentation"
@@ -95,12 +95,12 @@ planning_log:
     actor: "codex"
     summary: >
       Created after the boundary reset so the separate public face can be
-      planned cleanly without turning runx.ai into an maton product shell.
+      planned cleanly without turning runx.ai into an aster product shell.
 
 phases:
   - id: "phase1"
     name: "Site Boundary"
-    objective: "Define why maton.runx.ai is separate and what it links back to on runx."
+    objective: "Define why aster.runx.ai is separate and what it links back to on runx."
     changes:
       - file: "docs/architecture.md"
         action: "update"

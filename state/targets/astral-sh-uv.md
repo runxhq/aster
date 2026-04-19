@@ -11,7 +11,7 @@ subject_locator: astral-sh/uv
 ## Why It Matters
 
 `uv` is a fast-moving public developer tool with real stranger traffic. Work
-here is a useful test of whether `maton` can notice public friction and
+here is a useful test of whether `aster` can notice public friction and
 respond with high-signal triage or contribution behavior.
 
 ## Default Lanes

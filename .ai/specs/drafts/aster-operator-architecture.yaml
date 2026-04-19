@@ -1,13 +1,13 @@
 spec_version: "1.1"
-task_id: "maton-operator-architecture"
+task_id: "aster-operator-architecture"
 created: "2026-04-16T12:00:00Z"
 updated: "2026-04-16T12:00:00Z"
 status: "draft"
 
 task:
-  title: "Define maton operator architecture and ownership"
+  title: "Define aster operator architecture and ownership"
   summary: >
-    Lock the full-shape architecture for maton without leaking operator
+    Lock the full-shape architecture for aster without leaking operator
     semantics into runx. This spec covers repo topology, public-face
     ownership, migration from the current docs/artifacts shape, lane
     contracts, canonical-vs-derived data rules, and the boundary that keeps
@@ -31,10 +31,10 @@ task:
       - "../runx/plans/runx.md"
     invariants:
       - "runx_stays_primitive_only"
-      - "maton_owns_operator_semantics"
+      - "aster_owns_operator_semantics"
       - "public_face_stays_separate_from_runx_ai"
   objectives:
-    - "Define the hard runx/maton ownership boundary."
+    - "Define the hard runx/aster ownership boundary."
     - "Describe the target repo topology and site boundary."
     - "Describe the migration from today's docs/.artifacts shape to the target doctrine/state/history/reflections/site shape."
     - "Describe lane contracts in operational rather than aspirational terms."
@@ -43,9 +43,9 @@ task:
     - "Define promotion rules from reflection to state to history to site."
   touchpoints:
     - area: "repo topology"
-      description: "Clarify what belongs in runx, runx/cloud, and maton."
+      description: "Clarify what belongs in runx, runx/cloud, and aster."
     - area: "public face"
-      description: "Keep maton.runx.ai distinct from runx.ai."
+      description: "Keep aster.runx.ai distinct from runx.ai."
     - area: "lane contracts"
       description: "Each lane must define artifact, approval, and memory effect."
   scope:
@@ -60,15 +60,15 @@ task:
       - "Building new workflow lanes"
       - "Database schema changes"
   dependencies:
-    - "Current maton doctrine docs remain the source for philosophy and stage language"
+    - "Current aster doctrine docs remain the source for philosophy and stage language"
   acceptance:
     validation_profile: "standard"
     definition_of_done:
       - id: "dod1"
-        description: "Architecture docs explicitly separate generic runtime primitives from maton operator semantics."
+        description: "Architecture docs explicitly separate generic runtime primitives from aster operator semantics."
         status: "pending"
       - id: "dod2"
-        description: "The plan names the separate maton public face and its content ownership."
+        description: "The plan names the separate aster public face and its content ownership."
         status: "pending"
       - id: "dod3"
         description: "Lane contracts specify artifact, approval, and memory effect."
@@ -83,7 +83,7 @@ task:
       - id: "v1"
         type: "documentation"
         description: "Architecture page includes hard boundary, repo migration, memory, core update, and promotion sections."
-        command: "rg -n \"Hard Boundary|Current Reality|Repo Migration|Memory Model|Maton Core Update Rules|Promotion Rules|Does Maton Need SQL\\?|Lane Contract\" docs/architecture.md"
+        command: "rg -n \"Hard Boundary|Current Reality|Repo Migration|Memory Model|Aster Core Update Rules|Promotion Rules|Does Aster Need SQL\\?|Lane Contract\" docs/architecture.md"
         expected: "All section headers found"
       - id: "v2"
         type: "documentation"
@@ -101,13 +101,13 @@ planning_log:
 phases:
   - id: "phase1"
     name: "Boundary And Topology"
-    objective: "Document the hard ownership split between runx and maton."
+    objective: "Document the hard ownership split between runx and aster."
     changes:
       - file: "docs/architecture.md"
         action: "create"
         content_spec: |
-          Define the runx/maton boundary, repo topology, and the rule that
-          runx may host generic memory while maton owns operator semantics.
+          Define the runx/aster boundary, repo topology, and the rule that
+          runx may host generic memory while aster owns operator semantics.
           Acknowledge the current docs/.artifacts shape and the target
           doctrine/state/history/reflections/site convergence shape.
       - file: "README.md"
@@ -118,7 +118,7 @@ phases:
       - id: "ac1_1"
         type: "documentation"
         description: "Boundary language is present and explicit."
-        command: "rg -n \"runx may host the machine|maton owns the mind\" docs/architecture.md"
+        command: "rg -n \"runx may host the machine|aster owns the mind\" docs/architecture.md"
         expected: "boundary language present"
     status: "pending"
   - id: "phase2"
@@ -182,18 +182,18 @@ phases:
         action: "update"
         content_spec: |
           Add explicit update rules for doctrine/, state/, history/,
-          reflections/, and site/ so the maton core has filesystem-level
+          reflections/, and site/ so the aster core has filesystem-level
           governance rather than vibe-based governance.
     acceptance_criteria:
       - id: "ac5_1"
         type: "documentation"
         description: "Core update rules are present."
-        command: "rg -n \"Maton Core Update Rules|### `doctrine/`|### `state/`|### `history/`|### `reflections/`|### `site/`\" docs/architecture.md"
+        command: "rg -n \"Aster Core Update Rules|### `doctrine/`|### `state/`|### `history/`|### `reflections/`|### `site/`\" docs/architecture.md"
         expected: "core update rules present"
     status: "pending"
   - id: "phase6"
     name: "Promotion And Concurrency"
-    objective: "Define promotion rules and conflict handling for maton-managed state."
+    objective: "Define promotion rules and conflict handling for aster-managed state."
     dependencies: ["phase5"]
     changes:
       - file: "docs/architecture.md"

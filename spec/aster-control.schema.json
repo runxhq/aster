@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:maton:schema:maton-control:v1",
-  "title": "runx Maton Control Objects",
-  "description": "Canonical prerelease v1 schema for persisted maton operator state.",
+  "$id": "urn:aster:schema:aster-control:v1",
+  "title": "runx Aster Control Objects",
+  "description": "Canonical prerelease v1 schema for persisted aster operator state.",
   "type": "object",
   "properties": {
     "targets": {

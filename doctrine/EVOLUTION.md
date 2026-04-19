@@ -6,7 +6,7 @@ visibility: public
 
 # Evolution
 
-This file defines how `maton` is allowed to improve.
+This file defines how `aster` is allowed to improve.
 
 The system should evolve by becoming more discerning, more grounded, and more
 trusted. It should not chase scale before judgment.

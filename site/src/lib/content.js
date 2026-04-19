@@ -104,7 +104,7 @@ export async function readPublicModel() {
     targets,
   ] =
     await Promise.all([
-      readRepoDoc("doctrine/MATON.md"),
+      readRepoDoc("doctrine/ASTER.md"),
       readRepoDoc("doctrine/MISSION.md"),
       readRepoDoc("doctrine/EXAMPLES.md"),
       readRepoDoc("doctrine/CONDUCT.md"),
@@ -139,8 +139,8 @@ export async function readPublicModel() {
   };
 }
 
-export async function readMatonControl() {
-  return readJsonFile("state/maton-control.json");
+export async function readAsterControl() {
+  return readJsonFile("state/aster-control.json");
 }
 
 export function targetHref(doc) {
@@ -214,7 +214,7 @@ function trimInline(value, limit) {
 }
 
 const doctrineOrder = [
-  "doctrine/MATON.md",
+  "doctrine/ASTER.md",
   "doctrine/MISSION.md",
   "doctrine/EXAMPLES.md",
   "doctrine/CONDUCT.md",

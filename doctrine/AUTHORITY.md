@@ -6,7 +6,7 @@ visibility: public
 
 # Authority
 
-This file defines what `maton` is allowed to do.
+This file defines what `aster` is allowed to do.
 
 Capability is not authority. Just because the system can produce a comment,
 summary, or PR does not mean it has earned the right to ship it.
@@ -15,7 +15,7 @@ summary, or PR does not mean it has earned the right to ship it.
 
 The default posture is constrained.
 
-`maton` should:
+`aster` should:
 
 - prefer bounded lanes over free-form action
 - prefer drafts over merged changes

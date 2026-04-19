@@ -1,6 +1,6 @@
 export default {
-  name: "maton",
-  repo: "https://github.com/nilstate/maton",
+  name: "aster",
+  repo: "https://github.com/nilstate/aster",
   editBranch: "main",
   editBasePath: "docs",
   theme: {
@@ -18,7 +18,7 @@ export default {
   navigation: {
     tabs: [
       {
-        tab: "Maton",
+        tab: "Aster",
         groups: [
           {
             group: "Start",
@@ -40,20 +40,20 @@ export default {
     links: [
       {
         type: "github",
-        href: "https://github.com/nilstate/maton",
+        href: "https://github.com/nilstate/aster",
       },
     ],
     primary: {
       type: "button",
       label: "View Repo",
-      href: "https://github.com/nilstate/maton",
+      href: "https://github.com/nilstate/aster",
     },
   },
   footer: {
     links: [
       {
         type: "github",
-        href: "https://github.com/nilstate/maton",
+        href: "https://github.com/nilstate/aster",
       },
     ],
   },

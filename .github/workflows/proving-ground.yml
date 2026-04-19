@@ -15,7 +15,7 @@ jobs:
   proving-ground:
     runs-on: ubuntu-latest
     steps:
-      - name: Check out maton
+      - name: Check out aster
         uses: actions/checkout@v6
 
       - name: Check out runx OSS
@@ -42,8 +42,8 @@ jobs:
       - name: Run proving-ground catalog
         env:
           RUNX_ROOT: ${{ github.workspace }}/runx
-          ARTIFACT_DIR: ${{ github.workspace }}/maton-artifacts
-          MATON_ROOT: ${{ github.workspace }}
+          ARTIFACT_DIR: ${{ github.workspace }}/aster-artifacts
+          ASTER_ROOT: ${{ github.workspace }}
           PROVING_GROUND_PROFILE: minimal
         run: |
           chmod +x scripts/proving-ground.sh
@@ -51,7 +51,7 @@ jobs:
           node scripts/summarize-proving-ground.mjs "$ARTIFACT_DIR" > "$ARTIFACT_DIR/summary.md"
 
       - name: Append workflow summary
-        run: cat "${{ github.workspace }}/maton-artifacts/summary.md" >> "$GITHUB_STEP_SUMMARY"
+        run: cat "${{ github.workspace }}/aster-artifacts/summary.md" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Publish evidence
         if: ${{ always() }}
@@ -74,11 +74,11 @@ jobs:
             --data "$(jq -n \
               --arg title "$TITLE" --arg summary "$SUMMARY" --arg status "$STATUS" \
               --arg repo "${{ github.repository }}" --arg url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
-              '{events: [{kind: "maton_run", source: "github-actions", status: (if $status == "success" then "success" else "failure" end), title: $title, summary: $summary, repo: $repo, workflow: "proving-ground", url: $url, timestamp: (now | todate), metadata: {lane: "proving-ground", feed_channel: "ops"}}]}')" \
+              '{events: [{kind: "aster_run", source: "github-actions", status: (if $status == "success" then "success" else "failure" end), title: $title, summary: $summary, repo: $repo, workflow: "proving-ground", url: $url, timestamp: (now | todate), metadata: {lane: "proving-ground", feed_channel: "ops"}}]}')" \
             "${RUNX_PUBLIC_EVIDENCE_API_BASE_URL%/}/v1/admin/public/evidence" || true
 
       - name: Upload proving-ground artifacts
         uses: actions/upload-artifact@v7
         with:
-          name: maton-proving-ground
-          path: ${{ github.workspace }}/maton-artifacts
+          name: aster-proving-ground
+          path: ${{ github.workspace }}/aster-artifacts

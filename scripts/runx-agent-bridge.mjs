@@ -14,7 +14,7 @@ async function main() {
   const cliBin = path.join(runxRepoRoot, "packages", "cli", "dist", "index.js");
   const receiptDir = path.resolve(options.receiptDir ?? ".artifacts/runx-bridge");
   const traceDir = path.resolve(options.traceDir ?? path.join(receiptDir, "provider-trace"));
-  const tempDir = await mkdtemp(path.join(os.tmpdir(), "maton-runx-bridge-"));
+  const tempDir = await mkdtemp(path.join(os.tmpdir(), "aster-runx-bridge-"));
   const approvedGates = new Set([
     ...splitCsv(process.env.RUNX_APPROVED_GATES),
     ...options.approve,

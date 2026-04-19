@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 
-export const ISSUE_TRIAGE_MARKER = "<!-- maton:runx-issue-triage -->";
+export const ISSUE_TRIAGE_MARKER = "<!-- aster:runx-issue-triage -->";
 
 export function stripIssueTriageMarker(body) {
   return String(body ?? "")

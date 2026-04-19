@@ -10,17 +10,17 @@ import {
   normalizeWorkspaceChangePlanRequest,
   resolveVerificationPlan,
   validateVerificationProfileCatalog,
-} from "./maton-v1-contracts.mjs";
+} from "./aster-v1-contracts.mjs";
 import { loadRunxControlSchemaSync } from "./runx-control-schemas.mjs";
 
 const catalog = validateVerificationProfileCatalog({
   version: "runx.verification_profile_catalog.v1",
   repo_defaults: {
-    "nilstate/maton": "maton.site-ci",
+    "nilstate/aster": "aster.site-ci",
   },
   profiles: {
-    "maton.site-ci": {
-      repo: "nilstate/maton",
+    "aster.site-ci": {
+      repo: "nilstate/aster",
       description: "Run the site CI checks.",
       commands: ["npm run site:ci"],
     },
@@ -35,13 +35,13 @@ test("normalizeIssueToPrRequest applies the repo default verification profile", 
       source_id: "101",
     },
     {
-      defaultRepo: "nilstate/maton",
+      defaultRepo: "nilstate/aster",
       catalog,
     },
   );
 
-  assert.equal(request.target_repo, "nilstate/maton");
-  assert.equal(request.verification_profile, "maton.site-ci");
+  assert.equal(request.target_repo, "nilstate/aster");
+  assert.equal(request.verification_profile, "aster.site-ci");
 });
 
 test("normalizeIssueToPrRequest rejects out-of-scope repos", () => {
@@ -63,12 +63,12 @@ test("normalizeIssueToPrRequest preserves an explicit verification profile when 
     issue_title: "Fix docs drift",
     source: "github_issue",
     source_id: "101",
-    verification_profile: "maton.site-ci",
+    verification_profile: "aster.site-ci",
   }, {
-    defaultRepo: "nilstate/maton",
+    defaultRepo: "nilstate/aster",
   });
 
-  assert.equal(request.verification_profile, "maton.site-ci");
+  assert.equal(request.verification_profile, "aster.site-ci");
   assert.ok(!Object.hasOwn(request, "validation_commands"));
 });
 
@@ -80,7 +80,7 @@ test("normalizeIssueToPrRequest rejects direct publication branches outside runx
       source_id: "101",
       branch: "main",
     }, {
-      defaultRepo: "nilstate/maton",
+      defaultRepo: "nilstate/aster",
       catalog,
     });
   }, /issue_to_pr_request\.branch/);
@@ -96,7 +96,7 @@ test("normalizeAutomationBranchName accepts bounded automation branches", () => 
 test("resolveVerificationPlan maps legacy validation commands onto a declared profile", () => {
   const resolved = resolveVerificationPlan({
     catalog,
-    targetRepo: "nilstate/maton",
+    targetRepo: "nilstate/aster",
     issueToPrRequest: {
       issue_title: "Fix docs drift",
       source: "github_issue",
@@ -105,7 +105,7 @@ test("resolveVerificationPlan maps legacy validation commands onto a declared pr
     },
   });
 
-  assert.equal(resolved.profile_id, "maton.site-ci");
+  assert.equal(resolved.profile_id, "aster.site-ci");
   assert.equal(resolved.compatibility_mode, "legacy_validation_command_mapping");
   assert.deepEqual(resolved.commands, ["npm run site:ci"]);
 });
@@ -132,7 +132,7 @@ test("collectWorkerValidationIssues filters invalid worker requests", () => {
       },
     ],
     {
-      defaultRepo: "nilstate/maton",
+      defaultRepo: "nilstate/aster",
       catalog,
     },
   );
@@ -151,22 +151,22 @@ test("normalizeWorkerRequest rejects schema-invalid extra properties", () => {
         source: "github_issue",
         source_id: "101",
       },
-      target_repo: "nilstate/maton",
+      target_repo: "nilstate/aster",
     }, {
-      defaultRepo: "nilstate/maton",
+      defaultRepo: "nilstate/aster",
       catalog,
     });
-  }, /urn:maton:schema:worker-request:v1/);
+  }, /urn:aster:schema:worker-request:v1/);
 });
 
 test("normalizeWorkspaceChangePlanRequest preserves structured target surfaces", () => {
   const request = normalizeWorkspaceChangePlanRequest(
     {
       objective: "Roll out the docs fix",
-      project_context: "maton workspace",
+      project_context: "aster workspace",
       target_surfaces: [
         {
-          surface: "nilstate/maton",
+          surface: "nilstate/aster",
           kind: "repo",
           mutating: true,
           rationale: "Single prerelease repo scope.",
@@ -176,12 +176,12 @@ test("normalizeWorkspaceChangePlanRequest preserves structured target surfaces",
       success_criteria: ["One bounded plan exists before changes start."],
     },
     {
-      targetRepo: "nilstate/maton",
+      targetRepo: "nilstate/aster",
     },
   );
 
   assert.equal(request.target_surfaces.length, 1);
-  assert.equal(request.target_surfaces[0].surface, "nilstate/maton");
+  assert.equal(request.target_surfaces[0].surface, "nilstate/aster");
   assert.equal(request.target_surfaces[0].mutating, true);
 });
 

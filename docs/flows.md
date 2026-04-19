@@ -1,13 +1,13 @@
 ---
 title: Hosted Flows
-description: The concrete GitHub workflows that make maton a live runx proving-ground target.
+description: The concrete GitHub workflows that make aster a live runx proving-ground target.
 ---
 
 # Hosted Flows
 
 ## `site-pages`
 
-Builds and deploys `maton.runx.ai` from repo-owned operator content. This
+Builds and deploys `aster.runx.ai` from repo-owned operator content. This
 keeps the public site live even when the external caller bridge is offline.
 
 ## `issue-triage`
@@ -70,4 +70,4 @@ human-reviewed merge policy in the PR body and draft state.
 ## `rollback`
 
 Runs only on manual dispatch and posts a corrective public comment or closes a
-generated PR when an earlier maton output must be superseded.
+generated PR when an earlier aster output must be superseded.

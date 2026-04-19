@@ -15,14 +15,14 @@ const constitution = model.constitution.filter((doc) => doc !== null);
 
 <BaseLayout
   title="Thesis"
-  description="The public thesis and current operating surface of maton."
+  description="The public thesis and current operating surface of aster."
   current="home"
 >
   <section class="hero">
     <article class="panel">
       <div class="panel-inner">
         <p class="eyebrow">Operator Thesis</p>
-        <h1>{model.thesis?.title ?? "Maton"}</h1>
+        <h1>{model.thesis?.title ?? "Aster"}</h1>
         <p class="muted">{model.thesis?.excerpt}</p>
         <div class="prose" set:html={model.thesis?.html} />
       </div>
@@ -83,7 +83,7 @@ const constitution = model.constitution.filter((doc) => doc !== null);
           <div>
             <p class="panel-title">▐ public proof feed</p>
             <p class="panel-lede">
-              thesis-relevant public proofs only. if this goes quiet, maton has stopped making strangers care.
+              thesis-relevant public proofs only. if this goes quiet, aster has stopped making strangers care.
             </p>
           </div>
         </div>

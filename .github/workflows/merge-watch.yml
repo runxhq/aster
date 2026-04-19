@@ -47,7 +47,7 @@ jobs:
       CANDIDATE_PATH: ${{ github.event_name == 'workflow_dispatch' && inputs.candidate_path || 'SKILL.md' }}
       REGISTRY_OWNER: ${{ github.event_name == 'workflow_dispatch' && inputs.registry_owner || 'nilstate' }}
     steps:
-      - name: Check out maton
+      - name: Check out aster
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
@@ -96,7 +96,7 @@ jobs:
           metadata = dict(feed.get("metadata") or {})
           run_url = f"{os.environ['GITHUB_SERVER_URL']}/{os.environ['GITHUB_REPOSITORY']}/actions/runs/{os.environ['GITHUB_RUN_ID']}"
           event = {
-              "kind": "maton_run",
+              "kind": "aster_run",
               "source": "github-actions",
               "status": feed.get("status") or "success",
               "title": f"watched upstream merge on {metadata.get('target_repo') or os.environ.get('TARGET_REPO')}",

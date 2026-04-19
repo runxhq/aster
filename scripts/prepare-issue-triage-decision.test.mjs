@@ -35,13 +35,13 @@ test("prepareIssueTriageDecision starts an issue-to-pr worker only after triage 
         },
       }),
     },
-  }, { defaultRepo: "nilstate/maton", repoRoot });
+  }, { defaultRepo: "nilstate/aster", repoRoot });
 
   assert.equal(decision.mode, "issue-to-pr");
   assert.equal(decision.triage_decision.should_start_worker, true);
   assert.equal(decision.triage_decision.worker_requests.length, 1);
-  assert.equal(decision.issue_to_pr_request.target_repo, "nilstate/maton");
-  assert.equal(decision.issue_to_pr_request.verification_profile, "maton.site-ci");
+  assert.equal(decision.issue_to_pr_request.target_repo, "nilstate/aster");
+  assert.equal(decision.issue_to_pr_request.verification_profile, "aster.site-ci");
   assert.match(decision.comment_body, /Commence: `approve`/);
   assert.match(decision.comment_body, /This is bounded enough for one draft PR\./);
   assert.match(decision.comment_body, /Worker fanout: `1`/);
@@ -74,7 +74,7 @@ test("prepareIssueTriageDecision derives a single worker request when triage omi
         },
       }),
     },
-  }, { defaultRepo: "nilstate/maton", repoRoot });
+  }, { defaultRepo: "nilstate/aster", repoRoot });
 
   assert.equal(decision.mode, "issue-to-pr");
   assert.equal(decision.triage_decision.should_start_worker, true);
@@ -82,8 +82,8 @@ test("prepareIssueTriageDecision derives a single worker request when triage omi
   assert.equal(decision.issue_to_pr_request.task_id, "issue-101");
   assert.equal(decision.issue_to_pr_request.issue_title, "README command drift");
   assert.equal(decision.issue_to_pr_request.source_id, "101");
-  assert.equal(decision.issue_to_pr_request.target_repo, "nilstate/maton");
-  assert.equal(decision.issue_to_pr_request.verification_profile, "maton.site-ci");
+  assert.equal(decision.issue_to_pr_request.target_repo, "nilstate/aster");
+  assert.equal(decision.issue_to_pr_request.verification_profile, "aster.site-ci");
 });
 
 test("prepareIssueTriageDecision holds at a review comment when mutation should not start yet", () => {
@@ -110,7 +110,7 @@ test("prepareIssueTriageDecision holds at a review comment when mutation should 
         },
       }),
     },
-  }, { defaultRepo: "nilstate/maton", repoRoot });
+  }, { defaultRepo: "nilstate/aster", repoRoot });
 
   assert.equal(decision.mode, "comment");
   assert.equal(decision.triage_decision.should_start_worker, false);
@@ -140,7 +140,7 @@ test("prepareIssueTriageDecision falls back to an issue comment when draft PR re
         },
       }),
     },
-  }, { defaultRepo: "nilstate/maton", repoRoot });
+  }, { defaultRepo: "nilstate/aster", repoRoot });
 
   assert.equal(decision.triage_decision.review_target, "draft_pr");
   assert.equal(decision.triage_decision.comment_target, "issue");
@@ -166,10 +166,10 @@ test("prepareIssueTriageDecision starts a planning lane for objective-decompose 
           workspace_change_plan_request: {
             change_set_id: "change-set-204",
             objective: "Roll out abandoned cart recovery",
-            project_context: "maton workspace repo",
+            project_context: "aster workspace repo",
             target_surfaces: [
-              { surface: "maton/api", kind: "repo", mutating: true, rationale: "Backend semantics change first." },
-              { surface: "maton/app", kind: "repo", mutating: true, rationale: "The UI must consume the frozen contract." },
+              { surface: "aster/api", kind: "repo", mutating: true, rationale: "Backend semantics change first." },
+              { surface: "aster/app", kind: "repo", mutating: true, rationale: "The UI must consume the frozen contract." },
             ],
             shared_invariants: ["Keep the rollout approval-gated."],
             success_criteria: ["One phased plan exists before mutation begins."],
@@ -185,15 +185,15 @@ test("prepareIssueTriageDecision starts a planning lane for objective-decompose 
           commence_decision: "approve",
           action_decision: "proceed_to_plan",
           target_surfaces: [
-            { surface: "maton/api", kind: "repo", mutating: true, rationale: "Backend semantics change first." },
-            { surface: "maton/app", kind: "repo", mutating: true, rationale: "The UI must consume the frozen contract." },
+            { surface: "aster/api", kind: "repo", mutating: true, rationale: "Backend semantics change first." },
+            { surface: "aster/app", kind: "repo", mutating: true, rationale: "The UI must consume the frozen contract." },
           ],
           shared_invariants: ["Keep the rollout approval-gated."],
           success_criteria: ["One phased plan exists before mutation begins."],
         },
       }),
     },
-  }, { defaultRepo: "nilstate/maton", repoRoot });
+  }, { defaultRepo: "nilstate/aster", repoRoot });
 
   assert.equal(decision.mode, "plan");
   assert.equal(decision.triage_decision.should_start_planner, true);
@@ -217,7 +217,7 @@ test("prepareIssueTriageDecision stops non-mutating reply-only requests without 
         },
       }),
     },
-  }, { defaultRepo: "nilstate/maton", repoRoot });
+  }, { defaultRepo: "nilstate/aster", repoRoot });
 
   assert.equal(decision.mode, "comment");
   assert.equal(decision.triage_decision.action_decision, "stop");
@@ -261,7 +261,7 @@ test("prepareIssueTriageDecision blocks out-of-scope worker fanout during prerel
         },
       ],
     },
-  }, { defaultRepo: "nilstate/maton", repoRoot });
+  }, { defaultRepo: "nilstate/aster", repoRoot });
 
   assert.equal(decision.mode, "comment");
   assert.equal(decision.triage_decision.should_start_worker, false);

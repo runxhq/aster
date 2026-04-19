@@ -1,13 +1,13 @@
 ---
-title: Maton LLM Training Spec
+title: Aster LLM Training Spec
 updated: 2026-04-17
 visibility: internal
 ---
 
-# Maton LLM Training Spec
+# Aster LLM Training Spec
 
 This document defines the current prerelease `v1` learned-layer contract for
-`maton`.
+`aster`.
 
 It is not doctrine. It is the exact operator-state and selector contract that
 an LLM or training pipeline should learn against.
@@ -23,8 +23,8 @@ an LLM or training pipeline should learn against.
 
 Canonical machine-readable control state lives in:
 
-- `state/maton-control.json`
-- `spec/maton-control.schema.json`
+- `state/aster-control.json`
+- `spec/aster-control.schema.json`
 - `spec/selector-training-row.schema.json`
 
 These schemas are repo-local on purpose. They are not part of the public
@@ -39,7 +39,7 @@ The minimum durable objects are:
 - `CycleRecord`
 
 `receipts`, `verification-report.json`, `grant` objects, and approvals remain
-the higher-trust evidence layer. `maton-control.json` is a learned projection
+the higher-trust evidence layer. `aster-control.json` is a learned projection
 over that evidence, not a replacement for it.
 
 ## Opportunity labels
@@ -192,7 +192,7 @@ The canonical labeled export for one selector decision is:
 
 - `spec/selector-training-row.schema.json`
 
-The row is a projection over one concrete `maton-cycle` result. It keeps:
+The row is a projection over one concrete `aster-cycle` result. It keeps:
 
 - the full scored candidate set
 - the exact `priority_queue`
@@ -201,18 +201,18 @@ The row is a projection over one concrete `maton-cycle` result. It keeps:
 - the dispatch decision after persistence
 
 The row is intentionally label-first. It is not a replacement for
-`maton-control.json`; it is the one-example training artifact derived from a
+`aster-control.json`; it is the one-example training artifact derived from a
 cycle run.
 
 Current emitter:
 
 ```bash
-node scripts/maton-cycle.mjs --training-output .artifacts/maton/selector-training-row.json
+node scripts/aster-cycle.mjs --training-output .artifacts/aster/selector-training-row.json
 ```
 
 ## Public-surface contract
 
-The public priorities page must read from `state/maton-control.json`, not only
+The public priorities page must read from `state/aster-control.json`, not only
 from prose markdown. Markdown remains the human-facing narrative layer.
 
 Public pages should treat these fields as authoritative for current operator
@@ -250,6 +250,6 @@ remain grounded in the public `runx` receipt export schema:
 
 - `https://runx.ai/spec/training/trainable-receipt-row.schema.json`
 
-`maton` labels teach the selector what to choose. `runx` trainable receipt rows
+`aster` labels teach the selector what to choose. `runx` trainable receipt rows
 teach downstream models what a governed runtime execution and later outcome
 look like.

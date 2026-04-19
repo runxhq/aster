@@ -118,7 +118,7 @@ function hasOpenOperatorMemoryPr(options, runner) {
       "pr",
       "list",
       "--repo",
-      options.matonRepo,
+      options.asterRepo,
       "--head",
       buildOperatorMemoryBranch(options),
       "--state",
@@ -140,7 +140,7 @@ function buildOperatorMemoryBranch(options) {
 
 function parseArgs(argv) {
   const options = {
-    matonRepo: process.env.GITHUB_REPOSITORY || "nilstate/maton",
+    asterRepo: process.env.GITHUB_REPOSITORY || "nilstate/aster",
   };
   for (let index = 0; index < argv.length; index += 1) {
     const token = argv[index];
@@ -172,8 +172,8 @@ function parseArgs(argv) {
       options.sha = requireValue(argv, ++index, token);
       continue;
     }
-    if (token === "--maton-repo") {
-      options.matonRepo = requireValue(argv, ++index, token);
+    if (token === "--aster-repo") {
+      options.asterRepo = requireValue(argv, ++index, token);
       continue;
     }
     throw new Error(`Unknown argument: ${token}`);

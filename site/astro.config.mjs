@@ -15,7 +15,7 @@ const runxTokensPath = path.join(runxPackagesPath, "tokens", "dist");
 const runxUiPath = path.join(runxPackagesPath, "ui", "src");
 
 export default defineConfig({
-  site: "https://maton.runx.ai",
+  site: "https://aster.runx.ai",
   output: "static",
   vite: {
     resolve: {

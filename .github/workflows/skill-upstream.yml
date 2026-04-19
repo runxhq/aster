@@ -61,7 +61,7 @@ jobs:
       SHOULD_PUBLISH: ${{ inputs.publish }}
       FORCE_WRITE: ${{ inputs.force }}
     steps:
-      - name: Check out maton
+      - name: Check out aster
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
@@ -158,7 +158,7 @@ jobs:
             --data "$(jq -n \
               --arg title "$TITLE" --arg summary "$SUMMARY" --arg status "$STATUS" \
               --arg repo "${TARGET}" --arg url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
-              '{events: [{kind: "maton_run", source: "github-actions", status: (if $status == "success" then "success" else "failure" end), title: $title, summary: $summary, repo: $repo, workflow: "skill-upstream", url: $url, timestamp: (now | todate), metadata: {lane: "skill-upstream", feed_channel: "main", main_feed_eligible: true}}]}')" \
+              '{events: [{kind: "aster_run", source: "github-actions", status: (if $status == "success" then "success" else "failure" end), title: $title, summary: $summary, repo: $repo, workflow: "skill-upstream", url: $url, timestamp: (now | todate), metadata: {lane: "skill-upstream", feed_channel: "main", main_feed_eligible: true}}]}')" \
             "${RUNX_PUBLIC_EVIDENCE_API_BASE_URL%/}/v1/admin/public/evidence" || true
 
       - name: Upload artifacts

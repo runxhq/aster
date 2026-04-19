@@ -1,12 +1,12 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:maton:schema:selector-training-row:v1",
-  "title": "runx Maton Selector Training Row",
-  "description": "Canonical prerelease v1 schema for one labeled maton selector decision row.",
+  "$id": "urn:aster:schema:selector-training-row:v1",
+  "title": "runx Aster Selector Training Row",
+  "description": "Canonical prerelease v1 schema for one labeled aster selector decision row.",
   "type": "object",
   "properties": {
     "kind": {
-      "const": "runx.maton-selector-training-row.v1"
+      "const": "runx.aster-selector-training-row.v1"
     },
     "generated_at": {
       "type": "string",
@@ -69,7 +69,7 @@
     "selected_bucket": {
       "anyOf": [
         {
-          "$ref": "urn:maton:schema:maton-control:v1#/$defs/budgetBucket"
+          "$ref": "urn:aster:schema:aster-control:v1#/$defs/budgetBucket"
         },
         {
           "type": "null"
@@ -77,13 +77,13 @@
       ]
     },
     "budget_snapshot": {
-      "$ref": "urn:maton:schema:maton-control:v1#/$defs/budgetSnapshot"
+      "$ref": "urn:aster:schema:aster-control:v1#/$defs/budgetSnapshot"
     },
     "authority": {
-      "$ref": "urn:maton:schema:maton-control:v1#/$defs/authority"
+      "$ref": "urn:aster:schema:aster-control:v1#/$defs/authority"
     },
     "dispatch": {
-      "$ref": "urn:maton:schema:maton-control:v1#/$defs/dispatch"
+      "$ref": "urn:aster:schema:aster-control:v1#/$defs/dispatch"
     }
   },
   "required": [
@@ -130,7 +130,7 @@
           "minLength": 1
         },
         "budget_bucket": {
-          "$ref": "urn:maton:schema:maton-control:v1#/$defs/budgetBucket"
+          "$ref": "urn:aster:schema:aster-control:v1#/$defs/budgetBucket"
         },
         "authority_cost": {
           "type": "number",
@@ -142,7 +142,7 @@
           "format": "date-time"
         },
         "thesis_score": {
-          "$ref": "urn:maton:schema:maton-control:v1#/$defs/thesisScore"
+          "$ref": "urn:aster:schema:aster-control:v1#/$defs/thesisScore"
         },
         "score": {
           "type": "number",
@@ -175,7 +175,7 @@
           ]
         },
         "authority": {
-          "$ref": "urn:maton:schema:maton-control:v1#/$defs/authority"
+          "$ref": "urn:aster:schema:aster-control:v1#/$defs/authority"
         }
       },
       "required": [

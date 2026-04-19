@@ -26,7 +26,7 @@ async function main(argv = process.argv.slice(2)) {
 export async function buildContextBundle(options = {}) {
   const repoRoot = path.resolve(options.repoRoot ?? defaultRepoRoot);
   const artifactRoot = path.resolve(repoRoot, options.artifactRoot ?? ".artifacts");
-  const repo = options.repo ?? "nilstate/maton";
+  const repo = options.repo ?? "nilstate/aster";
   const targetRepo = options.targetRepo ?? repo;
   const targetSlug = slugifyRepoLike(targetRepo);
   const snapshot = await readOptionalJson(options.snapshot ? path.resolve(options.snapshot) : undefined);
@@ -45,7 +45,7 @@ export async function buildContextBundle(options = {}) {
     includeContent: true,
     repoRoot,
   });
-  const control = await readOptionalJson(path.join(repoRoot, "state", "maton-control.json"));
+  const control = await readOptionalJson(path.join(repoRoot, "state", "aster-control.json"));
   const priorities = await readMarkdownDocument(path.join(repoRoot, "state", "priorities.md"), repoRoot);
   const capabilities = await readMarkdownDocument(path.join(repoRoot, "state", "capabilities.md"), repoRoot);
   const target = await readMarkdownDocument(
@@ -92,7 +92,7 @@ export async function buildContextBundle(options = {}) {
 
 export function renderContextPrompt(bundle) {
   const lines = [
-    "# Maton Context Bundle",
+    "# Aster Context Bundle",
     "",
     `- lane: \`${bundle.lane}\``,
     `- subject_kind: \`${bundle.subject.kind}\``,
@@ -606,7 +606,7 @@ function isRelevantContextDoc(entry, subject) {
 
 function sortDoctrineDocs(docs) {
   const priority = {
-    "doctrine/MATON.md": 0,
+    "doctrine/ASTER.md": 0,
     "doctrine/MISSION.md": 1,
     "doctrine/EXAMPLES.md": 2,
     "doctrine/CONDUCT.md": 3,
@@ -622,7 +622,7 @@ function sortDoctrineDocs(docs) {
 
 function trimDoctrineForPrompt(doc) {
   const preferences = {
-    "doctrine/MATON.md": ["What It Must Become", "What It Must Never Become", "Success Condition"],
+    "doctrine/ASTER.md": ["What It Must Become", "What It Must Never Become", "Success Condition"],
     "doctrine/MISSION.md": ["What Must Be Proven", "Highest-Value Proof", "Mission Questions"],
     "doctrine/EXAMPLES.md": ["Good Public Comment", "Bad Public Comment", "Good `no_op`", "Mission Contrast"],
     "doctrine/CONDUCT.md": ["People First", "Attention Is Expensive", "Public Attention Rules"],

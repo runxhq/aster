@@ -9,13 +9,13 @@ import {
   buildDispatchPlan,
   discoverOpportunities,
   loadSelectionPolicy,
-  runMatonCycle,
+  runAsterCycle,
   scoreOpportunities,
   selectOpportunity,
-} from "./maton-cycle.mjs";
+} from "./aster-cycle.mjs";
 
 const baseSelectionPolicy = {
-  title: "Maton Selection Policy",
+  title: "Aster Selection Policy",
   version: 1,
   updated: "2026-04-17",
   weights: {
@@ -76,7 +76,7 @@ async function writeSelectionPolicy(filePath, overrides = {}) {
 }
 
 test("loadSelectionPolicy parses weights, thresholds, and cooldowns", async () => {
-  const tempRoot = await mkdtemp(path.join(os.tmpdir(), "maton-scoring-"));
+  const tempRoot = await mkdtemp(path.join(os.tmpdir(), "aster-scoring-"));
   const selectionPolicyPath = path.join(tempRoot, "selection-policy.json");
   await writeSelectionPolicy(selectionPolicyPath);
 
@@ -245,7 +245,7 @@ test("selectOpportunity enforces the portfolio budget before final ranking", () 
 });
 
 test("discover, score, and select curated prerelease targets inside nilstate scope", async () => {
-  const tempRoot = await mkdtemp(path.join(os.tmpdir(), "maton-cycle-"));
+  const tempRoot = await mkdtemp(path.join(os.tmpdir(), "aster-cycle-"));
   const repoRoot = path.join(tempRoot, "repo");
   await mkdir(path.join(repoRoot, "doctrine"), { recursive: true });
   await mkdir(path.join(repoRoot, "state", "targets"), { recursive: true });
@@ -255,14 +255,14 @@ test("discover, score, and select curated prerelease targets inside nilstate sco
   await writeSelectionPolicy(path.join(repoRoot, "state", "selection-policy.json"));
 
   await writeFile(
-    path.join(repoRoot, "state", "targets", "nilstate-maton.md"),
+    path.join(repoRoot, "state", "targets", "nilstate-aster.md"),
     [
       "---",
-      "title: Target Dossier — nilstate/maton",
-      "subject_locator: nilstate/maton",
+      "title: Target Dossier — nilstate/aster",
+      "subject_locator: nilstate/aster",
       "---",
       "",
-      "# nilstate/maton",
+      "# nilstate/aster",
       "",
       "## Default Lanes",
       "",
@@ -298,7 +298,7 @@ test("discover, score, and select curated prerelease targets inside nilstate sco
     discoveryPath,
     `${JSON.stringify(
       {
-        "nilstate/maton": {
+        "nilstate/aster": {
           issues: [],
           prs: [],
         },
@@ -323,9 +323,9 @@ test("discover, score, and select curated prerelease targets inside nilstate sco
     )}\n`,
   );
 
-  const result = await runMatonCycle({
+  const result = await runAsterCycle({
     repoRoot,
-    repo: "nilstate/maton",
+    repo: "nilstate/aster",
     discoveryInput: discoveryPath,
     now: "2026-04-16T12:00:00Z",
   });
@@ -336,25 +336,25 @@ test("discover, score, and select curated prerelease targets inside nilstate sco
   assert.match(result.selection.priorities[0].subject_locator, /nilstate\/runx#pr\/101/);
   assert.equal(result.selection.priorities[0].within_v1_scope, true);
   assert.equal(result.selection.priorities[0].vetoed, false);
-  assert.equal(result.maton_control.targets.length >= 2, true);
-  assert.equal(result.maton_control.opportunities[0].opportunity_id, result.opportunities[0].id);
-  assert.equal(result.maton_control.cycle_records[0].status, "selected");
-  assert.equal(result.maton_control.priorities[0].status, "selected");
-  assert.equal(result.maton_control.cycle_records[0].authority.scope, "public_triage");
-  assert.equal(result.maton_control.cycle_records[0].dispatch.status, "ready");
-  assert.equal(result.maton_control.cycle_records[0].dispatch.target_repo, "nilstate/runx");
+  assert.equal(result.aster_control.targets.length >= 2, true);
+  assert.equal(result.aster_control.opportunities[0].opportunity_id, result.opportunities[0].id);
+  assert.equal(result.aster_control.cycle_records[0].status, "selected");
+  assert.equal(result.aster_control.priorities[0].status, "selected");
+  assert.equal(result.aster_control.cycle_records[0].authority.scope, "public_triage");
+  assert.equal(result.aster_control.cycle_records[0].dispatch.status, "ready");
+  assert.equal(result.aster_control.cycle_records[0].dispatch.target_repo, "nilstate/runx");
   assert.equal(
-    result.maton_control.targets.find((entry) => entry.repo === "nilstate/runx")?.lifecycle.selected_count,
+    result.aster_control.targets.find((entry) => entry.repo === "nilstate/runx")?.lifecycle.selected_count,
     1,
   );
   assert.equal(
-    result.maton_control.targets.find((entry) => entry.repo === "nilstate/runx")?.lifecycle.evaluated_count,
+    result.aster_control.targets.find((entry) => entry.repo === "nilstate/runx")?.lifecycle.evaluated_count,
     1,
   );
 });
 
-test("runMatonCycle persists durable priority and cycle objects", async () => {
-  const tempRoot = await mkdtemp(path.join(os.tmpdir(), "maton-persisted-control-"));
+test("runAsterCycle persists durable priority and cycle objects", async () => {
+  const tempRoot = await mkdtemp(path.join(os.tmpdir(), "aster-persisted-control-"));
   const repoRoot = path.join(tempRoot, "repo");
   await mkdir(path.join(repoRoot, "doctrine"), { recursive: true });
   await mkdir(path.join(repoRoot, "state", "targets"), { recursive: true });
@@ -362,7 +362,7 @@ test("runMatonCycle persists durable priority and cycle objects", async () => {
   await mkdir(path.join(repoRoot, "reflections"), { recursive: true });
 
   await writeSelectionPolicy(path.join(repoRoot, "state", "selection-policy.json"));
-  await writeFile(path.join(repoRoot, "state", "maton-control.json"), `${JSON.stringify({
+  await writeFile(path.join(repoRoot, "state", "aster-control.json"), `${JSON.stringify({
     targets: [],
     opportunities: [],
     priorities: [],
@@ -412,13 +412,13 @@ test("runMatonCycle persists durable priority and cycle objects", async () => {
     )}\n`,
   );
 
-  const result = await runMatonCycle({
+  const result = await runAsterCycle({
     repoRoot,
-    repo: "nilstate/maton",
+    repo: "nilstate/aster",
     discoveryInput: discoveryPath,
     now: "2026-04-18T12:00:00Z",
   });
-  const persisted = JSON.parse(await readFile(path.join(repoRoot, "state", "maton-control.json"), "utf8"));
+  const persisted = JSON.parse(await readFile(path.join(repoRoot, "state", "aster-control.json"), "utf8"));
 
   assert.equal(result.selection.status, "selected");
   assert.equal(persisted.priorities.length >= 1, true);
@@ -439,7 +439,7 @@ test("runMatonCycle persists durable priority and cycle objects", async () => {
 });
 
 test("buildSelectorTrainingRow projects a schema-valid labeled selector row", async () => {
-  const tempRoot = await mkdtemp(path.join(os.tmpdir(), "maton-selector-training-"));
+  const tempRoot = await mkdtemp(path.join(os.tmpdir(), "aster-selector-training-"));
   const repoRoot = path.join(tempRoot, "repo");
   await mkdir(path.join(repoRoot, "doctrine"), { recursive: true });
   await mkdir(path.join(repoRoot, "state", "targets"), { recursive: true });
@@ -447,7 +447,7 @@ test("buildSelectorTrainingRow projects a schema-valid labeled selector row", as
   await mkdir(path.join(repoRoot, "reflections"), { recursive: true });
 
   await writeSelectionPolicy(path.join(repoRoot, "state", "selection-policy.json"));
-  await writeFile(path.join(repoRoot, "state", "maton-control.json"), `${JSON.stringify({
+  await writeFile(path.join(repoRoot, "state", "aster-control.json"), `${JSON.stringify({
     targets: [],
     opportunities: [],
     priorities: [],
@@ -497,15 +497,15 @@ test("buildSelectorTrainingRow projects a schema-valid labeled selector row", as
     )}\n`,
   );
 
-  const result = await runMatonCycle({
+  const result = await runAsterCycle({
     repoRoot,
-    repo: "nilstate/maton",
+    repo: "nilstate/aster",
     discoveryInput: discoveryPath,
     now: "2026-04-18T12:00:00Z",
   });
   const trainingRow = buildSelectorTrainingRow(result);
 
-  assert.equal(trainingRow.kind, "runx.maton-selector-training-row.v1");
+  assert.equal(trainingRow.kind, "runx.aster-selector-training-row.v1");
   assert.equal(trainingRow.cycle_id, result.cycle_id);
   assert.equal(trainingRow.selection_status, "selected");
   assert.equal(trainingRow.selected_bucket, "thesis_work");
@@ -518,8 +518,8 @@ test("buildSelectorTrainingRow projects a schema-valid labeled selector row", as
   assert.equal(trainingRow.dispatch.status, "ready");
 });
 
-test("runMatonCycle vetoes curated external targets outside prerelease v1 scope", async () => {
-  const tempRoot = await mkdtemp(path.join(os.tmpdir(), "maton-external-veto-"));
+test("runAsterCycle vetoes curated external targets outside prerelease v1 scope", async () => {
+  const tempRoot = await mkdtemp(path.join(os.tmpdir(), "aster-external-veto-"));
   const repoRoot = path.join(tempRoot, "repo");
   await mkdir(path.join(repoRoot, "doctrine"), { recursive: true });
   await mkdir(path.join(repoRoot, "state", "targets"), { recursive: true });
@@ -571,9 +571,9 @@ test("runMatonCycle vetoes curated external targets outside prerelease v1 scope"
     )}\n`,
   );
 
-  const result = await runMatonCycle({
+  const result = await runAsterCycle({
     repoRoot,
-    repo: "nilstate/maton",
+    repo: "nilstate/aster",
     discoveryInput: discoveryPath,
     now: "2026-04-16T12:00:00Z",
   });
@@ -614,8 +614,8 @@ test("scoreOpportunities enforces cooldowns from target dossiers", async () => {
       source: "maintenance",
       title: "Run proving-ground",
       summary: "Run proving-ground",
-      subject_locator: "nilstate/maton",
-      target_repo: "nilstate/maton",
+      subject_locator: "nilstate/aster",
+      target_repo: "nilstate/aster",
       stale_days: 0.2,
       dossier: {
         default_lanes: ["proving-ground"],
@@ -635,7 +635,7 @@ test("scoreOpportunities enforces cooldowns from target dossiers", async () => {
   const scored = scoreOpportunities({
     opportunities,
     dossiers: {
-      "nilstate-maton": opportunities[0].dossier,
+      "nilstate-aster": opportunities[0].dossier,
     },
     memory: { history: [], reflections: [] },
     policy,
@@ -674,8 +674,8 @@ test("scoreOpportunities uses dossier current opportunities to boost lane fit", 
     source: "github_issue",
     title: "docs: clarify command",
     summary: "docs: clarify command",
-    subject_locator: "nilstate/maton#issue/10",
-    target_repo: "nilstate/maton",
+    subject_locator: "nilstate/aster#issue/10",
+    target_repo: "nilstate/aster",
     is_external: true,
     body_length: 80,
     stale_days: 5,
@@ -729,7 +729,7 @@ test("scoreOpportunities uses dossier current opportunities to boost lane fit", 
 
 test("buildDispatchPlan dispatches curated prerelease opportunities", () => {
   const plan = buildDispatchPlan({
-    repo: "nilstate/maton",
+    repo: "nilstate/aster",
     dispatchRef: "main",
     selection: {
       status: "selected",
@@ -753,8 +753,8 @@ test("buildDispatchPlan dispatches curated prerelease opportunities", () => {
   assert.equal(plan.inputs.pr_number, "101");
 });
 
-test("runMatonCycle vetoes candidates with an open operator-memory PR", async () => {
-  const tempRoot = await mkdtemp(path.join(os.tmpdir(), "maton-open-pr-"));
+test("runAsterCycle vetoes candidates with an open operator-memory PR", async () => {
+  const tempRoot = await mkdtemp(path.join(os.tmpdir(), "aster-open-pr-"));
   const repoRoot = path.join(tempRoot, "repo");
   await mkdir(path.join(repoRoot, "doctrine"), { recursive: true });
   await mkdir(path.join(repoRoot, "state", "targets"), { recursive: true });
@@ -818,9 +818,9 @@ test("runMatonCycle vetoes candidates with an open operator-memory PR", async ()
     )}\n`,
   );
 
-  const result = await runMatonCycle({
+  const result = await runAsterCycle({
     repoRoot,
-    repo: "nilstate/maton",
+    repo: "nilstate/aster",
     discoveryInput: discoveryPath,
     openOperatorMemoryBranches: ["runx/operator-memory-issue-triage-nilstate-runx-pr-101"],
     now: "2026-04-16T12:00:00Z",
@@ -836,8 +836,8 @@ test("runMatonCycle vetoes candidates with an open operator-memory PR", async ()
   assert.equal(vetoedPr?.within_v1_scope, true);
 });
 
-test("runMatonCycle vetoes bot-authored dependency update pull requests", async () => {
-  const tempRoot = await mkdtemp(path.join(os.tmpdir(), "maton-bot-pr-"));
+test("runAsterCycle vetoes bot-authored dependency update pull requests", async () => {
+  const tempRoot = await mkdtemp(path.join(os.tmpdir(), "aster-bot-pr-"));
   const repoRoot = path.join(tempRoot, "repo");
   await mkdir(path.join(repoRoot, "doctrine"), { recursive: true });
   await mkdir(path.join(repoRoot, "state", "targets"), { recursive: true });
@@ -901,9 +901,9 @@ test("runMatonCycle vetoes bot-authored dependency update pull requests", async 
     )}\n`,
   );
 
-  const result = await runMatonCycle({
+  const result = await runAsterCycle({
     repoRoot,
-    repo: "nilstate/maton",
+    repo: "nilstate/aster",
     discoveryInput: discoveryPath,
     now: "2026-04-16T12:00:00Z",
   });
@@ -917,8 +917,8 @@ test("runMatonCycle vetoes bot-authored dependency update pull requests", async 
   assert.match(vetoedPr?.veto_reasons.join(",") ?? "", /internal_or_build_only_pull_request/);
 });
 
-test("runMatonCycle vetoes PR comment candidates without a welcome signal", async () => {
-  const tempRoot = await mkdtemp(path.join(os.tmpdir(), "maton-no-welcome-"));
+test("runAsterCycle vetoes PR comment candidates without a welcome signal", async () => {
+  const tempRoot = await mkdtemp(path.join(os.tmpdir(), "aster-no-welcome-"));
   const repoRoot = path.join(tempRoot, "repo");
   await mkdir(path.join(repoRoot, "doctrine"), { recursive: true });
   await mkdir(path.join(repoRoot, "state", "targets"), { recursive: true });
@@ -984,9 +984,9 @@ test("runMatonCycle vetoes PR comment candidates without a welcome signal", asyn
     )}\n`,
   );
 
-  const result = await runMatonCycle({
+  const result = await runAsterCycle({
     repoRoot,
-    repo: "nilstate/maton",
+    repo: "nilstate/aster",
     discoveryInput: discoveryPath,
     now: "2026-04-16T12:00:00Z",
   });
@@ -997,8 +997,8 @@ test("runMatonCycle vetoes PR comment candidates without a welcome signal", asyn
   assert.match(vetoedPr?.veto_reasons.join(",") ?? "", /comment_without_welcome_signal/);
 });
 
-test("runMatonCycle enforces severe cooldown after a spam outcome", async () => {
-  const tempRoot = await mkdtemp(path.join(os.tmpdir(), "maton-severe-cooldown-"));
+test("runAsterCycle enforces severe cooldown after a spam outcome", async () => {
+  const tempRoot = await mkdtemp(path.join(os.tmpdir(), "aster-severe-cooldown-"));
   const repoRoot = path.join(tempRoot, "repo");
   await mkdir(path.join(repoRoot, "doctrine"), { recursive: true });
   await mkdir(path.join(repoRoot, "state", "targets"), { recursive: true });
@@ -1053,9 +1053,9 @@ test("runMatonCycle enforces severe cooldown after a spam outcome", async () => 
     )}\n`,
   );
 
-  const result = await runMatonCycle({
+  const result = await runAsterCycle({
     repoRoot,
-    repo: "nilstate/maton",
+    repo: "nilstate/aster",
     discoveryInput: discoveryPath,
     now: "2026-04-17T12:00:00Z",
   });

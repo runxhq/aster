@@ -1,5 +1,5 @@
 name: Issue to PR
-description: Submit one bounded repo change that maton should attempt to turn into a draft PR.
+description: Submit one bounded repo change that aster should attempt to turn into a draft PR.
 title: "[issue-to-pr] "
 body:
   - type: textarea

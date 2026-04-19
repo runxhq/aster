@@ -31,7 +31,7 @@ jobs:
     if: ${{ github.event_name == 'workflow_dispatch' || startsWith(github.event.issue.title, '[skill]') }}
     runs-on: ubuntu-latest
     env:
-      GH_TOKEN: ${{ secrets.MATON_GH_TOKEN != '' && secrets.MATON_GH_TOKEN || github.token }}
+      GH_TOKEN: ${{ secrets.ASTER_GH_TOKEN != '' && secrets.ASTER_GH_TOKEN || github.token }}
       RUNX_CALLER_MODEL: ${{ vars.RUNX_CALLER_MODEL || 'gpt-5.4' }}
       RUNX_CALLER_REASONING_EFFORT: ${{ vars.RUNX_CALLER_REASONING_EFFORT || 'xhigh' }}
       RUNX_CALLER_MAX_ATTEMPTS: ${{ vars.RUNX_CALLER_MAX_ATTEMPTS || '3' }}
@@ -48,7 +48,7 @@ jobs:
             echo "enabled=true" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Check out maton
+      - name: Check out aster
         if: ${{ steps.preflight.outputs.enabled == 'true' }}
         uses: actions/checkout@v6
         with:
@@ -125,7 +125,7 @@ jobs:
           ISSUE_TITLE: ${{ steps.issue.outputs.title }}
           ISSUE_BODY: ${{ steps.issue.outputs.body }}
         run: |
-          node scripts/maton-core.mjs \
+          node scripts/aster-core.mjs \
             --lane skill-lab \
             --runx-root "$GITHUB_WORKSPACE/.runx/runx" \
             --artifact-root "$GITHUB_WORKSPACE/.artifacts/skill-lab" \
@@ -142,7 +142,7 @@ jobs:
             skill "$GITHUB_WORKSPACE/.runx/runx/skills/objective-to-skill" \
             --objective "$ISSUE_TITLE" \
             --project_context "$ISSUE_BODY"
-          node scripts/apply-maton-promotions.mjs \
+          node scripts/apply-aster-promotions.mjs \
             --repo-root "$GITHUB_WORKSPACE" \
             --summary "$GITHUB_WORKSPACE/.artifacts/skill-lab/core-summary.json" \
             --output "$GITHUB_WORKSPACE/.artifacts/skill-lab/promotion-apply.json"
@@ -170,7 +170,7 @@ jobs:
           cat > .artifacts/skill-lab/pr-body.md <<EOF
           ## Summary
 
-          This draft PR was opened by the \`maton\` skill-lab lane.
+          This draft PR was opened by the \`aster\` skill-lab lane.
 
           - Source issue: #${{ steps.issue.outputs.number }}
           - Issue URL: ${{ steps.issue.outputs.url }}
@@ -238,7 +238,7 @@ jobs:
             --data "$(jq -n \
               --arg title "$TITLE" --arg summary "$SUMMARY" --arg status "$STATUS" \
               --arg repo "${{ github.repository }}" --arg url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
-              '{events: [{kind: "maton_run", source: "github-actions", status: (if $status == "success" then "success" else "failure" end), title: $title, summary: $summary, repo: $repo, workflow: "skill-lab", url: $url, timestamp: (now | todate), metadata: {lane: "skill-lab", feed_channel: "main", main_feed_eligible: true}}]}')" \
+              '{events: [{kind: "aster_run", source: "github-actions", status: (if $status == "success" then "success" else "failure" end), title: $title, summary: $summary, repo: $repo, workflow: "skill-lab", url: $url, timestamp: (now | todate), metadata: {lane: "skill-lab", feed_channel: "main", main_feed_eligible: true}}]}')" \
             "${RUNX_PUBLIC_EVIDENCE_API_BASE_URL%/}/v1/admin/public/evidence" || true
 
       - name: Upload artifacts

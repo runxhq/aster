@@ -8,7 +8,7 @@ task:
   title: "Dogfood skill contribution on nilstate icey-cli"
   summary: >
     Execute the deployed skill-contribution lane against nilstate/icey-cli as it
-    will run in production: from the GitHub Actions workflow on auscaster/maton,
+    will run in production: from the GitHub Actions workflow on auscaster/aster,
     checking out the remote target repo, generating a portable SKILL.md, validating
     the artifact packet, and publishing or updating a draft PR in the target repo.
     Local generation may be used only as preflight evidence; the acceptance gate
@@ -17,8 +17,8 @@ task:
   risk_level: "medium"
   context:
     packages:
-      - "maton/.github/workflows/skill-contribution.yml"
-      - "maton/scripts"
+      - "aster/.github/workflows/skill-contribution.yml"
+      - "aster/scripts"
       - "nilstate/icey-cli"
     files_impacted:
       - path: "../icey-cli/SKILL.md"
@@ -37,7 +37,7 @@ task:
     related_docs:
       - "docs/skill-contribution.md"
       - "../runx/docs/skill-learning-contribution-spec.md"
-    cwd: "/home/kam/dev/maton"
+    cwd: "/home/kam/dev/aster"
   objectives:
     - "Generate a repo-grounded portable SKILL.md for nilstate/icey-cli"
     - "Validate public-language, evidence, and artifact gates"
@@ -50,14 +50,14 @@ task:
       - "SKILL.md only in the target repo"
       - "Draft PR publication"
       - "Hosted workflow dispatch and result verification"
-      - "Public evidence relay through maton workflow_run"
+      - "Public evidence relay through aster workflow_run"
     out_of_scope:
       - "Merging the upstream PR"
       - "Changing nilstate/icey core repo"
       - "Adding runx x.yaml or registry binding before upstream acceptance"
       - "Publishing a runx registry skill"
   dependencies:
-    - "auscaster/maton main contains skill-contribution workflow"
+    - "auscaster/aster main contains skill-contribution workflow"
     - "GitHub Actions can dispatch workflow_dispatch events"
     - "The configured token can write a branch/PR to nilstate/icey-cli when publish=true"
     - "nilstate/icey-cli CI can run on the generated draft PR"
@@ -70,17 +70,17 @@ task:
     - area: "target repo"
       description: "nilstate/icey-cli receives SKILL.md"
       owners: ["nilstate/icey-cli"]
-    - area: "maton workflow"
+    - area: "aster workflow"
       description: "skill-contribution workflow runs remotely with target_repo nilstate/icey-cli"
-      owners: ["maton"]
+      owners: ["aster"]
     - area: "upstream PR"
       description: "Draft PR #2 carries the portable skill contribution"
       owners: ["nilstate/icey-cli"]
     - area: "public evidence"
       description: "publish-public-evidence receives workflow_run for skill-contribution"
-      owners: ["maton", "runx/cloud"]
+      owners: ["aster", "runx/cloud"]
   risks:
-    - description: "Remote workflow cannot push to nilstate/icey-cli because token is scoped only to maton"
+    - description: "Remote workflow cannot push to nilstate/icey-cli because token is scoped only to aster"
       impact: "high"
       mitigation: "Use UPSTREAM_CONTRIBUTION_TOKEN or RUNX_WORKSPACE_PAT; if missing, rerun with publish=false and record publication as blocked"
     - description: "Generated SKILL.md is too broad or stale"
@@ -105,7 +105,7 @@ task:
         status: "done"
         checked_at: "2026-04-16T01:08:06Z"
       - id: "dod4"
-        description: "Hosted skill-contribution workflow was dispatched from auscaster/maton main"
+        description: "Hosted skill-contribution workflow was dispatched from auscaster/aster main"
         status: "done"
         checked_at: "2026-04-16T01:04:24Z"
       - id: "dod5"
@@ -139,12 +139,12 @@ task:
       - id: "v4"
         type: "integration"
         description: "Remote workflow run succeeded"
-        command: "gh run view 24486417144 --repo auscaster/maton --json databaseId,status,conclusion,url"
+        command: "gh run view 24486417144 --repo auscaster/aster --json databaseId,status,conclusion,url"
         expected: "\"conclusion\":\"success\""
       - id: "v5"
         type: "integration"
         description: "Remote skill-contribution run completes"
-        command: "gh run view 24486417144 --repo auscaster/maton --json databaseId,status,conclusion,url"
+        command: "gh run view 24486417144 --repo auscaster/aster --json databaseId,status,conclusion,url"
         expected: "\"status\":\"completed\""
       - id: "v6"
         type: "integration"
@@ -248,31 +248,31 @@ phases:
     status: "completed"
   - id: "phase3"
     name: "Remote workflow dogfood"
-    objective: "Run the deployed maton workflow against nilstate/icey-cli."
+    objective: "Run the deployed aster workflow against nilstate/icey-cli."
     changes:
       - file: "GitHub Actions"
         action: "update"
         lines: "all"
         content_spec: |
-          Dispatch skill-contribution.yml on auscaster/maton main with
+          Dispatch skill-contribution.yml on auscaster/aster main with
           target_repo=nilstate/icey-cli and publish=true. Wait for the run result.
     acceptance_criteria:
       - id: "ac3_1"
         type: "integration"
         description: "Workflow dispatch succeeded in hosted run"
-        command: "gh run view 24486417144 --repo auscaster/maton --json databaseId,status,conclusion,url"
+        command: "gh run view 24486417144 --repo auscaster/aster --json databaseId,status,conclusion,url"
         expected: "\"conclusion\":\"success\""
         result: "pass"
         executed_at: "2026-04-16T01:08:07Z"
-        result_output: "{\"conclusion\":\"success\",\"databaseId\":24486417144,\"status\":\"completed\",\"url\":\"https://github.com/auscaster/maton/actions/runs/24486417144\"}"
+        result_output: "{\"conclusion\":\"success\",\"databaseId\":24486417144,\"status\":\"completed\",\"url\":\"https://github.com/auscaster/aster/actions/runs/24486417144\"}"
       - id: "ac3_2"
         type: "integration"
         description: "Remote workflow conclusion recorded"
-        command: "gh run view 24486417144 --repo auscaster/maton --json databaseId,status,conclusion,url"
+        command: "gh run view 24486417144 --repo auscaster/aster --json databaseId,status,conclusion,url"
         expected: "\"status\":\"completed\""
         result: "pass"
         executed_at: "2026-04-16T01:08:08Z"
-        result_output: "{\"conclusion\":\"success\",\"databaseId\":24486417144,\"status\":\"completed\",\"url\":\"https://github.com/auscaster/maton/actions/runs/24486417144\"}"
+        result_output: "{\"conclusion\":\"success\",\"databaseId\":24486417144,\"status\":\"completed\",\"url\":\"https://github.com/auscaster/aster/actions/runs/24486417144\"}"
     status: "completed"
   - id: "phase4"
     name: "PR CI and evidence check"
@@ -298,11 +298,11 @@ phases:
       - id: "ac4_2"
         type: "integration"
         description: "Evidence relay checked"
-        command: "gh run list --repo auscaster/maton --workflow publish-public-evidence.yml --limit 5 --json databaseId,status,conclusion,displayTitle,url"
+        command: "gh run list --repo auscaster/aster --workflow publish-public-evidence.yml --limit 5 --json databaseId,status,conclusion,displayTitle,url"
         expected: "\"conclusion\":\"success\""
         result: "pass"
         executed_at: "2026-04-16T01:12:30Z"
-        result_output: "[{\"conclusion\":\"success\",\"databaseId\":24486613855,\"displayTitle\":\"publish-public-evidence\",\"status\":\"completed\",\"url\":\"https://github.com/auscaster/maton/actions/runs/24486613855\"},{\"conclusion\":\""
+        result_output: "[{\"conclusion\":\"success\",\"databaseId\":24486613855,\"displayTitle\":\"publish-public-evidence\",\"status\":\"completed\",\"url\":\"https://github.com/auscaster/aster/actions/runs/24486613855\"},{\"conclusion\":\""
     status: "completed"
 
 rollback:
@@ -310,5 +310,5 @@ rollback:
   commands:
     phase1: "git -C /home/kam/dev/icey-cli checkout main && git -C /home/kam/dev/icey-cli clean -f SKILL.md"
     phase2: "gh pr close 2 --repo nilstate/icey-cli --comment 'Closing dogfood draft PR by operator request.'"
-    phase3: "gh run cancel <run-id> --repo auscaster/maton"
+    phase3: "gh run cancel <run-id> --repo auscaster/aster"
     phase4: "No code rollback; record failed evidence state."

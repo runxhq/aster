@@ -12,27 +12,27 @@ export const RUNX_CONTROL_SCHEMA_ARTIFACTS = {
     file: "spec/verification-profile.schema.json",
   },
   workspace_change_plan_request: {
-    ref: "urn:maton:schema:workspace-change-plan-request:v1",
+    ref: "urn:aster:schema:workspace-change-plan-request:v1",
     file: "spec/workspace-change-plan-request.schema.json",
   },
   issue_to_pr_request: {
-    ref: "urn:maton:schema:issue-to-pr-request:v1",
+    ref: "urn:aster:schema:issue-to-pr-request:v1",
     file: "spec/issue-to-pr-request.schema.json",
   },
   worker_request: {
-    ref: "urn:maton:schema:worker-request:v1",
+    ref: "urn:aster:schema:worker-request:v1",
     file: "spec/worker-request.schema.json",
   },
   verification_report: {
     ref: "https://runx.ai/spec/governance/verification-report.schema.json",
     file: "spec/verification-report.schema.json",
   },
-  maton_control: {
-    ref: "urn:maton:schema:maton-control:v1",
-    file: "spec/maton-control.schema.json",
+  aster_control: {
+    ref: "urn:aster:schema:aster-control:v1",
+    file: "spec/aster-control.schema.json",
   },
   selector_training_row: {
-    ref: "urn:maton:schema:selector-training-row:v1",
+    ref: "urn:aster:schema:selector-training-row:v1",
     file: "spec/selector-training-row.schema.json",
   },
 };

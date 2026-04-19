@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-MATON_ROOT="${MATON_ROOT:-$(pwd)}"
+ASTER_ROOT="${ASTER_ROOT:-$(pwd)}"
 RUNX_ROOT="${RUNX_ROOT:?set RUNX_ROOT to the runx workspace root}"
-ARTIFACT_DIR="${ARTIFACT_DIR:-$MATON_ROOT/.artifacts/proving-ground}"
+ARTIFACT_DIR="${ARTIFACT_DIR:-$ASTER_ROOT/.artifacts/proving-ground}"
 RUNX_ANSWERS_DIR="${RUNX_ANSWERS_DIR:-}"
 PROVING_GROUND_PROFILE="${PROVING_GROUND_PROFILE:-full}"
 
@@ -56,43 +56,43 @@ run_json() {
 
 run_json evolve-introspect \
   evolve \
-  --repo_root "$MATON_ROOT"
+  --repo_root "$ASTER_ROOT"
 
 run_json sourcey \
   skill "$SKILLS_ROOT/sourcey" \
-  --project "$MATON_ROOT"
+  --project "$ASTER_ROOT"
 
 if [[ "$PROVING_GROUND_PROFILE" != "minimal" ]]; then
   run_json content-pipeline \
     skill "$SKILLS_ROOT/content-pipeline" \
-    --objective "Draft the next maton operator update from repo evidence" \
+    --objective "Draft the next aster operator update from repo evidence" \
     --audience operators \
     --domain "oss repo operations" \
     --operator_context "Ground claims in committed repo state only." \
-    --target_entities maton \
+    --target_entities aster \
     --target_entities runx
 
   run_json market-intelligence \
     skill "$SKILLS_ROOT/market-intelligence" \
-    --objective "Identify the highest-signal change in the maton repo this week" \
+    --objective "Identify the highest-signal change in the aster repo this week" \
     --audience operators \
     --domain "oss repo operations" \
     --operator_context "Favor repo evidence over generic ecosystem claims." \
-    --target_entities maton \
+    --target_entities aster \
     --target_entities runx
 
   run_json skill-testing \
     skill "$SKILLS_ROOT/skill-testing" \
     --skill_ref "$SKILLS_ROOT/sourcey" \
-    --objective "Assess whether sourcey is strong enough to document maton safely" \
+    --objective "Assess whether sourcey is strong enough to document aster safely" \
     --test_constraints "Use repo-local evidence and inline harness receipts only."
 
   run_json research \
     skill "$SKILLS_ROOT/research" \
-    --objective "Identify the next highest-leverage improvement for maton" \
+    --objective "Identify the next highest-leverage improvement for aster" \
     --domain "oss repo operations" \
     --deliverable "operator brief" \
-    --target_entities maton \
+    --target_entities aster \
     --target_entities runx
 fi
 

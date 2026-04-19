@@ -7,7 +7,7 @@ status: "in_progress"
 task:
   title: "Implement upstream skill contribution stack"
   summary: >
-    Build the full upstream skill-contribution stack for maton and runx:
+    Build the full upstream skill-contribution stack for aster and runx:
     strategy docs, machine-readable artifact schemas, executable preparation
     and validation scripts, a deployed GitHub Actions workflow, proof-wall
     evidence wiring, and Sourcey docs coverage. The stack must preserve the
@@ -17,10 +17,10 @@ task:
   risk_level: "medium"
   context:
     packages:
-      - "maton/.github/workflows"
-      - "maton/scripts"
-      - "maton/schemas"
-      - "maton/docs"
+      - "aster/.github/workflows"
+      - "aster/scripts"
+      - "aster/schemas"
+      - "aster/docs"
       - "runx/plans"
       - "runx/docs"
     files_impacted:
@@ -74,7 +74,7 @@ task:
       - "docs/run-catalog.md"
       - "docs/flows.md"
       - "docs/operations.md"
-    cwd: "/home/kam/dev/maton"
+    cwd: "/home/kam/dev/aster"
   objectives:
     - "Define skill-learning, skill-contribution, registry-binding, and proof-wall as separate layers with explicit ownership"
     - "Create a machine-readable artifact schema for opportunity, research, candidate, contribution, and feed-event packets"
@@ -84,7 +84,7 @@ task:
     - "Keep upstream PR language contribution-oriented and non-marketing"
   scope:
     in_scope:
-      - "Maton orchestration for upstream SKILL.md contributions"
+      - "Aster orchestration for upstream SKILL.md contributions"
       - "Runx strategy and implementation-spec documentation"
       - "JSON artifact contracts and validation gates"
       - "Remote workflow dispatch readiness"
@@ -97,11 +97,11 @@ task:
       - "Replacing objective-to-skill internals"
   dependencies:
     - "GitHub CLI authenticated with repo scope for manual verification"
-    - "GitHub Actions availability on auscaster/maton"
+    - "GitHub Actions availability on auscaster/aster"
     - "UPSTREAM_CONTRIBUTION_TOKEN or RUNX_WORKSPACE_PAT for cross-repo publishing from hosted workflow"
     - "Sourcey CLI available through npx for docs build"
   assumptions:
-    - "Maton is the correct owner for upstream PR orchestration"
+    - "Aster is the correct owner for upstream PR orchestration"
     - "Runx core remains the owner of portable skill primitives and registry binding format"
     - "External repos should receive SKILL.md only unless maintainers explicitly request more"
     - "The first hosted dogfood can target nilstate/icey-cli because it has clear build, release, packaging, and operator workflows"
@@ -112,18 +112,18 @@ task:
     - area: "runx implementation spec"
       description: "Document state machine, artifacts, workflow ownership, quality gates, and proof-wall events"
       owners: ["runx"]
-    - area: "maton scripts"
+    - area: "aster scripts"
       description: "Prepare and validate upstream SKILL.md contribution packets"
-      owners: ["maton"]
-    - area: "maton workflow deployment"
+      owners: ["aster"]
+    - area: "aster workflow deployment"
       description: "Run contribution lane in GitHub Actions against external repositories"
-      owners: ["maton"]
-    - area: "maton Sourcey docs"
+      owners: ["aster"]
+    - area: "aster Sourcey docs"
       description: "Publish operator docs for the new lane"
-      owners: ["maton"]
+      owners: ["aster"]
     - area: "public evidence"
       description: "Map skill-contribution workflow runs onto the live proof wall"
-      owners: ["maton", "runx/cloud"]
+      owners: ["aster", "runx/cloud"]
   risks:
     - description: "Public upstream PR language could read like runx marketing"
       impact: "high"
@@ -134,7 +134,7 @@ task:
     - description: "Generated SKILL.md could become generic and unhelpful"
       impact: "high"
       mitigation: "Preparation script grounds output in explicit target repo files and validator requires evidence/workflow/safety sections"
-    - description: "Unrelated dirty maton files could be accidentally committed"
+    - description: "Unrelated dirty aster files could be accidentally committed"
       impact: "medium"
       mitigation: "Stage only explicit files for this stack and leave supervisor edits untouched"
   acceptance:
@@ -149,15 +149,15 @@ task:
         status: "done"
         checked_at: "2026-04-16T01:06:22Z"
       - id: "dod3"
-        description: "Maton contains machine-readable JSON schema for contribution artifacts"
+        description: "Aster contains machine-readable JSON schema for contribution artifacts"
         status: "done"
         checked_at: "2026-04-16T01:06:22Z"
       - id: "dod4"
-        description: "Maton can prepare a repo-grounded SKILL.md and contribution packet"
+        description: "Aster can prepare a repo-grounded SKILL.md and contribution packet"
         status: "done"
         checked_at: "2026-04-16T01:05:41Z"
       - id: "dod5"
-        description: "Maton can validate public-language, source-reference, and artifact gates before publication"
+        description: "Aster can validate public-language, source-reference, and artifact gates before publication"
         status: "done"
         checked_at: "2026-04-16T01:05:41Z"
       - id: "dod6"
@@ -175,9 +175,9 @@ task:
     validation:
       - id: "v1"
         type: "test"
-        description: "Maton required-file check passes"
+        description: "Aster required-file check passes"
         command: "npm run check"
-        expected: "maton check passed"
+        expected: "aster check passed"
       - id: "v2"
         type: "documentation"
         description: "Sourcey docs build includes skill-contribution page"
@@ -201,7 +201,7 @@ task:
       - id: "v6"
         type: "integration"
         description: "Remote workflow exists after push"
-        command: "gh workflow view skill-contribution.yml --repo auscaster/maton"
+        command: "gh workflow view skill-contribution.yml --repo auscaster/aster"
         expected: "workflow is visible"
   constraints:
     approvals_required: []
@@ -224,7 +224,7 @@ planning_log:
     summary: "User required real specs, execution, deployment, and remote dogfooding rather than plan-only docs."
   - timestamp: "2026-04-16T00:58:30Z"
     actor: "agent"
-    summary: "Expanded the scafld task spec to cover runx docs, maton schemas, scripts, workflows, evidence publishing, docs, validation, and deployment."
+    summary: "Expanded the scafld task spec to cover runx docs, aster schemas, scripts, workflows, evidence publishing, docs, validation, and deployment."
 
   - timestamp: "2026-04-16T01:02:54Z"
     actor: "cli"
@@ -313,7 +313,7 @@ phases:
         lines: "all"
         content_spec: |
           Add manual dispatch workflow with target repo/ref/mode/publish/force
-          inputs. Checkout maton and target repo, prepare, validate, optionally
+          inputs. Checkout aster and target repo, prepare, validate, optionally
           publish draft PR, and upload artifacts.
       - file: ".github/workflows/publish-public-evidence.yml"
         action: "update"
@@ -332,8 +332,8 @@ phases:
         result_output: "workflow ok"
     status: "completed"
   - id: "phase4"
-    name: "Maton docs and checks"
-    objective: "Document the lane and make it part of maton's required files and Sourcey site."
+    name: "Aster docs and checks"
+    objective: "Document the lane and make it part of aster's required files and Sourcey site."
     changes:
       - file: "docs/skill-contribution.md"
         action: "create"
@@ -375,10 +375,10 @@ phases:
         type: "test"
         description: "Repo check passes"
         command: "npm run check"
-        expected: "maton check passed"
+        expected: "aster check passed"
         result: "pass"
         executed_at: "2026-04-16T01:05:41Z"
-        result_output: "> maton@0.1.0 check > node scripts/check.mjs  maton check passed"
+        result_output: "> aster@0.1.0 check > node scripts/check.mjs  aster check passed"
       - id: "ac4_2"
         type: "documentation"
         description: "Sourcey docs build"
@@ -386,11 +386,11 @@ phases:
         expected: "Pages:"
         result: "pass"
         executed_at: "2026-04-16T01:05:53Z"
-        result_output: "> maton@0.1.0 docs:build > cd docs && npx -y sourcey build --config sourcey.config.ts -o ../.sourcey/runx-docs   Sourcey — building documentation site    Pages:  10   Output: /home/kam/dev/automat"
+        result_output: "> aster@0.1.0 docs:build > cd docs && npx -y sourcey build --config sourcey.config.ts -o ../.sourcey/runx-docs   Sourcey — building documentation site    Pages:  10   Output: /home/kam/dev/automat"
     status: "completed"
   - id: "phase5"
     name: "Deployment"
-    objective: "Commit and push runx and maton changes so the hosted lane is live."
+    objective: "Commit and push runx and aster changes so the hosted lane is live."
     changes:
       - file: "../runx"
         action: "update"
@@ -399,7 +399,7 @@ phases:
       - file: "."
         action: "update"
         lines: "all"
-        content_spec: "Commit and push maton workflow, docs, schema, and script changes without unrelated dirty files."
+        content_spec: "Commit and push aster workflow, docs, schema, and script changes without unrelated dirty files."
     acceptance_criteria:
       - id: "ac5_1"
         type: "integration"
@@ -411,7 +411,7 @@ phases:
         result_output: "4d16d92 docs(skill): define contribution stack"
       - id: "ac5_2"
         type: "integration"
-        description: "Maton changes pushed"
+        description: "Aster changes pushed"
         command: "git log --oneline -1"
         expected: "fix(ci): sanitize skill contribution artifact name"
         result: "pass"
