@@ -1,6 +1,6 @@
 ---
 title: Target Dossier — nilstate/aster
-updated: 2026-04-17
+updated: 2026-04-20
 visibility: public
 subject_kind: github_repository
 subject_locator: nilstate/aster
@@ -35,3 +35,7 @@ line.
 - repo-local changes are high-confidence when scoped cleanly
 - public narrative must remain subordinate to receipts and committed state
 - changes that alter workflow publication rules deserve extra care
+
+## Recent Outcomes
+
+- 2026-04-20 · `issue-triage` · `success` · `rx_1815747745554caa92d73c0812f7f5a6` · lane finished with success
