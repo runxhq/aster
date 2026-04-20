@@ -15,6 +15,9 @@ interface FeedItem {
   artifactUrl: string | null;
   commitShort: string | null;
   failureReason: string | null;
+  isDemo?: boolean;
+  demoLabel?: string | null;
+  demoNotice?: string | null;
 }
 
 interface Props {
@@ -45,6 +48,7 @@ const {
               <span class="feed-card__lane">{item.channel.toUpperCase()}</span>
               <span class="feed-card__source">{item.proofLane.toUpperCase()}</span>
               <span class="feed-card__status">{item.status === "ok" ? "verified" : item.status === "partial" ? "pending" : "failed"}</span>
+              {item.isDemo ? <span class="feed-card__demo">{(item.demoLabel ?? "demo").toUpperCase()}</span> : null}
             </div>
             <span class="feed-card__time">{item.timestamp}</span>
           </div>
@@ -76,7 +80,14 @@ const {
                 <span>channel</span>
                 <strong>{item.channel}</strong>
               </span>
+              {item.isDemo ? (
+                <span class="feed-card__proof">
+                  <span>seed</span>
+                  <strong>{item.demoLabel ?? "demo"}</strong>
+                </span>
+              ) : null}
             </div>
+            {item.isDemo && item.demoNotice ? <p class="feed-card__demo-note">{item.demoNotice}</p> : null}
             <div class="feed-card__links">
               {item.url ? <a href={item.url}>workflow</a> : null}
               {item.artifactUrl ? <a href={item.artifactUrl}>artifacts</a> : null}

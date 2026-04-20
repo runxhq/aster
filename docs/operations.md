@@ -78,6 +78,9 @@ Approvals stay explicit:
   regenerated or reposted
 - public comment quality must clear the Kam-voice bar before posting
 - issue triage writes comments only through the dedicated workflow
+- when a human narrows a gate with rationale or invariants, that context should
+  be captured as canonical approval evidence and only then reflected into
+  derived memory or prompt context
 - Skill-lab opens draft PRs only
 - Skill-upstream opens draft PRs only, and upstream changes are limited to
   portable `SKILL.md` unless a maintainer explicitly requests more
@@ -86,6 +89,41 @@ Approvals stay explicit:
 - Merge-watch is read-only against upstream repos. It records PR
   state, checks, merge commit, and upstream blob metadata, then emits an
   internal registry-binding request after merge.
+
+### Maintainer approval context
+
+When a maintainer wants to narrow a future approval gate without adding hidden
+prompt sprawl, the guidance should live in the issue or PR thread itself using
+an explicit marker block:
+
+```md
+<!-- aster:approval-context -->
+Rationale: Keep this bounded to triage and planning only.
+Approved By: kam
+Applies To: issue-triage.plan, issue-triage.build
+Objective Fingerprint: issue:runx-42
+Expires After: 2026-05-01T00:00:00Z
+Invariant: Do not open or update a PR until build is explicitly approved.
+Notes:
+- Reuse this only for the same repo-scoped objective.
+- Quote the approval rationale back in the receipt summary.
+```
+
+Rules:
+
+- only trusted maintainer authorships count: `OWNER`, `MEMBER`, or
+  `COLLABORATOR`
+- the latest trusted marker block wins for that thread
+- `Applies To` scopes the approval to one or more gate ids or wildcard patterns
+  such as `issue-triage.*`
+- `Objective Fingerprint` narrows the approval to one concrete issue/PR objective
+- `Expires After` lets old approvals fail closed instead of lingering forever
+- the thread comment is canonical evidence; any derived memory or prompt context
+  must be rebuildable from it
+- if no trusted marker exists, the lane should behave as though no approval
+  context was supplied
+- `state/approved-policies.json` is a derived cache built from those thread
+  markers; it is helpful memory, not a hidden source of authority
 
 ## Artifact policy
 

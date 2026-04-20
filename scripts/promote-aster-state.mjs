@@ -49,6 +49,8 @@ export function buildPromotionDrafts({ lane, contextBundle, runResult, now = new
     feed_channel: feedChannelForLane(lane, runResult?.status ?? "unknown"),
     main_feed_eligible: isMainFeedEligible(lane, runResult?.status ?? "unknown"),
     subject: contextBundle?.subject ?? {},
+    approval_context: contextBundle?.approval_context ?? null,
+    approval_decisions: Array.isArray(contextBundle?.approval_decisions) ? contextBundle.approval_decisions : [],
     signal,
   };
 
@@ -150,6 +152,8 @@ function buildReflectionDraft({ date, lane, contextBundle, packet }) {
     lines.push(`- Receipt: \`${packet.receipt_id}\``);
   }
 
+  appendApprovalContextLines(lines, packet);
+
   lines.push("", "## Signals", "");
   lines.push(`- Summary: ${packet.summary}`);
   if (packet.signal.recommended_lane) {
@@ -211,6 +215,7 @@ function buildHistoryDraft({ date, lane, contextBundle, packet }) {
   if (packet.receipt_id) {
     lines.push("", `Receipt reference: \`${packet.receipt_id}\`.`);
   }
+  appendApprovalContextLines(lines, packet);
   lines.push("");
   return `${lines.join("\n")}\n`;
 }
@@ -258,6 +263,44 @@ function requireValue(argv, index, flag) {
     throw new Error(`${flag} requires a value.`);
   }
   return value;
+}
+
+function appendApprovalContextLines(lines, packet) {
+  if (!packet?.approval_context && (!Array.isArray(packet?.approval_decisions) || packet.approval_decisions.length === 0)) {
+    return;
+  }
+  lines.push("", "## Approval Context", "");
+  if (packet?.approval_context?.source) {
+    lines.push(`- Source: \`${packet.approval_context.source}\``);
+  }
+  if (packet?.approval_context?.source_url) {
+    lines.push(`- Source URL: ${packet.approval_context.source_url}`);
+  }
+  if (packet?.approval_context?.approved_by) {
+    lines.push(`- Approved by: \`${packet.approval_context.approved_by}\``);
+  }
+  if (packet?.approval_context?.rationale) {
+    lines.push(`- Rationale: ${packet.approval_context.rationale}`);
+  }
+  const invariants = Array.isArray(packet?.approval_context?.shared_invariants)
+    ? packet.approval_context.shared_invariants
+    : [];
+  for (const invariant of invariants) {
+    lines.push(`- Invariant: ${invariant}`);
+  }
+  const notes = Array.isArray(packet?.approval_context?.operator_notes)
+    ? packet.approval_context.operator_notes
+    : [];
+  for (const note of notes) {
+    lines.push(`- Operator note: ${note}`);
+  }
+  const decisions = Array.isArray(packet?.approval_decisions) ? packet.approval_decisions : [];
+  for (const decision of decisions) {
+    const gateId = firstString(decision?.gate_id);
+    const gateReason = firstString(decision?.gate_reason);
+    lines.push(`- Approved gate: \`${gateId || "unknown-gate"}\`${gateReason ? ` · ${gateReason}` : ""}`);
+  }
+  lines.push("- Approval guidance narrows the run; it does not widen authority beyond lane policy.");
 }
 
 function tryParseJson(value) {

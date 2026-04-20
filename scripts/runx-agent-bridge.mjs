@@ -25,6 +25,8 @@ async function main() {
     options.reasoningEffort ?? process.env.RUNX_CALLER_REASONING_EFFORT ?? "xhigh";
   const maxTurns = Number(options.maxTurns ?? process.env.RUNX_CALLER_MAX_TURNS ?? "8");
   const contextText = await loadCallerContext(options.contextFile);
+  const approvalContext = await loadApprovalContext(options.approvalContextPath);
+  const approvalRecords = [];
 
   if (!existsSync(cliBin)) {
     throw new Error(`runx CLI build not found at ${cliBin}`);
@@ -37,7 +39,6 @@ async function main() {
   await mkdir(traceDir, { recursive: true });
 
   let runArgs = [...options.runxArgs];
-  let latestStdout = "";
   let latestExitCode = 0;
 
   for (let turn = 0; turn < maxTurns; turn += 1) {
@@ -48,7 +49,6 @@ async function main() {
       workdir: options.workdir,
     });
 
-    latestStdout = invocation.stdout;
     latestExitCode = invocation.exitCode;
 
     if (!invocation.stdout.trim()) {
@@ -71,8 +71,20 @@ async function main() {
     for (const request of report.requests ?? []) {
       if (request.kind === "approval") {
         const gateId = String(request.gate?.id ?? "");
-        if (options.approveAll || approvedGates.has(gateId)) {
+        const approvalMechanism = options.approveAll
+          ? "approve_all"
+          : setHasGateMatch(approvedGates, gateId)
+            ? "explicit_gate_match"
+            : approvalContextAllowsGate(approvalContext, request.gate)
+              ? "approval_context"
+              : null;
+        if (approvalMechanism) {
           approvals[gateId] = true;
+          approvalRecords.push(buildApprovalDecisionRecord({
+            gate: request.gate,
+            approvalContext,
+            approvalMechanism,
+          }));
           continue;
         }
         throw new Error(`Unapproved gate '${gateId}' encountered. Add --approve ${gateId} or set RUNX_APPROVED_GATES.`);
@@ -93,6 +105,7 @@ async function main() {
       throw new Error(`Unsupported runx resolution request kind: ${request.kind}`);
     }
 
+    await writeApprovalRecords(options.approvalDecisionsPath, approvalRecords);
     const answersPath = path.join(tempDir, `answers-turn-${turn + 1}.json`);
     await writeFile(
       answersPath,
@@ -138,6 +151,14 @@ function parseArgs(argv) {
     }
     if (token === "--context-file") {
       options.contextFile = requireValue(argv, ++index, token);
+      continue;
+    }
+    if (token === "--approval-context") {
+      options.approvalContextPath = requireValue(argv, ++index, token);
+      continue;
+    }
+    if (token === "--approval-decisions") {
+      options.approvalDecisionsPath = requireValue(argv, ++index, token);
       continue;
     }
     if (token === "--model") {
@@ -635,6 +656,179 @@ async function loadCallerContext(contextFile) {
   const resolved = path.resolve(candidate);
   const content = await readFile(resolved, "utf8");
   return content.trim();
+}
+
+async function loadApprovalContext(approvalContextPath) {
+  if (!approvalContextPath) {
+    return null;
+  }
+  const resolved = path.resolve(approvalContextPath);
+  if (!existsSync(resolved)) {
+    return null;
+  }
+  const parsed = JSON.parse(await readFile(resolved, "utf8"));
+  return normalizeApprovalContext(parsed);
+}
+
+function normalizeApprovalContext(value) {
+  const record = value && typeof value === "object" && !Array.isArray(value) ? value : {};
+  const source = normalizeString(record.source);
+  const sourceUrl = normalizeString(record.source_url);
+  const rationale = normalizeString(record.rationale);
+  const approvedBy = normalizeString(record.approved_by);
+  const appliesTo = normalizeStringArray(record.applies_to);
+  const objectiveFingerprint = normalizeString(record.objective_fingerprint);
+  const expiresAfter = normalizeString(record.expires_after);
+  const operatorNotes = normalizeStringArray(record.operator_notes);
+  const sharedInvariants = normalizeStringArray(record.shared_invariants);
+  const decisions = normalizeApprovalDecisions(record.decisions ?? record.approval_decisions);
+  if (
+    !source
+    && !sourceUrl
+    && !rationale
+    && !approvedBy
+    && !objectiveFingerprint
+    && !expiresAfter
+    && appliesTo.length === 0
+    && operatorNotes.length === 0
+    && sharedInvariants.length === 0
+    && decisions.length === 0
+  ) {
+    return null;
+  }
+  return {
+    source,
+    source_url: sourceUrl,
+    rationale,
+    approved_by: approvedBy,
+    applies_to: appliesTo,
+    objective_fingerprint: objectiveFingerprint,
+    expires_after: expiresAfter,
+    operator_notes: operatorNotes,
+    shared_invariants: sharedInvariants,
+    decisions,
+  };
+}
+
+export function approvalContextAllowsGate(approvalContext, gate) {
+  const gateId = normalizeString(gate?.id);
+  if (!approvalContext || !gateId) {
+    return false;
+  }
+  const explicitDecisions = Array.isArray(approvalContext.decisions) ? approvalContext.decisions : [];
+  if (
+    explicitDecisions.some((decision) =>
+      gateSelectorMatches(normalizeString(decision?.gate_id), gateId)
+    )
+  ) {
+    return true;
+  }
+  const appliesTo = Array.isArray(approvalContext.applies_to) ? approvalContext.applies_to : [];
+  if (appliesTo.length === 0) {
+    return false;
+  }
+  return appliesTo.some((entry) => gateSelectorMatches(entry, gateId));
+}
+
+function buildApprovalDecisionRecord({ gate, approvalContext, approvalMechanism }) {
+  return {
+    gate_id: normalizeString(gate?.id) || "unknown-gate",
+    gate_reason: normalizeString(gate?.reason),
+    gate_type: normalizeString(gate?.type),
+    resolved_at: new Date().toISOString(),
+    decision: "approved",
+    approval_mechanism: approvalMechanism ?? "explicit_gate_match",
+    source: approvalContext?.source ?? null,
+    source_url: approvalContext?.source_url ?? null,
+    rationale: approvalContext?.rationale ?? null,
+    approved_by: approvalContext?.approved_by ?? null,
+    applies_to: approvalContext?.applies_to ?? [],
+    objective_fingerprint: approvalContext?.objective_fingerprint ?? null,
+    expires_after: approvalContext?.expires_after ?? null,
+    operator_notes: approvalContext?.operator_notes ?? [],
+    shared_invariants: approvalContext?.shared_invariants ?? [],
+  };
+}
+
+async function writeApprovalRecords(approvalDecisionsPath, approvalRecords) {
+  if (!approvalDecisionsPath || approvalRecords.length === 0) {
+    return;
+  }
+  const resolved = path.resolve(approvalDecisionsPath);
+  const deduped = dedupeApprovalRecords(approvalRecords);
+  await mkdir(path.dirname(resolved), { recursive: true });
+  await writeFile(resolved, `${JSON.stringify(deduped, null, 2)}\n`);
+}
+
+function normalizeString(value) {
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+function normalizeStringArray(values) {
+  const seen = new Set();
+  const result = [];
+  for (const value of Array.isArray(values) ? values : []) {
+    const normalized = normalizeString(value);
+    if (!normalized || seen.has(normalized)) {
+      continue;
+    }
+    seen.add(normalized);
+    result.push(normalized);
+  }
+  return result;
+}
+
+function normalizeApprovalDecisions(values) {
+  const normalized = [];
+  const seen = new Set();
+  for (const value of Array.isArray(values) ? values : []) {
+    const gateId = normalizeString(value?.gate_id);
+    if (!gateId || seen.has(gateId)) {
+      continue;
+    }
+    seen.add(gateId);
+    normalized.push({
+      gate_id: gateId,
+      reason: normalizeString(value?.reason) ?? normalizeString(value?.gate_reason),
+    });
+  }
+  return normalized;
+}
+
+function dedupeApprovalRecords(records) {
+  const seen = new Set();
+  const deduped = [];
+  for (const record of Array.isArray(records) ? records : []) {
+    const gateId = normalizeString(record?.gate_id) || "unknown-gate";
+    if (seen.has(gateId)) {
+      continue;
+    }
+    seen.add(gateId);
+    deduped.push(record);
+  }
+  return deduped;
+}
+
+function setHasGateMatch(values, gateId) {
+  for (const value of values) {
+    if (gateSelectorMatches(value, gateId)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+export function gateSelectorMatches(selector, gateId) {
+  const normalizedSelector = normalizeString(selector);
+  const normalizedGateId = normalizeString(gateId);
+  if (!normalizedSelector || !normalizedGateId) {
+    return false;
+  }
+  if (normalizedSelector === normalizedGateId) {
+    return true;
+  }
+  const escaped = normalizedSelector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/\\\*/g, ".*");
+  return new RegExp(`^${escaped}$`).test(normalizedGateId);
 }
 
 function sanitizeTraceName(value) {

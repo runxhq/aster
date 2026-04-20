@@ -9,10 +9,16 @@ type PriorityEntry = {
   score?: unknown;
   budget_bucket?: unknown;
   reason?: unknown;
+  authority?: {
+    scope?: unknown;
+    approval_mode?: unknown;
+    target_repo?: unknown;
+  };
 };
 
 type TargetEntry = {
   repo?: unknown;
+  state?: unknown;
   lifecycle?: {
     evaluated_count?: unknown;
     selected_count?: unknown;
@@ -24,7 +30,7 @@ function isPriorityEntry(value: PriorityEntry | undefined): value is PriorityEnt
   return Boolean(value);
 }
 
-const priorities = await readRepoDoc("state/priorities.md");
+const prioritiesDoc = await readRepoDoc("state/priorities.md");
 const control = await readAsterControl();
 const latestCycle = Array.isArray(control?.cycle_records) ? control.cycle_records.at(-1) ?? null : null;
 const persistedPriorities: PriorityEntry[] = Array.isArray(control?.priorities)
@@ -44,6 +50,7 @@ const persistedTargets: TargetEntry[] = Array.isArray(control?.targets)
 const selectedTarget = latestCycle?.dispatch?.target_repo
   ? persistedTargets.find((entry) => entry.repo === latestCycle.dispatch.target_repo) ?? null
   : null;
+const isDemoCycle = String(latestCycle?.cycle_id ?? "").startsWith("demo-");
 
 function bucketLabel(value: unknown) {
   return String(value ?? "none")
@@ -58,33 +65,76 @@ function valueLabel(value: unknown, fallback = "none") {
 ---
 
 <BaseLayout title="Priorities" description="Current operator priorities." current="priorities">
+  <section class="panel">
+    <div class="panel-inner">
+      <p class="eyebrow">Live Control</p>
+      <h1>Priorities</h1>
+      <p class="hero-support" style="margin-top: 0;">
+        This is the learned layer: persisted target lifecycle, scored opportunities, and the latest selection record. It is compact current state, not constitutional truth.
+      </p>
+      {isDemoCycle ? (
+        <div class="status-strip" style="margin-top: var(--space-5);">
+          <span class="status-pill">demo bootstrap</span>
+          <p class="section-lede">
+            The current queue is seeded starter state so the control room reads honestly before live cycle traffic fills it in.
+          </p>
+        </div>
+      ) : null}
+      <div class="metric-grid">
+        <article class="metric-card">
+          <span class="metric-label">latest cycle</span>
+          <strong class="metric-value">{valueLabel(latestCycle?.status, "none")}</strong>
+          <span class="metric-detail">{valueLabel(latestCycle?.reason, "No cycle persisted yet.")}</span>
+        </article>
+        <article class="metric-card">
+          <span class="metric-label">selected bucket</span>
+          <strong class="metric-value">{bucketLabel(latestCycle?.selected_bucket)}</strong>
+          <span class="metric-detail">{latestCycle?.priority_ids?.length ?? 0} priority ids recorded</span>
+        </article>
+        <article class="metric-card">
+          <span class="metric-label">dispatch</span>
+          <strong class="metric-value">{valueLabel(latestCycle?.dispatch?.status, "none")}</strong>
+          <span class="metric-detail">{valueLabel(latestCycle?.dispatch?.workflow, "No workflow")}</span>
+        </article>
+        <article class="metric-card">
+          <span class="metric-label">target</span>
+          <strong class="metric-value">{valueLabel(latestCycle?.dispatch?.target_repo, "none")}</strong>
+          <span class="metric-detail">{valueLabel(latestCycle?.dispatch?.subject_locator, "No subject locator")}</span>
+        </article>
+      </div>
+    </div>
+  </section>
+
   <section class="grid two">
     <section class="panel">
       <div class="panel-inner">
-        <p class="eyebrow">Live Control</p>
-        <h2>Latest Cycle</h2>
+        <p class="eyebrow">Latest Cycle</p>
         {latestCycle ? (
-          <div class="prose">
-            <p><strong>Status:</strong> {latestCycle.status}</p>
-            <p><strong>Reason:</strong> {latestCycle.reason}</p>
-            <p><strong>Generated:</strong> {latestCycle.generated_at}</p>
-            <p><strong>Budget bucket:</strong> {bucketLabel(latestCycle.selected_bucket)}</p>
-            <p><strong>Priority count:</strong> {latestCycle.priority_ids.length}</p>
-            <p><strong>Authority scope:</strong> {valueLabel(latestCycle.authority?.scope)}</p>
-            <p><strong>Approval mode:</strong> {valueLabel(latestCycle.authority?.approval_mode)}</p>
-            <p><strong>Dispatch status:</strong> {valueLabel(latestCycle.dispatch?.status, "no dispatch")}</p>
-            <p><strong>Dispatch target:</strong> {valueLabel(latestCycle.dispatch?.target_repo)}</p>
-            {selectedTarget?.lifecycle ? (
-              <>
-                <p><strong>Target evaluations:</strong> {selectedTarget.lifecycle.evaluated_count}</p>
-                <p><strong>Target selections:</strong> {selectedTarget.lifecycle.selected_count}</p>
-                <p><strong>Target dispatches:</strong> {selectedTarget.lifecycle.dispatched_count}</p>
-              </>
-            ) : null}
+          <div class="signal-list">
+            <div class="signal-row">
+              <span>authority</span>
+              <strong>{valueLabel(latestCycle.authority?.scope)}</strong>
+              <p>{valueLabel(latestCycle.authority?.approval_mode)}</p>
+            </div>
+            <div class="signal-row">
+              <span>budget mix</span>
+              <strong>{bucketLabel(latestCycle.selected_bucket)}</strong>
+              <p>window {latestCycle.budget_snapshot?.window_size ?? "n/a"} · thesis {latestCycle.budget_snapshot?.projected_counts?.thesis_work ?? 0}</p>
+            </div>
+            <div class="signal-row">
+              <span>target lifecycle</span>
+              <strong>{valueLabel(selectedTarget?.repo, "none")}</strong>
+              <p>
+                {selectedTarget?.lifecycle
+                  ? `${selectedTarget.lifecycle.evaluated_count ?? 0} evaluations · ${selectedTarget.lifecycle.selected_count ?? 0} selections · ${selectedTarget.lifecycle.dispatched_count ?? 0} dispatches`
+                  : "No lifecycle counters recorded."}
+              </p>
+            </div>
           </div>
         ) : (
-          <div class="prose">
-            <p>No persisted cycle projection exists yet. The selector has no durable queue to show.</p>
+          <div class="empty-block">
+            <strong>No cycle projection yet</strong>
+            <span>The selector has not written a durable cycle record.</span>
           </div>
         )}
       </div>
@@ -93,43 +143,30 @@ function valueLabel(value: unknown, fallback = "none") {
     <section class="panel">
       <div class="panel-inner">
         <p class="eyebrow">Priority Queue</p>
-        <h2>Controlling Priorities</h2>
-        {latestPriorities.length > 0 ? (
-          <ul class="priority-list">
-            {latestPriorities.map((entry) => (
-              <li>
-                <strong>{entry.status}</strong> · score {entry.score} · {bucketLabel(entry.budget_bucket)}
-                <br />
-                <span>{entry.reason}</span>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <div class="prose">
-            <p>The latest cycle did not persist any queue entries.</p>
-          </div>
-        )}
+        <div class="stack tight">
+          {latestPriorities.length > 0 ? latestPriorities.map((entry) => (
+            <div class="list-card">
+              <div class="status-strip">
+                <span class="status-pill">{valueLabel(entry.status)}</span>
+                <span class="status-pill">{bucketLabel(entry.budget_bucket)}</span>
+                <span class="status-pill">score {valueLabel(entry.score, "0")}</span>
+              </div>
+              <h3>{entry.authority?.target_repo ?? entry.priority_id}</h3>
+              <p>{valueLabel(entry.reason, "No rationale persisted.")}</p>
+              <p class="muted" style="margin: 0;">
+                {valueLabel(entry.authority?.scope)} · {valueLabel(entry.authority?.approval_mode)}
+              </p>
+            </div>
+          )) : (
+            <div class="empty-block">
+              <strong>No queue entries</strong>
+              <span>The latest cycle did not persist any queue state.</span>
+            </div>
+          )}
+        </div>
       </div>
     </section>
   </section>
 
-  <RichDoc doc={priorities} />
+  <RichDoc doc={prioritiesDoc} />
 </BaseLayout>
-
-<style>
-  .priority-list {
-    margin: 0;
-    padding-left: 1.2rem;
-    display: grid;
-    gap: var(--space-3);
-  }
-
-  .priority-list li {
-    color: var(--color-ink);
-    line-height: var(--line-height-relaxed);
-  }
-
-  .priority-list span {
-    color: var(--color-ink-dim);
-  }
-</style>

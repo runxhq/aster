@@ -2,75 +2,27 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import {
-  buildInputMessages,
-  extractOutputTextCandidates,
-  shouldFallbackToChatCompletions,
+  approvalContextAllowsGate,
+  gateSelectorMatches,
 } from "./runx-agent-bridge.mjs";
 
-test("shouldFallbackToChatCompletions recognizes missing responses scope", () => {
-  assert.equal(
-    shouldFallbackToChatCompletions({
-      response: { statusCode: 401 },
-      parsed: {
-        error: {
-          message: "Missing scopes: api.responses.write",
-        },
-      },
-    }),
-    true,
-  );
+test("gateSelectorMatches supports exact and wildcard gate selectors", () => {
+  assert.equal(gateSelectorMatches("issue-triage.plan", "issue-triage.plan"), true);
+  assert.equal(gateSelectorMatches("issue-triage.*", "issue-triage.plan"), true);
+  assert.equal(gateSelectorMatches("issue-triage.*", "fix-pr.review"), false);
 });
 
-test("shouldFallbackToChatCompletions ignores unrelated failures", () => {
-  assert.equal(
-    shouldFallbackToChatCompletions({
-      response: { statusCode: 400 },
-      parsed: {
-        error: {
-          message: "Bad request",
-        },
+test("approvalContextAllowsGate auto-approves only explicitly scoped gates", () => {
+  const approvalContext = {
+    applies_to: ["issue-triage.plan", "fix-pr.review"],
+    decisions: [
+      {
+        gate_id: "issue-triage.build",
       },
-    }),
-    false,
-  );
-});
+    ],
+  };
 
-test("extractOutputTextCandidates supports chat completion payloads", () => {
-  assert.deepEqual(
-    extractOutputTextCandidates({
-      choices: [
-        {
-          message: {
-            content: "{\"ok\":true}",
-          },
-        },
-      ],
-    }),
-    ["{\"ok\":true}"],
-  );
-});
-
-test("buildInputMessages injects operator context when provided", () => {
-  const messages = buildInputMessages(
-    {
-      id: "request-1",
-      work: {
-        source_type: "skill",
-        agent: "external-caller",
-        task: "triage",
-        envelope: {
-          expected_outputs: {
-            answer: "string",
-          },
-        },
-      },
-    },
-    { answer: "string" },
-    undefined,
-    "## Doctrine\nUse receipts first.",
-  );
-
-  assert.equal(messages[1].role, "system");
-  assert.match(messages[1].content, /Use this operator context bundle/);
-  assert.match(messages[1].content, /Use receipts first/);
+  assert.equal(approvalContextAllowsGate(approvalContext, { id: "issue-triage.plan" }), true);
+  assert.equal(approvalContextAllowsGate(approvalContext, { id: "issue-triage.build" }), true);
+  assert.equal(approvalContextAllowsGate(approvalContext, { id: "docs-pr.publish" }), false);
 });

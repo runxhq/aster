@@ -1,7 +1,354 @@
 {
-  "targets": [],
-  "opportunities": [],
-  "priorities": [],
-  "reflection_entries": [],
-  "cycle_records": []
+  "targets": [
+    {
+      "target_id": "target-nilstate-aster",
+      "repo": "nilstate/aster",
+      "state": "active",
+      "default_lanes": ["docs-pr", "proving-ground", "skill-lab"],
+      "lifecycle": {
+        "last_evaluated_at": "2026-04-18T07:42:00Z",
+        "last_selected_at": "2026-04-17T15:20:00Z",
+        "last_dispatched_at": "2026-04-17T15:23:00Z",
+        "last_cycle_id": "demo-2026-04-17-docs-pass",
+        "last_cycle_status": "completed",
+        "last_transition_reason": "selected_after_portfolio_budget",
+        "evaluated_count": 6,
+        "selected_count": 3,
+        "dispatched_count": 2
+      }
+    },
+    {
+      "target_id": "target-nilstate-runx",
+      "repo": "nilstate/runx",
+      "state": "active",
+      "default_lanes": ["issue-triage", "skill-upstream", "merge-watch"],
+      "lifecycle": {
+        "last_evaluated_at": "2026-04-18T08:10:00Z",
+        "last_selected_at": "2026-04-16T12:31:00Z",
+        "last_dispatched_at": "2026-04-16T12:33:00Z",
+        "last_cycle_id": "demo-2026-04-16-runx-proof-pass",
+        "last_cycle_status": "completed",
+        "last_transition_reason": "selected_after_portfolio_budget",
+        "evaluated_count": 7,
+        "selected_count": 2,
+        "dispatched_count": 2
+      }
+    },
+    {
+      "target_id": "target-pnpm-pnpm",
+      "repo": "pnpm/pnpm",
+      "state": "active",
+      "default_lanes": ["issue-triage"],
+      "lifecycle": {
+        "last_evaluated_at": "2026-04-18T08:10:00Z",
+        "last_selected_at": "2026-04-18T08:10:00Z",
+        "last_dispatched_at": "2026-04-18T08:12:00Z",
+        "last_cycle_id": "demo-2026-04-18-pnpm-issue-triage",
+        "last_cycle_status": "dispatched",
+        "last_transition_reason": "selected_after_portfolio_budget",
+        "evaluated_count": 4,
+        "selected_count": 1,
+        "dispatched_count": 1
+      }
+    },
+    {
+      "target_id": "target-astral-sh-uv",
+      "repo": "astral-sh/uv",
+      "state": "cooling_down",
+      "default_lanes": ["issue-triage"],
+      "lifecycle": {
+        "last_evaluated_at": "2026-04-17T10:18:00Z",
+        "last_selected_at": "2026-04-16T13:20:00Z",
+        "last_dispatched_at": "2026-04-16T13:24:00Z",
+        "last_cycle_id": "demo-2026-04-16-uv-trust-recovery",
+        "last_cycle_status": "completed",
+        "last_transition_reason": "cooldown_severe_trust_recovery",
+        "evaluated_count": 4,
+        "selected_count": 1,
+        "dispatched_count": 1
+      }
+    },
+    {
+      "target_id": "target-biomejs-biome",
+      "repo": "biomejs/biome",
+      "state": "eligible",
+      "default_lanes": ["issue-triage"],
+      "lifecycle": {
+        "last_evaluated_at": "2026-04-18T08:10:00Z",
+        "last_selected_at": null,
+        "last_dispatched_at": null,
+        "last_cycle_id": "demo-2026-04-18-pnpm-issue-triage",
+        "last_cycle_status": "no_op",
+        "last_transition_reason": "deferred_below_selected_score",
+        "evaluated_count": 3,
+        "selected_count": 0,
+        "dispatched_count": 0
+      }
+    },
+    {
+      "target_id": "target-vitejs-vite",
+      "repo": "vitejs/vite",
+      "state": "eligible",
+      "default_lanes": ["issue-triage"],
+      "lifecycle": {
+        "last_evaluated_at": "2026-04-18T08:10:00Z",
+        "last_selected_at": null,
+        "last_dispatched_at": null,
+        "last_cycle_id": "demo-2026-04-18-pnpm-issue-triage",
+        "last_cycle_status": "no_op",
+        "last_transition_reason": "deferred_below_selected_score",
+        "evaluated_count": 3,
+        "selected_count": 0,
+        "dispatched_count": 0
+      }
+    }
+  ],
+  "opportunities": [
+    {
+      "opportunity_id": "opp-pnpm-11254",
+      "target_id": "target-pnpm-pnpm",
+      "subject_locator": "pnpm/pnpm#11254",
+      "lane": "issue-triage",
+      "source": "demo_bootstrap",
+      "budget_bucket": "thesis_work",
+      "authority_cost": 0.24,
+      "evidence_at": "2026-04-18T08:06:00Z",
+      "thesis_score": {
+        "stranger_value": 0.86,
+        "proof_strength": 0.82,
+        "compounding_value": 0.71,
+        "tractability": 0.8,
+        "novelty": 0.54,
+        "maintenance_efficiency": 0.65
+      }
+    },
+    {
+      "opportunity_id": "opp-aster-docs-refresh",
+      "target_id": "target-nilstate-aster",
+      "subject_locator": "nilstate/aster#docs/doctrine-home",
+      "lane": "docs-pr",
+      "source": "demo_bootstrap",
+      "budget_bucket": "context_improvement",
+      "authority_cost": 0.08,
+      "evidence_at": "2026-04-18T07:48:00Z",
+      "thesis_score": {
+        "stranger_value": 0.48,
+        "proof_strength": 0.69,
+        "compounding_value": 0.76,
+        "tractability": 0.92,
+        "novelty": 0.35,
+        "maintenance_efficiency": 0.84
+      }
+    },
+    {
+      "opportunity_id": "opp-biome-9965",
+      "target_id": "target-biomejs-biome",
+      "subject_locator": "biomejs/biome#9965",
+      "lane": "issue-triage",
+      "source": "demo_bootstrap",
+      "budget_bucket": "thesis_work",
+      "authority_cost": 0.27,
+      "evidence_at": "2026-04-18T08:04:00Z",
+      "thesis_score": {
+        "stranger_value": 0.72,
+        "proof_strength": 0.67,
+        "compounding_value": 0.58,
+        "tractability": 0.63,
+        "novelty": 0.46,
+        "maintenance_efficiency": 0.57
+      }
+    },
+    {
+      "opportunity_id": "opp-vite-19001",
+      "target_id": "target-vitejs-vite",
+      "subject_locator": "vitejs/vite#19001",
+      "lane": "issue-triage",
+      "source": "demo_bootstrap",
+      "budget_bucket": "thesis_work",
+      "authority_cost": 0.29,
+      "evidence_at": "2026-04-18T08:03:00Z",
+      "thesis_score": {
+        "stranger_value": 0.68,
+        "proof_strength": 0.61,
+        "compounding_value": 0.55,
+        "tractability": 0.59,
+        "novelty": 0.42,
+        "maintenance_efficiency": 0.56
+      }
+    }
+  ],
+  "priorities": [
+    {
+      "priority_id": "prio-demo-pnpm-11254",
+      "opportunity_id": "opp-pnpm-11254",
+      "status": "dispatched",
+      "score": 0.81,
+      "reason": "selected_after_portfolio_budget",
+      "budget_bucket": "thesis_work",
+      "authority_cost": 0.24,
+      "proof_strength": 0.82,
+      "tractability": 0.8,
+      "evidence_at": "2026-04-18T08:06:00Z",
+      "authority": {
+        "scope": "public_triage",
+        "approval_mode": "workflow_gate",
+        "requires_human_approval": false,
+        "policy_basis": "selected_after_portfolio_budget",
+        "target_repo": "pnpm/pnpm"
+      }
+    },
+    {
+      "priority_id": "prio-demo-aster-docs-refresh",
+      "opportunity_id": "opp-aster-docs-refresh",
+      "status": "deferred",
+      "score": 0.67,
+      "reason": "deferred_below_selected_score",
+      "budget_bucket": "context_improvement",
+      "authority_cost": 0.08,
+      "proof_strength": 0.69,
+      "tractability": 0.92,
+      "evidence_at": "2026-04-18T07:48:00Z",
+      "authority": {
+        "scope": "internal_proof",
+        "approval_mode": "lane_preapproved",
+        "requires_human_approval": false,
+        "policy_basis": "deferred_below_selected_score",
+        "target_repo": "nilstate/aster"
+      }
+    },
+    {
+      "priority_id": "prio-demo-biome-9965",
+      "opportunity_id": "opp-biome-9965",
+      "status": "deferred",
+      "score": 0.64,
+      "reason": "deferred_below_selected_score",
+      "budget_bucket": "thesis_work",
+      "authority_cost": 0.27,
+      "proof_strength": 0.67,
+      "tractability": 0.63,
+      "evidence_at": "2026-04-18T08:04:00Z",
+      "authority": {
+        "scope": "public_triage",
+        "approval_mode": "workflow_gate",
+        "requires_human_approval": false,
+        "policy_basis": "deferred_below_selected_score",
+        "target_repo": "biomejs/biome"
+      }
+    }
+  ],
+  "reflection_entries": [
+    {
+      "reflection_id": "refl-2026-04-17-attention",
+      "target_id": "target-nilstate-aster",
+      "summary": "Public comment lanes must earn the right to act. Attention cost is now a hard gating input, not a soft preference.",
+      "outcome_status": "accepted",
+      "recorded_at": "2026-04-17T10:18:00Z"
+    },
+    {
+      "reflection_id": "refl-2026-04-16-uv-trust",
+      "target_id": "target-astral-sh-uv",
+      "summary": "Spam-marked feedback on a bot-authored PR forced a trust recovery model and a stricter no-op preference for comment lanes.",
+      "outcome_status": "failure",
+      "recorded_at": "2026-04-16T14:22:00Z"
+    }
+  ],
+  "cycle_records": [
+    {
+      "cycle_id": "demo-2026-04-17-docs-pass",
+      "selected_priority_id": "prio-demo-aster-docs-refresh",
+      "priority_ids": ["prio-demo-aster-docs-refresh"],
+      "status": "completed",
+      "reason": "selected_after_portfolio_budget",
+      "selected_bucket": "context_improvement",
+      "budget_snapshot": {
+        "window_size": 10,
+        "current_counts": {
+          "thesis_work": 3,
+          "context_improvement": 1,
+          "runtime_proof_work": 1
+        },
+        "projected_counts": {
+          "thesis_work": 3,
+          "context_improvement": 2,
+          "runtime_proof_work": 1
+        },
+        "target_mix": {
+          "thesis_work": 0.6,
+          "context_improvement": 0.25,
+          "runtime_proof_work": 0.15
+        }
+      },
+      "authority": {
+        "scope": "internal_proof",
+        "approval_mode": "lane_preapproved",
+        "requires_human_approval": false,
+        "policy_basis": "selected_after_portfolio_budget",
+        "target_repo": "nilstate/aster"
+      },
+      "dispatch": {
+        "status": "dispatched",
+        "workflow": "docs-pr",
+        "ref": "main",
+        "target_repo": "nilstate/aster",
+        "subject_locator": "nilstate/aster#docs/doctrine-home",
+        "score": 0.67,
+        "inputs": {
+          "target_repo": "nilstate/aster",
+          "lane": "docs-pr"
+        }
+      },
+      "generated_at": "2026-04-17T15:20:00Z"
+    },
+    {
+      "cycle_id": "demo-2026-04-18-pnpm-issue-triage",
+      "selected_priority_id": "prio-demo-pnpm-11254",
+      "priority_ids": [
+        "prio-demo-pnpm-11254",
+        "prio-demo-aster-docs-refresh",
+        "prio-demo-biome-9965"
+      ],
+      "status": "dispatched",
+      "reason": "selected_after_portfolio_budget",
+      "selected_bucket": "thesis_work",
+      "budget_snapshot": {
+        "window_size": 10,
+        "current_counts": {
+          "thesis_work": 3,
+          "context_improvement": 1,
+          "runtime_proof_work": 1
+        },
+        "projected_counts": {
+          "thesis_work": 4,
+          "context_improvement": 1,
+          "runtime_proof_work": 1
+        },
+        "target_mix": {
+          "thesis_work": 0.65,
+          "context_improvement": 0.2,
+          "runtime_proof_work": 0.15
+        }
+      },
+      "authority": {
+        "scope": "public_triage",
+        "approval_mode": "workflow_gate",
+        "requires_human_approval": false,
+        "policy_basis": "selected_after_portfolio_budget",
+        "target_repo": "pnpm/pnpm"
+      },
+      "dispatch": {
+        "status": "dispatched",
+        "workflow": "issue-triage",
+        "ref": "main",
+        "target_repo": "pnpm/pnpm",
+        "subject_locator": "pnpm/pnpm#11254",
+        "score": 0.81,
+        "inputs": {
+          "target_repo": "pnpm/pnpm",
+          "issue_number": "11254",
+          "lane": "issue-triage"
+        }
+      },
+      "generated_at": "2026-04-18T08:10:00Z"
+    }
+  ]
 }

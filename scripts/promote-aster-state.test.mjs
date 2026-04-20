@@ -31,6 +31,20 @@ test("buildPromotionDrafts creates reflection and history drafts", () => {
       subject: {
         locator: "nilstate/aster#issue/101",
       },
+      approval_context: {
+        source: "issue_comment",
+        source_url: "https://github.com/nilstate/aster/issues/101#issuecomment-1",
+        rationale: "Keep the action reviewable and bounded.",
+        approved_by: "kam",
+        operator_notes: ["Prefer a draft PR over a direct mutation."],
+        shared_invariants: ["Do not widen scope beyond docs."],
+      },
+      approval_decisions: [
+        {
+          gate_id: "gate.alpha",
+          gate_reason: "public PR creation requires review",
+        },
+      ],
     },
     runResult: {
       status: "completed",
@@ -50,7 +64,12 @@ test("buildPromotionDrafts creates reflection and history drafts", () => {
   assert.match(drafts.reflection.filename, /^2026-04-16-issue-triage-/);
   assert.match(drafts.reflection.content, /## What Happened/);
   assert.match(drafts.reflection.content, /rcpt_123/);
+  assert.match(drafts.reflection.content, /## Approval Context/);
+  assert.match(drafts.reflection.content, /Prefer a draft PR over a direct mutation/);
+  assert.match(drafts.reflection.content, /gate\.alpha/);
   assert.match(drafts.history.content, /receipt_id: rcpt_123/);
   assert.match(drafts.history.content, /README command drift/);
+  assert.equal(drafts.packet.approval_context?.approved_by, "kam");
+  assert.equal(drafts.packet.approval_decisions[0]?.gate_id, "gate.alpha");
   assert.equal(drafts.packet.receipt_id, "rcpt_123");
 });

@@ -1,3 +1,5 @@
+import { DEMO_ASTER_FEED } from "./demo-activity.js";
+
 const apiBaseUrl = (process.env.RUNX_PUBLIC_EVIDENCE_API_BASE_URL || "https://api.runx.ai").replace(/\/+$/, "");
 
 export async function readActivityModel({ limit = 48 } = {}) {
@@ -17,6 +19,16 @@ export async function readActivityModel({ limit = 48 } = {}) {
     fetchedAt: new Date().toISOString(),
     mainFeed,
     opsFeed,
+    liveCount: [...mainFeed, ...opsFeed].filter((item) => !item.isDemo).length,
+    demoCount: [...mainFeed, ...opsFeed].filter((item) => item.isDemo).length,
+    mode:
+      [...mainFeed, ...opsFeed].length === 0
+        ? "empty"
+        : [...mainFeed, ...opsFeed].every((item) => item.isDemo)
+          ? "demo"
+          : [...mainFeed, ...opsFeed].some((item) => item.isDemo)
+            ? "mixed"
+            : "live",
   };
 }
 
@@ -28,12 +40,13 @@ async function readAsterFeed(limit) {
       },
     });
     if (!response.ok) {
-      return [];
+      return DEMO_ASTER_FEED.slice(0, limit);
     }
     const payload = await response.json();
-    return dedupeFeedItems(Array.isArray(payload.feed) ? payload.feed : []);
+    const deduped = dedupeFeedItems(Array.isArray(payload.feed) ? payload.feed : []);
+    return deduped.length > 0 ? deduped : DEMO_ASTER_FEED.slice(0, limit);
   } catch {
-    return [];
+    return DEMO_ASTER_FEED.slice(0, limit);
   }
 }
 
@@ -85,7 +98,10 @@ function normalizeFeedItem(item) {
     artifactUrl: normalizeAsterAlias(stringMetadata(metadata, "artifact_url")),
     commitShort: stringMetadata(metadata, "commit_short") ?? shortCommit(item.commit),
     failureReason: normalizeAsterAlias(stringMetadata(metadata, "failure_reason")),
-  };
+    isDemo: booleanMetadata(metadata, "demo_seed"),
+    demoLabel: normalizeAsterAlias(stringMetadata(metadata, "demo_label")),
+    demoNotice: normalizeAsterAlias(stringMetadata(metadata, "demo_notice")),
+    };
 }
 
 export function feedChannelForItem(item) {
@@ -125,6 +141,10 @@ function stringMetadata(metadata, key) {
 
 function shortCommit(value) {
   return typeof value === "string" && value.trim() ? value.trim().slice(0, 12) : null;
+}
+
+function booleanMetadata(metadata, key) {
+  return metadata[key] === true;
 }
 
 function normalizeAsterAlias(value) {

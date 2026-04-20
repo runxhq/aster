@@ -156,11 +156,14 @@ jobs:
           TARGET_SLUG="$(printf '%s' "${{ steps.issue.outputs.target_repo }}" | tr '[:upper:]/' '[:lower:]-')"
           if ! printf '%s' "$TARGET_REPO" | grep -Eq '^nilstate/[A-Za-z0-9._-]+$'; then
             echo "allowed=false" >> "$GITHUB_OUTPUT"
+            echo "reason=target_outside_prerelease_v1_scope" >> "$GITHUB_OUTPUT"
             echo "Target repo '$TARGET_REPO' is outside prerelease v1 scope; skipping issue-triage." >> "$GITHUB_STEP_SUMMARY"
           elif [ -f "state/targets/$TARGET_SLUG.md" ]; then
             echo "allowed=true" >> "$GITHUB_OUTPUT"
+            echo "reason=allowed" >> "$GITHUB_OUTPUT"
           else
             echo "allowed=false" >> "$GITHUB_OUTPUT"
+            echo "reason=target_missing_curated_dossier" >> "$GITHUB_OUTPUT"
             echo "Target repo '$TARGET_REPO' has no curated target dossier; skipping issue-triage." >> "$GITHUB_STEP_SUMMARY"
           fi
 
@@ -176,10 +179,28 @@ jobs:
             --body "${{ steps.issue.outputs.body }}" \
             > "$GITHUB_WORKSPACE/.artifacts/issue-triage/issue/replay-guard.json"
           STATUS="$(jq -r '.status' "$GITHUB_WORKSPACE/.artifacts/issue-triage/issue/replay-guard.json")"
+          REASON="$(jq -r '.reason // "run"' "$GITHUB_WORKSPACE/.artifacts/issue-triage/issue/replay-guard.json")"
           echo "status=$STATUS" >> "$GITHUB_OUTPUT"
+          echo "reason=$REASON" >> "$GITHUB_OUTPUT"
           if [ "$STATUS" != "run" ]; then
             echo "Issue replay guard blocked this run." >> "$GITHUB_STEP_SUMMARY"
             jq -r '"- " + (.reason // "unknown")' "$GITHUB_WORKSPACE/.artifacts/issue-triage/issue/replay-guard.json" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Derive issue approval context
+        if: ${{ steps.preflight.outputs.enabled == 'true' && steps.target_scope.outputs.allowed == 'true' }}
+        run: |
+          node scripts/derive-approval-context.mjs \
+            --mode issue \
+            --repo "${{ steps.issue.outputs.target_repo }}" \
+            --issue "${{ steps.issue.outputs.number }}" \
+            --objective-fingerprint "$(jq -r '.fingerprint // empty' "$GITHUB_WORKSPACE/.artifacts/issue-triage/issue/replay-guard.json")" \
+            --applies-to "issue-triage.*" \
+            --output "$GITHUB_WORKSPACE/.artifacts/issue-triage/issue/approval-context.json"
+          if [ "$(jq 'keys | length' "$GITHUB_WORKSPACE/.artifacts/issue-triage/issue/approval-context.json")" -gt 0 ]; then
+            echo "Issue approval context detected." >> "$GITHUB_STEP_SUMMARY"
+            jq -r '"- source: " + (.source // "unknown")' "$GITHUB_WORKSPACE/.artifacts/issue-triage/issue/approval-context.json" >> "$GITHUB_STEP_SUMMARY"
+            jq -r 'select(.source_url != null) | "- source_url: " + .source_url' "$GITHUB_WORKSPACE/.artifacts/issue-triage/issue/approval-context.json" >> "$GITHUB_STEP_SUMMARY"
           fi
 
       - name: Run issue-triage on issue
@@ -199,6 +220,9 @@ jobs:
             --target-repo "${{ steps.issue.outputs.target_repo }}" \
             --issue-number "${{ steps.issue.outputs.number }}" \
             --issue-url "${{ steps.issue.outputs.url }}" \
+            --objective-fingerprint "$(jq -r '.fingerprint // empty' "$GITHUB_WORKSPACE/.artifacts/issue-triage/issue/replay-guard.json")" \
+            --approval-applies-to "issue-triage.*" \
+            --approval-context-file "$GITHUB_WORKSPACE/.artifacts/issue-triage/issue/approval-context.json" \
             --receipt-dir "$GITHUB_WORKSPACE/.artifacts/issue-triage/issue/triage-receipts" \
             --trace-dir "$GITHUB_WORKSPACE/.artifacts/issue-triage/issue/triage-provider-trace" \
             --output "$GITHUB_WORKSPACE/.artifacts/issue-triage/issue/triage-result.json" \
@@ -292,7 +316,9 @@ jobs:
             --subject-locator "${{ steps.issue.outputs.target_repo }}#issue/${{ steps.issue.outputs.number }}" \
             --output ".artifacts/issue-triage/issue/comment-eval.json"
           STATUS="$(jq -r '.status' .artifacts/issue-triage/issue/comment-eval.json)"
+          REASON="$(jq -r '.checks | to_entries | map(select(.value == false) | .key) | join(",")' .artifacts/issue-triage/issue/comment-eval.json)"
           echo "status=$STATUS" >> "$GITHUB_OUTPUT"
+          echo "reason=${REASON:-pass}" >> "$GITHUB_OUTPUT"
           if [ "$STATUS" != "pass" ]; then
             echo "Issue comment quality blocked public posting." >> "$GITHUB_STEP_SUMMARY"
             jq -r '.checks | to_entries[] | select(.value == false) | "- " + .key' .artifacts/issue-triage/issue/comment-eval.json >> "$GITHUB_STEP_SUMMARY"
@@ -311,19 +337,46 @@ jobs:
             --body-file ".artifacts/issue-triage/issue/triage-comment.md"
 
       - name: Publish evidence
-        if: ${{ always() && steps.preflight.outputs.enabled == 'true' && steps.target_scope.outputs.allowed == 'true' && steps.issue_replay_guard.outputs.status == 'run' }}
+        if: ${{ always() && steps.preflight.outputs.enabled == 'true' }}
         env:
           RUNX_PUBLIC_EVIDENCE_API_BASE_URL: ${{ vars.RUNX_PUBLIC_EVIDENCE_API_BASE_URL || 'https://api.runx.ai' }}
           RUNX_PUBLIC_EVIDENCE_TOKEN: ${{ secrets.RUNX_PUBLIC_EVIDENCE_TOKEN }}
         run: |
-          STATUS="${{ job.status }}"
           ISSUE_NUM="${{ steps.issue.outputs.number }}"
           ISSUE_TITLE="${{ steps.issue.outputs.title }}"
           TARGET="${{ steps.issue.outputs.target_repo }}"
-          if [ "$STATUS" = "success" ]; then
+          FEED_STATUS="success"
+          FEED_CHANNEL="main"
+          BLOCKED_BY=""
+          QUIET_REASON=""
+          SUMMARY=""
+          TITLE=""
+          if [ "${{ steps.target_scope.outputs.allowed }}" != "true" ]; then
+            FEED_STATUS="waiting"
+            FEED_CHANNEL="ops"
+            BLOCKED_BY="target_scope"
+            QUIET_REASON="${{ steps.target_scope.outputs.reason }}"
+            TITLE="issue-triage held for issue #${ISSUE_NUM} on ${TARGET}"
+            SUMMARY="issue-triage skipped because ${QUIET_REASON}"
+          elif [ "${{ steps.issue_replay_guard.outputs.status }}" != "run" ]; then
+            FEED_STATUS="waiting"
+            FEED_CHANNEL="ops"
+            BLOCKED_BY="replay_guard"
+            QUIET_REASON="${{ steps.issue_replay_guard.outputs.reason }}"
+            TITLE="issue-triage held for issue #${ISSUE_NUM} on ${TARGET}"
+            SUMMARY="issue-triage replay guard blocked duplicate work for '${ISSUE_TITLE}'"
+          elif [ "${{ steps.issue_comment_quality.outputs.status }}" != "pass" ] && [ "${{ steps.issue_comment_quality.outputs.status }}" != "" ] && [ "${{ steps.issue_comment_quality.outputs.status }}" != "missing" ]; then
+            FEED_STATUS="paused"
+            FEED_CHANNEL="ops"
+            BLOCKED_BY="comment_quality"
+            QUIET_REASON="${{ steps.issue_comment_quality.outputs.reason }}"
+            TITLE="issue-triage held before posting issue comment on ${TARGET}"
+            SUMMARY="issue comment quality blocked public posting for '${ISSUE_TITLE}'"
+          elif [ "${{ job.status }}" = "success" ]; then
             TITLE="triaged issue #${ISSUE_NUM} on ${TARGET}"
             SUMMARY="reviewed '${ISSUE_TITLE}' and posted a triage comment with routing decision"
           else
+            FEED_STATUS="failure"
             TITLE="failed to triage issue #${ISSUE_NUM} on ${TARGET}"
             SUMMARY="issue-triage lane failed for '${ISSUE_TITLE}'"
           fi
@@ -334,16 +387,19 @@ jobs:
             --data "$(jq -n \
               --arg title "$TITLE" \
               --arg summary "$SUMMARY" \
-              --arg status "$STATUS" \
+              --arg status "$FEED_STATUS" \
               --arg repo "$TARGET" \
               --arg workflow "issue-triage" \
               --arg branch "${{ github.ref_name }}" \
               --arg commit "${{ github.sha }}" \
               --arg url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+              --arg feed_channel "$FEED_CHANNEL" \
+              --arg blocked_by "$BLOCKED_BY" \
+              --arg quiet_reason "$QUIET_REASON" \
               '{events: [{
                 kind: "aster_run",
                 source: "github-actions",
-                status: (if $status == "success" then "success" else "failure" end),
+                status: $status,
                 title: $title,
                 summary: $summary,
                 repo: $repo,
@@ -352,7 +408,13 @@ jobs:
                 commit: $commit,
                 url: $url,
                 timestamp: (now | todate),
-                metadata: {lane: "issue-triage", feed_channel: "main", main_feed_eligible: true}
+                metadata: {
+                  lane: "issue-triage",
+                  feed_channel: $feed_channel,
+                  main_feed_eligible: ($feed_channel == "main"),
+                  blocked_by: (if $blocked_by == "" then null else $blocked_by end),
+                  quiet_reason: (if $quiet_reason == "" then null else $quiet_reason end)
+                }
               }]}')" \
             "${RUNX_PUBLIC_EVIDENCE_API_BASE_URL%/}/v1/admin/public/evidence" || true
 
@@ -431,15 +493,18 @@ jobs:
           TARGET_SLUG="$(printf '%s' "$TARGET_REPO" | tr '[:upper:]/' '[:lower:]-')"
           if ! printf '%s' "$TARGET_REPO" | grep -Eq '^nilstate/[A-Za-z0-9._-]+$'; then
             echo "allowed=false" >> "$GITHUB_OUTPUT"
+            echo "reason=target_outside_prerelease_v1_scope" >> "$GITHUB_OUTPUT"
             echo "Target repo '$TARGET_REPO' is outside prerelease v1 scope; skipping issue-triage." >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
           if [ ! -f "state/targets/$TARGET_SLUG.md" ]; then
             echo "allowed=false" >> "$GITHUB_OUTPUT"
+            echo "reason=target_missing_curated_dossier" >> "$GITHUB_OUTPUT"
             echo "Target repo '$TARGET_REPO' has no curated target dossier; skipping issue-triage." >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
           echo "allowed=true" >> "$GITHUB_OUTPUT"
+          echo "reason=allowed" >> "$GITHUB_OUTPUT"
           mkdir -p .artifacts/issue-triage/pr
           node scripts/build-pr-snapshot.mjs \
             --repo "$TARGET_REPO" \
@@ -457,7 +522,9 @@ jobs:
             --dossier "$GITHUB_WORKSPACE/state/targets/$TARGET_SLUG.md" \
             > "$GITHUB_WORKSPACE/.artifacts/issue-triage/pr/policy.json"
           ALLOWED="$(jq -r '.allowed' "$GITHUB_WORKSPACE/.artifacts/issue-triage/pr/policy.json")"
+          REASON="$(jq -r '(.reasons // []) | join(",")' "$GITHUB_WORKSPACE/.artifacts/issue-triage/pr/policy.json")"
           echo "allowed=$ALLOWED" >> "$GITHUB_OUTPUT"
+          echo "reason=${REASON:-allowed}" >> "$GITHUB_OUTPUT"
           if [ "$ALLOWED" != "true" ]; then
             echo "Issue-triage PR gate blocked this run." >> "$GITHUB_STEP_SUMMARY"
             jq -r '.reasons[] | "- " + .' "$GITHUB_WORKSPACE/.artifacts/issue-triage/pr/policy.json" >> "$GITHUB_STEP_SUMMARY"
@@ -475,10 +542,29 @@ jobs:
             --sha "$(jq -r '.head_sha' "$GITHUB_WORKSPACE/.artifacts/issue-triage/pr/pr-snapshot.json")" \
             > "$GITHUB_WORKSPACE/.artifacts/issue-triage/pr/replay-guard.json"
           STATUS="$(jq -r '.status' "$GITHUB_WORKSPACE/.artifacts/issue-triage/pr/replay-guard.json")"
+          REASON="$(jq -r '.reason // "run"' "$GITHUB_WORKSPACE/.artifacts/issue-triage/pr/replay-guard.json")"
           echo "status=$STATUS" >> "$GITHUB_OUTPUT"
+          echo "reason=$REASON" >> "$GITHUB_OUTPUT"
           if [ "$STATUS" != "run" ]; then
             echo "PR replay guard blocked this run." >> "$GITHUB_STEP_SUMMARY"
             jq -r '"- " + (.reason // "unknown")' "$GITHUB_WORKSPACE/.artifacts/issue-triage/pr/replay-guard.json" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Derive PR approval context
+        if: ${{ steps.preflight.outputs.enabled == 'true' && steps.target_scope.outputs.allowed == 'true' && steps.pr_policy.outputs.allowed == 'true' }}
+        run: |
+          TARGET_REPO="${{ github.event.inputs.target_repo || github.repository }}"
+          node scripts/derive-approval-context.mjs \
+            --mode pr \
+            --repo "$TARGET_REPO" \
+            --pr "${{ github.event.inputs.pr_number || github.event.pull_request.number }}" \
+            --objective-fingerprint "$(jq -r '.head_sha' "$GITHUB_WORKSPACE/.artifacts/issue-triage/pr/pr-snapshot.json")" \
+            --applies-to "issue-triage.*" \
+            --output "$GITHUB_WORKSPACE/.artifacts/issue-triage/pr/approval-context.json"
+          if [ "$(jq 'keys | length' "$GITHUB_WORKSPACE/.artifacts/issue-triage/pr/approval-context.json")" -gt 0 ]; then
+            echo "PR approval context detected." >> "$GITHUB_STEP_SUMMARY"
+            jq -r '"- source: " + (.source // "unknown")' "$GITHUB_WORKSPACE/.artifacts/issue-triage/pr/approval-context.json" >> "$GITHUB_STEP_SUMMARY"
+            jq -r 'select(.source_url != null) | "- source_url: " + .source_url' "$GITHUB_WORKSPACE/.artifacts/issue-triage/pr/approval-context.json" >> "$GITHUB_STEP_SUMMARY"
           fi
 
       - name: Run issue-triage on PR
@@ -497,7 +583,10 @@ jobs:
             --repo "${{ github.repository }}" \
             --target-repo "$TARGET_REPO" \
             --pr-number "${{ github.event.inputs.pr_number || github.event.pull_request.number }}" \
+            --objective-fingerprint "$(jq -r '.head_sha' "$GITHUB_WORKSPACE/.artifacts/issue-triage/pr/pr-snapshot.json")" \
+            --approval-applies-to "issue-triage.*" \
             --snapshot "$GITHUB_WORKSPACE/.artifacts/issue-triage/pr/pr-snapshot.json" \
+            --approval-context-file "$GITHUB_WORKSPACE/.artifacts/issue-triage/pr/approval-context.json" \
             --receipt-dir "$GITHUB_WORKSPACE/.artifacts/issue-triage/pr/receipts" \
             --trace-dir "$GITHUB_WORKSPACE/.artifacts/issue-triage/pr/provider-trace" \
             --output "$GITHUB_WORKSPACE/.artifacts/issue-triage/pr/result.json" \
@@ -559,7 +648,9 @@ jobs:
             --subject-locator "$TARGET_REPO#pr/$(jq -r '.pr_number' .artifacts/issue-triage/pr/pr-snapshot.json)" \
             --output ".artifacts/issue-triage/pr/comment-eval.json"
           STATUS="$(jq -r '.status' .artifacts/issue-triage/pr/comment-eval.json)"
+          REASON="$(jq -r '.checks | to_entries | map(select(.value == false) | .key) | join(",")' .artifacts/issue-triage/pr/comment-eval.json)"
           echo "status=$STATUS" >> "$GITHUB_OUTPUT"
+          echo "reason=${REASON:-pass}" >> "$GITHUB_OUTPUT"
           if [ "$STATUS" != "pass" ]; then
             echo "PR comment quality blocked public posting." >> "$GITHUB_STEP_SUMMARY"
             jq -r '.checks | to_entries[] | select(.value == false) | "- " + .key' .artifacts/issue-triage/pr/comment-eval.json >> "$GITHUB_STEP_SUMMARY"
@@ -574,6 +665,95 @@ jobs:
             --pr "$(jq -r '.pr_number' .artifacts/issue-triage/pr/pr-snapshot.json)" \
             --body-file ".artifacts/issue-triage/pr/comment.md" \
             --sha "$(jq -r '.head_sha' .artifacts/issue-triage/pr/pr-snapshot.json)"
+
+      - name: Publish evidence
+        if: ${{ always() && steps.preflight.outputs.enabled == 'true' }}
+        env:
+          RUNX_PUBLIC_EVIDENCE_API_BASE_URL: ${{ vars.RUNX_PUBLIC_EVIDENCE_API_BASE_URL || 'https://api.runx.ai' }}
+          RUNX_PUBLIC_EVIDENCE_TOKEN: ${{ secrets.RUNX_PUBLIC_EVIDENCE_TOKEN }}
+        run: |
+          TARGET="${{ github.event.inputs.target_repo || github.repository }}"
+          PR_NUM="${{ github.event.inputs.pr_number || github.event.pull_request.number }}"
+          PR_TITLE="$(jq -r '.title // "pull request"' "$GITHUB_WORKSPACE/.artifacts/issue-triage/pr/pr-snapshot.json" 2>/dev/null || printf 'pull request')"
+          FEED_STATUS="success"
+          FEED_CHANNEL="main"
+          BLOCKED_BY=""
+          QUIET_REASON=""
+          TITLE=""
+          SUMMARY=""
+          if [ "${{ steps.target_scope.outputs.allowed }}" != "true" ]; then
+            FEED_STATUS="waiting"
+            FEED_CHANNEL="ops"
+            BLOCKED_BY="target_scope"
+            QUIET_REASON="${{ steps.target_scope.outputs.reason }}"
+            TITLE="issue-triage held for PR #${PR_NUM} on ${TARGET}"
+            SUMMARY="issue-triage skipped because ${QUIET_REASON}"
+          elif [ "${{ steps.pr_policy.outputs.allowed }}" != "true" ] && [ "${{ steps.pr_policy.outputs.allowed }}" != "" ]; then
+            FEED_STATUS="waiting"
+            FEED_CHANNEL="ops"
+            BLOCKED_BY="pr_public_value_gate"
+            QUIET_REASON="${{ steps.pr_policy.outputs.reason }}"
+            TITLE="issue-triage held for PR #${PR_NUM} on ${TARGET}"
+            SUMMARY="issue-triage PR public-value gate blocked '${PR_TITLE}'"
+          elif [ "${{ steps.pr_replay_guard.outputs.status }}" != "run" ] && [ "${{ steps.pr_replay_guard.outputs.status }}" != "" ]; then
+            FEED_STATUS="waiting"
+            FEED_CHANNEL="ops"
+            BLOCKED_BY="replay_guard"
+            QUIET_REASON="${{ steps.pr_replay_guard.outputs.reason }}"
+            TITLE="issue-triage held for PR #${PR_NUM} on ${TARGET}"
+            SUMMARY="issue-triage replay guard blocked duplicate PR work for '${PR_TITLE}'"
+          elif [ "${{ steps.pr_comment_quality.outputs.status }}" != "pass" ] && [ "${{ steps.pr_comment_quality.outputs.status }}" != "" ] && [ "${{ steps.pr_comment_quality.outputs.status }}" != "missing" ]; then
+            FEED_STATUS="paused"
+            FEED_CHANNEL="ops"
+            BLOCKED_BY="comment_quality"
+            QUIET_REASON="${{ steps.pr_comment_quality.outputs.reason }}"
+            TITLE="issue-triage held before posting PR comment on ${TARGET}"
+            SUMMARY="PR comment quality blocked public posting for '${PR_TITLE}'"
+          elif [ "${{ job.status }}" = "success" ]; then
+            TITLE="triaged PR #${PR_NUM} on ${TARGET}"
+            SUMMARY="reviewed '${PR_TITLE}' and posted a maintainer comment with the next unblock"
+          else
+            FEED_STATUS="failure"
+            TITLE="failed to triage PR #${PR_NUM} on ${TARGET}"
+            SUMMARY="issue-triage lane failed for '${PR_TITLE}'"
+          fi
+          curl --fail --silent --show-error \
+            -X POST \
+            -H "authorization: Bearer ${RUNX_PUBLIC_EVIDENCE_TOKEN}" \
+            -H "content-type: application/json" \
+            --data "$(jq -n \
+              --arg title "$TITLE" \
+              --arg summary "$SUMMARY" \
+              --arg status "$FEED_STATUS" \
+              --arg repo "$TARGET" \
+              --arg workflow "issue-triage" \
+              --arg branch "${{ github.ref_name }}" \
+              --arg commit "${{ github.sha }}" \
+              --arg url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+              --arg feed_channel "$FEED_CHANNEL" \
+              --arg blocked_by "$BLOCKED_BY" \
+              --arg quiet_reason "$QUIET_REASON" \
+              '{events: [{
+                kind: "aster_run",
+                source: "github-actions",
+                status: $status,
+                title: $title,
+                summary: $summary,
+                repo: $repo,
+                workflow: $workflow,
+                branch: $branch,
+                commit: $commit,
+                url: $url,
+                timestamp: (now | todate),
+                metadata: {
+                  lane: "issue-triage",
+                  feed_channel: $feed_channel,
+                  main_feed_eligible: ($feed_channel == "main"),
+                  blocked_by: (if $blocked_by == "" then null else $blocked_by end),
+                  quiet_reason: (if $quiet_reason == "" then null else $quiet_reason end)
+                }
+              }]}')" \
+            "${RUNX_PUBLIC_EVIDENCE_API_BASE_URL%/}/v1/admin/public/evidence" || true
 
       - name: Upload PR artifacts
         if: ${{ always() && steps.preflight.outputs.enabled == 'true' && steps.target_scope.outputs.allowed == 'true' }}

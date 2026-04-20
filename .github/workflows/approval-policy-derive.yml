@@ -1,0 +1,71 @@
+name: approval-policy-derive
+
+on:
+  schedule:
+    - cron: "23 1 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  derive-approved-policies:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.ASTER_GH_TOKEN != '' && secrets.ASTER_GH_TOKEN || github.token }}
+    steps:
+      - name: Check out aster
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - name: Configure git author
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Derive approval policy memory
+        run: |
+          mkdir -p .artifacts/approval-policy-derive
+          node scripts/derive-approved-policies.mjs \
+            --repo-root "$GITHUB_WORKSPACE" \
+            --output "$GITHUB_WORKSPACE/state/approved-policies.json"
+          cp "$GITHUB_WORKSPACE/state/approved-policies.json" "$GITHUB_WORKSPACE/.artifacts/approval-policy-derive/approved-policies.json"
+          jq -r '"Derived " + ((.policies | length) | tostring) + " approval policies."' "$GITHUB_WORKSPACE/state/approved-policies.json" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Publish draft PR when policy memory changes
+        run: |
+          cat > "$GITHUB_WORKSPACE/.artifacts/approval-policy-derive/pr-body.md" <<'EOF'
+          ## Summary
+
+          This draft PR refreshes `state/approved-policies.json` from trusted GitHub approval-context markers.
+
+          - source evidence stays in the underlying issue and PR threads
+          - this state file is a rebuildable cache for future approval-aware runs
+          - merge remains human-reviewed
+          EOF
+          node scripts/publish-runx-pr.mjs \
+            --repo "${{ github.repository }}" \
+            --branch "runx/approval-policy-derive-${{ github.run_id }}" \
+            --title "[runx] refresh approval policy memory" \
+            --commit-message "state(approval): refresh derived policy memory" \
+            --body-file "$GITHUB_WORKSPACE/.artifacts/approval-policy-derive/pr-body.md" \
+            --lane approval-policy-derive \
+            > "$GITHUB_WORKSPACE/.artifacts/approval-policy-derive/publish.json"
+          cat "$GITHUB_WORKSPACE/.artifacts/approval-policy-derive/publish.json" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload artifacts
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: approval-policy-derive-${{ github.run_id }}
+          path: .artifacts/approval-policy-derive

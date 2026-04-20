@@ -1,6 +1,6 @@
 import { execFileSync } from "node:child_process";
 import { existsSync } from "node:fs";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -30,11 +30,14 @@ export async function runAsterCore(options) {
   const contextPromptPath = path.resolve(options.contextPrompt ?? path.join(artifactRoot, "context.md"));
   const promotionsDir = path.resolve(options.promotionsDir ?? path.join(artifactRoot, "promotions"));
   const summaryPath = path.resolve(options.summaryOutput ?? path.join(artifactRoot, "core-summary.json"));
+  const approvalContextPath = path.resolve(options.approvalContextJson ?? path.join(artifactRoot, "approval-context.json"));
+  const approvalDecisionsPath = path.resolve(options.approvalDecisions ?? path.join(receiptDir, "approval-decisions.json"));
 
   await mkdir(artifactRoot, { recursive: true });
   await mkdir(receiptDir, { recursive: true });
   await mkdir(traceDir, { recursive: true });
   await mkdir(promotionsDir, { recursive: true });
+  await rm(approvalDecisionsPath, { force: true });
 
   const contextBundle = await buildContextBundle({
     repoRoot,
@@ -48,12 +51,25 @@ export async function runAsterCore(options) {
     prNumber: options.prNumber,
     issueUrl: options.issueUrl,
     snapshot: options.snapshot,
+    approvalContextFile: options.approvalContextFile,
+    approvalSource: options.approvalSource,
+    approvalSourceUrl: options.approvalSourceUrl,
+    approvalRationale: options.approvalRationale,
+    approvalNotes: options.approvalNotes,
+    approvalInvariants: options.approvalInvariants,
+    approvedBy: options.approvedBy,
+    objectiveFingerprint: options.objectiveFingerprint,
+    approvalAppliesTo: options.approvalAppliesTo,
+    now: options.now,
     maxHistory: options.maxHistory,
     maxReflections: options.maxReflections,
     maxArtifacts: options.maxArtifacts,
   });
   await writeFile(contextJsonPath, `${JSON.stringify(contextBundle, null, 2)}\n`);
   await writeFile(contextPromptPath, `${renderContextPrompt(contextBundle)}\n`);
+  if (contextBundle.approval_context) {
+    await writeFile(approvalContextPath, `${JSON.stringify(contextBundle.approval_context, null, 2)}\n`);
+  }
 
   const bridgeArgs = buildBridgeArgs({
     repoRoot,
@@ -63,6 +79,8 @@ export async function runAsterCore(options) {
     traceDir,
     outputPath,
     contextPromptPath,
+    approvalContextPath: contextBundle.approval_context ? approvalContextPath : undefined,
+    approvalDecisionsPath,
     approve: options.approve,
     approveAll: options.approveAll,
     model: options.model,
@@ -88,6 +106,9 @@ export async function runAsterCore(options) {
   }
 
   const runResult = JSON.parse(await readFile(outputPath, "utf8"));
+  if (existsSync(approvalDecisionsPath)) {
+    contextBundle.approval_decisions = JSON.parse(await readFile(approvalDecisionsPath, "utf8"));
+  }
   const drafts = buildPromotionDrafts({
     lane: options.lane,
     contextBundle,
@@ -104,6 +125,8 @@ export async function runAsterCore(options) {
     result_path: outputPath,
     context_json_path: contextJsonPath,
     context_prompt_path: contextPromptPath,
+    approval_context_path: contextBundle.approval_context ? approvalContextPath : null,
+    approval_decisions_path: existsSync(approvalDecisionsPath) ? approvalDecisionsPath : null,
     receipt_dir: receiptDir,
     trace_dir: traceDir,
     promotion_outputs: promotionOutputs,
@@ -124,6 +147,8 @@ export function buildBridgeArgs({
   traceDir,
   outputPath,
   contextPromptPath,
+  approvalContextPath,
+  approvalDecisionsPath,
   approve = [],
   approveAll = false,
   model,
@@ -145,6 +170,12 @@ export function buildBridgeArgs({
     "--context-file",
     path.resolve(contextPromptPath),
   ];
+  if (approvalContextPath) {
+    args.push("--approval-context", path.resolve(approvalContextPath));
+  }
+  if (approvalDecisionsPath) {
+    args.push("--approval-decisions", path.resolve(approvalDecisionsPath));
+  }
 
   if (workdir) {
     args.push("--workdir", path.resolve(workdir));
@@ -174,6 +205,9 @@ export function buildBridgeArgs({
 function parseArgs(argv) {
   const options = {
     approve: [],
+    approvalNotes: [],
+    approvalInvariants: [],
+    approvalAppliesTo: [],
     runxArgs: [],
   };
 
@@ -227,6 +261,18 @@ function parseArgs(argv) {
       options.contextPrompt = requireValue(argv, ++index, token);
       continue;
     }
+    if (token === "--approval-context-json") {
+      options.approvalContextJson = requireValue(argv, ++index, token);
+      continue;
+    }
+    if (token === "--approval-context-file") {
+      options.approvalContextFile = requireValue(argv, ++index, token);
+      continue;
+    }
+    if (token === "--approval-decisions") {
+      options.approvalDecisions = requireValue(argv, ++index, token);
+      continue;
+    }
     if (token === "--lane") {
       options.lane = requireValue(argv, ++index, token);
       continue;
@@ -257,6 +303,42 @@ function parseArgs(argv) {
     }
     if (token === "--issue-url") {
       options.issueUrl = requireValue(argv, ++index, token);
+      continue;
+    }
+    if (token === "--approval-source") {
+      options.approvalSource = requireValue(argv, ++index, token);
+      continue;
+    }
+    if (token === "--approval-source-url") {
+      options.approvalSourceUrl = requireValue(argv, ++index, token);
+      continue;
+    }
+    if (token === "--approval-rationale") {
+      options.approvalRationale = requireValue(argv, ++index, token);
+      continue;
+    }
+    if (token === "--approval-note") {
+      options.approvalNotes.push(requireValue(argv, ++index, token));
+      continue;
+    }
+    if (token === "--approval-invariant") {
+      options.approvalInvariants.push(requireValue(argv, ++index, token));
+      continue;
+    }
+    if (token === "--approved-by") {
+      options.approvedBy = requireValue(argv, ++index, token);
+      continue;
+    }
+    if (token === "--objective-fingerprint") {
+      options.objectiveFingerprint = requireValue(argv, ++index, token);
+      continue;
+    }
+    if (token === "--approval-applies-to") {
+      options.approvalAppliesTo.push(requireValue(argv, ++index, token));
+      continue;
+    }
+    if (token === "--now") {
+      options.now = requireValue(argv, ++index, token);
       continue;
     }
     if (token === "--snapshot") {

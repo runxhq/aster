@@ -1,123 +1,247 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import FeedList from "../components/FeedList.astro";
-import { doctrineHref, readPublicModel, targetHref } from "../lib/content.js";
+import { doctrineHref, readAsterControl, readPublicModel, targetHref } from "../lib/content.js";
 import { readActivityModel } from "../lib/activity.js";
 
-const model = await readPublicModel();
-const activity = await readActivityModel();
+type ControlTarget = {
+  state?: unknown;
+};
+
+type ControlPriority = {
+  priority_id?: unknown;
+  status?: unknown;
+  budget_bucket?: unknown;
+  reason?: unknown;
+};
+
+const [model, activity, control] = await Promise.all([
+  readPublicModel(),
+  readActivityModel(),
+  readAsterControl(),
+]);
+
 const latestHistory = model.history[0];
 const latestReflection = model.reflections[0];
 const latestProof = activity.mainFeed[0];
 const latestOps = activity.opsFeed[0];
 const constitution = model.constitution.filter((doc) => doc !== null);
+const trackedTargets: ControlTarget[] = Array.isArray(control?.targets) ? control.targets as ControlTarget[] : [];
+const priorities: ControlPriority[] = Array.isArray(control?.priorities) ? control.priorities as ControlPriority[] : [];
+const latestCycle = Array.isArray(control?.cycle_records) ? control.cycle_records.at(-1) ?? null : null;
+const liveTargets = trackedTargets.filter((entry: ControlTarget) => entry.state === "active").length;
+const queueSize = priorities.filter((entry: ControlPriority) => entry.status === "selected" || entry.status === "dispatched").length;
+const selectedTarget = latestCycle?.dispatch?.target_repo ?? latestCycle?.authority?.target_repo ?? "No target selected";
+const isDemoSurface = activity.mode !== "live" || String(latestCycle?.cycle_id ?? "").startsWith("demo-");
+const liveProofCount = activity.mainFeed.filter((item) => !item.isDemo).length;
+const demoProofCount = activity.mainFeed.filter((item) => item.isDemo).length;
+const liveOpsCount = activity.opsFeed.filter((item) => !item.isDemo).length;
+const demoOpsCount = activity.opsFeed.filter((item) => item.isDemo).length;
+const topPriorities = priorities.slice(0, 3);
+const topTargets = model.targets.slice(0, 4);
 ---
 
 <BaseLayout
-  title="Thesis"
-  description="The public thesis and current operating surface of aster."
+  title="Public Operator"
+  description="The public face, doctrine, and current operating state of aster."
   current="home"
 >
   <section class="hero">
     <article class="panel">
       <div class="panel-inner">
-        <p class="eyebrow">Operator Thesis</p>
-        <h1>{model.thesis?.title ?? "Aster"}</h1>
-        <p class="muted">{model.thesis?.excerpt}</p>
-        <div class="prose" set:html={model.thesis?.html} />
+        <p class="eyebrow">Kam-Trained Public Operator</p>
+        <div class="hero-lockup">
+          <div>
+            <h1>{model.thesis?.title ?? "Aster"}</h1>
+            <p class="hero-lede">
+              {model.thesis?.excerpt ?? "A public operator built on runx, optimized for bounded work that strangers are glad exists."}
+            </p>
+            <p class="hero-support">
+              Aster’s job is to make the runx thesis legible in the world: doctrine first,
+              proof before narrative, and one bounded public action at a time. This surface
+              shows the constitution, the current queue, and the receipts-backed feed.
+            </p>
+            <div class="action-row">
+              <a class="action-link action-link--primary" href="/activity/">Open proof feed</a>
+              <a class="action-link" href="/priorities/">Inspect priorities</a>
+              <a class="action-link" href="/doctrine/">Read doctrine</a>
+            </div>
+          </div>
+          <div class="aster-sigil" aria-hidden="true"></div>
+        </div>
+
+        {isDemoSurface ? (
+          <div class="status-strip" style="margin-top: var(--space-5);">
+            <span class="status-pill">demo bootstrap</span>
+            <p class="section-lede">
+              This surface is seeded with clearly flagged starter state and proof rows so the
+              public contract stays visible before live traffic fills every lane.
+            </p>
+          </div>
+        ) : null}
+
+        <div class="metric-grid">
+          <article class="metric-card">
+            <span class="metric-label">tracked targets</span>
+            <strong class="metric-value">{trackedTargets.length}</strong>
+            <span class="metric-detail">{liveTargets} active, {trackedTargets.length - liveTargets} warming or cooling</span>
+          </article>
+          <article class="metric-card">
+            <span class="metric-label">priority queue</span>
+            <strong class="metric-value">{queueSize}</strong>
+            <span class="metric-detail">{priorities.length} persisted priority objects in the learned layer</span>
+          </article>
+          <article class="metric-card">
+            <span class="metric-label">latest cycle</span>
+            <strong class="metric-value">{latestCycle?.status ?? "none"}</strong>
+            <span class="metric-detail">{latestCycle?.reason ?? "No cycle has been persisted yet."}</span>
+          </article>
+          <article class="metric-card">
+            <span class="metric-label">feed mode</span>
+            <strong class="metric-value">{activity.mode}</strong>
+            <span class="metric-detail">{liveProofCount + liveOpsCount} live rows · {demoProofCount + demoOpsCount} demo rows</span>
+          </article>
+        </div>
       </div>
     </article>
 
-    <div class="stack">
+    <aside class="stack">
       <section class="panel">
         <div class="panel-inner">
-          <p class="eyebrow">Current Stage</p>
-          <h2>Context before scale</h2>
-          <p>
-            The current work is to make doctrine, state, history, reflections,
-            and live proof surfaces mechanically visible before the operator acts.
-          </p>
+          <p class="eyebrow">Current Selection</p>
+          <div class="signal-list">
+            <div class="signal-row">
+              <span>target</span>
+              <strong>{selectedTarget}</strong>
+              <p>{latestCycle?.dispatch?.subject_locator ?? "The latest cycle has no persisted subject locator yet."}</p>
+            </div>
+            <div class="signal-row">
+              <span>authority</span>
+              <strong>{latestCycle?.authority?.scope ?? "none"}</strong>
+              <p>{latestCycle?.authority?.approval_mode ?? "No approval mode persisted."}</p>
+            </div>
+            <div class="signal-row">
+              <span>dispatch</span>
+              <strong>{latestCycle?.dispatch?.status ?? "no dispatch"}</strong>
+              <p>{latestCycle?.dispatch?.workflow ?? "No workflow selected."}</p>
+            </div>
+          </div>
         </div>
       </section>
+
       <section class="panel">
         <div class="panel-inner">
-          <p class="eyebrow">Latest Proof</p>
-          <h2>{latestProof?.title ?? latestHistory?.title ?? "No proof yet"}</h2>
-          <p>{latestProof?.summary ?? latestHistory?.excerpt}</p>
-          <a class="muted" href="/activity/">Read activity →</a>
+          <p class="eyebrow">Latest Signal</p>
+          <div class="signal-list">
+            <div class="signal-row">
+              <span>public proof</span>
+              <strong>{latestProof?.title ?? "No proof rows yet"}</strong>
+              <p>{latestProof?.summary ?? latestHistory?.excerpt ?? "The thesis feed is waiting for its first externally legible proof."}</p>
+            </div>
+            <div class="signal-row">
+              <span>ops/status</span>
+              <strong>{latestOps?.title ?? "No ops rows yet"}</strong>
+              <p>{latestOps?.summary ?? "Operational exhaust stays here instead of polluting the main proof wall."}</p>
+            </div>
+          </div>
         </div>
       </section>
-      <section class="panel">
-        <div class="panel-inner">
-          <p class="eyebrow">Ops Status</p>
-          <h2>{latestOps?.title ?? "No ops events yet"}</h2>
-          <p>{latestOps?.summary ?? "The ops/status feed will appear here as runs land."}</p>
-          <a class="muted" href="/activity/">Inspect ops/status →</a>
-        </div>
-      </section>
-    </div>
+    </aside>
   </section>
 
-  <section class="grid two" style="margin-top: 1rem;">
-    <article class="panel">
-      <div class="panel-inner">
-        <p class="eyebrow">Live Priorities</p>
-        <h2>{model.priorities?.title}</h2>
-        <div class="prose" set:html={model.priorities?.html} />
-      </div>
-    </article>
-    <article class="panel">
-      <div class="panel-inner">
-        <p class="eyebrow">Latest Reflection</p>
-        <h2>{latestReflection?.title ?? "No reflections yet"}</h2>
-        <p>{latestReflection?.excerpt}</p>
-        <a class="muted" href="/reflections/">Read reflections →</a>
-      </div>
-    </article>
-  </section>
-
-  <section class="grid two" style="margin-top: 1rem;">
+  <section class="grid two">
     <article class="panel">
       <div class="panel-inner">
         <div class="feed-header">
           <div>
             <p class="panel-title">▐ public proof feed</p>
             <p class="panel-lede">
-              thesis-relevant public proofs only. if this goes quiet, aster has stopped making strangers care.
+              Thesis-relevant public artifacts only. If this goes quiet for too long, aster has stopped making the runx thesis legible.
             </p>
           </div>
         </div>
         <FeedList
           items={activity.mainFeed.slice(0, 4)}
-          emptyTitle="No thesis feed items yet"
-          emptyDetail="Public proof appears here once a public artifact or comment lands."
+          emptyTitle="No proof items yet"
+          emptyDetail="Seeded or live proof rows land here when aster makes externally legible progress."
         />
       </div>
     </article>
+
     <article class="panel">
       <div class="panel-inner">
         <div class="feed-header">
           <div>
             <p class="panel-title">▐ ops / status feed</p>
             <p class="panel-lede">
-              selector runs, docs builds, proving-ground, and other operational exhaust stay here instead of polluting the main proof wall.
+              Selector cycles, site builds, and proving-ground exhaust stay here where they can be inspected without pretending to be public impact.
             </p>
           </div>
         </div>
         <FeedList
           items={activity.opsFeed.slice(0, 4)}
-          emptyTitle="No ops/status items yet"
-          emptyDetail="Operational runs appear here after the public evidence pipeline records them."
+          emptyTitle="No ops items yet"
+          emptyDetail="Control-plane activity appears here once workflows or demo bootstrap events land."
         />
       </div>
     </article>
   </section>
 
-  <section class="grid two" style="margin-top: 1rem;">
+  <section class="grid two">
+    <article class="panel">
+      <div class="panel-inner">
+        <p class="eyebrow">Operator State</p>
+        <h2>What Aster Thinks It Should Do Next</h2>
+        <p class="section-lede">
+          The control layer persists target history, scored opportunities, and the current queue. It is derived state, not a second truth source.
+        </p>
+        <div class="stack tight" style="margin-top: var(--space-5);">
+          {topPriorities.length > 0 ? topPriorities.map((entry: ControlPriority) => (
+            <div class="list-card">
+              <div class="status-strip">
+                <span class="status-pill">{entry.status}</span>
+                <span class="status-pill">{String(entry.budget_bucket ?? "none").replaceAll("_", " ")}</span>
+              </div>
+              <h3>{entry.priority_id}</h3>
+              <p>{entry.reason}</p>
+            </div>
+          )) : (
+            <div class="empty-block">
+              <strong>No persisted priorities</strong>
+              <span>The queue will appear here once selector state has been written.</span>
+            </div>
+          )}
+        </div>
+      </div>
+    </article>
+
+    <article class="panel">
+      <div class="panel-inner">
+        <p class="eyebrow">Recent Memory</p>
+        <div class="stack tight">
+          <div class="list-card">
+            <h3>{latestReflection?.title ?? "No reflections yet"}</h3>
+            <p>{latestReflection?.excerpt ?? "When aster learns from a run or a mistake, the diagnosis will show here."}</p>
+            <a class="text-link" href="/reflections/">Read reflections →</a>
+          </div>
+          <div class="list-card">
+            <h3>{latestHistory?.title ?? "No history entries yet"}</h3>
+            <p>{latestHistory?.excerpt ?? "Append-only public milestones land here as aster changes shape."}</p>
+            <a class="text-link" href="/history/">Read history →</a>
+          </div>
+        </div>
+      </div>
+    </article>
+  </section>
+
+  <section class="grid two">
     <article class="panel">
       <div class="panel-inner">
         <p class="eyebrow">Constitution</p>
-        <div class="stack">
+        <p class="section-lede">
+          Doctrine is stable, human-reviewed, and upstream of policy, learned state, and public narrative.
+        </p>
+        <div class="stack tight" style="margin-top: var(--space-5);">
           {constitution.map((doc) => (
             <a class="list-card" href={doctrineHref(doc)}>
               <h3>{doc.title}</h3>
@@ -127,36 +251,21 @@ const constitution = model.constitution.filter((doc) => doc !== null);
         </div>
       </div>
     </article>
+
     <article class="panel">
       <div class="panel-inner">
-        <p class="eyebrow">Targets</p>
-        <div class="stack">
-          {model.targets.map((target) => (
+        <p class="eyebrow">Target Universe</p>
+        <p class="section-lede">
+          Dossiers hold repo-specific trust posture, lane preference, and reminders about what not to do.
+        </p>
+        <div class="stack tight" style="margin-top: var(--space-5);">
+          {topTargets.map((target) => (
             <a class="list-card" href={targetHref(target)}>
               <h3>{target.title}</h3>
               <p>{target.excerpt}</p>
             </a>
           ))}
         </div>
-      </div>
-    </article>
-  </section>
-
-  <section class="grid two" style="margin-top: 1rem;">
-    <article class="panel">
-      <div class="panel-inner">
-        <p class="eyebrow">Public Voice</p>
-        <h2>{model.voice?.title ?? "Voice"}</h2>
-        <p>{model.voice?.excerpt}</p>
-        <div class="prose" set:html={model.voice?.html} />
-      </div>
-    </article>
-    <article class="panel">
-      <div class="panel-inner">
-        <p class="eyebrow">Authority</p>
-        <h2>{model.authority?.title ?? "Authority"}</h2>
-        <p>{model.authority?.excerpt}</p>
-        <div class="prose" set:html={model.authority?.html} />
       </div>
     </article>
   </section>

@@ -4,39 +4,74 @@ import FeedList from "../components/FeedList.astro";
 import { readActivityModel } from "../lib/activity.js";
 
 const activity = await readActivityModel();
+
+const mainLive = activity.mainFeed.filter((item) => !item.isDemo).length;
+const mainDemo = activity.mainFeed.filter((item) => item.isDemo).length;
+const opsLive = activity.opsFeed.filter((item) => !item.isDemo).length;
+const opsDemo = activity.opsFeed.filter((item) => item.isDemo).length;
 ---
 
 <BaseLayout
   title="Activity"
-  description="Split public-proof and ops/status feeds for aster."
+  description="Public proof and operational status for aster."
   current="activity"
 >
   <section class="panel">
     <div class="panel-inner">
       <p class="eyebrow">Split Feed</p>
       <h1>Activity</h1>
-      <p class="muted">
-        The main feed is for public proof. The ops feed is for selector runs,
-        builds, proving-ground, and operational exhaust. The split is policy, not taste.
+      <p class="hero-support" style="margin-top: 0;">
+        The feed is split by policy. Main is for public proof that makes the runx thesis legible to strangers. Ops is for selector loops, builds, and control-plane exhaust.
       </p>
+      {activity.mode !== "live" ? (
+        <div class="status-strip" style="margin-top: var(--space-5);">
+          <span class="status-pill">{activity.mode === "demo" ? "demo bootstrap" : "mixed feed"}</span>
+          <p class="section-lede">
+            Starter rows stay visible until live public evidence replaces them. They are flagged in-card so the feed never blurs seeded proof with earned proof.
+          </p>
+        </div>
+      ) : null}
+
+      <div class="metric-grid">
+        <article class="metric-card">
+          <span class="metric-label">proof rows</span>
+          <strong class="metric-value">{activity.mainFeed.length}</strong>
+          <span class="metric-detail">{mainLive} live · {mainDemo} demo</span>
+        </article>
+        <article class="metric-card">
+          <span class="metric-label">ops rows</span>
+          <strong class="metric-value">{activity.opsFeed.length}</strong>
+          <span class="metric-detail">{opsLive} live · {opsDemo} demo</span>
+        </article>
+        <article class="metric-card">
+          <span class="metric-label">current mode</span>
+          <strong class="metric-value">{activity.mode}</strong>
+          <span class="metric-detail">Live rows replace seeded rows as the operator works in public.</span>
+        </article>
+        <article class="metric-card">
+          <span class="metric-label">last fetch</span>
+          <strong class="metric-value">fresh</strong>
+          <span class="metric-detail">{activity.fetchedAt}</span>
+        </article>
+      </div>
     </div>
   </section>
 
-  <section class="grid two" style="margin-top: 1rem;">
+  <section class="grid two">
     <article class="panel">
       <div class="panel-inner">
         <div class="feed-header">
           <div>
             <p class="panel-title">▐ main feed</p>
             <p class="panel-lede">
-              real public proof only: comments, public PR work, and externally legible outcomes.
+              Public comments, PRs, docs changes, and other externally legible proof. This lane should be quiet unless aster has actually done something worth strangers noticing.
             </p>
           </div>
         </div>
         <FeedList
           items={activity.mainFeed}
           emptyTitle="No main-feed items yet"
-          emptyDetail="This surface populates once a thesis-relevant public artifact lands."
+          emptyDetail="Thesis-relevant public proof will appear here as soon as it exists."
         />
       </div>
     </article>
@@ -47,14 +82,14 @@ const activity = await readActivityModel();
           <div>
             <p class="panel-title">▐ ops / status</p>
             <p class="panel-lede">
-              cycle runs, docs builds, proving-ground, and other control-plane exhaust.
+              Cycle generation, site publication, and other operational evidence that matters for auditability but should not masquerade as public impact.
             </p>
           </div>
         </div>
         <FeedList
           items={activity.opsFeed}
           emptyTitle="No ops/status items yet"
-          emptyDetail="Operational events appear here as workflows publish generic public evidence."
+          emptyDetail="Operational rows appear here when workflows publish into the public evidence lane."
         />
       </div>
     </article>

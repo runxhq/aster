@@ -1,6 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import os from "node:os";
 import path from "node:path";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
 import {
@@ -53,6 +55,97 @@ test("renderContextPrompt includes doctrine and state sections", async () => {
   assert.match(prompt, /### Live Control/);
   assert.match(prompt, /### Target Summary/);
   assert.match(prompt, /Target Dossier/);
+});
+
+test("buildContextBundle and prompt carry explicit approval context", async () => {
+  const bundle = await buildContextBundle({
+    repoRoot,
+    lane: "docs-pr",
+    subjectKind: "repository",
+    subjectLocator: "nilstate/aster",
+    repo: "nilstate/aster",
+    targetRepo: "nilstate/aster",
+    approvalSource: "issue_comment",
+    approvalSourceUrl: "https://github.com/nilstate/aster/issues/42#issuecomment-1",
+    approvalRationale: "Keep the change bounded to the docs surface and preserve the public governance story.",
+    approvalNotes: ["Prefer explicit review notes over hidden operator intuition."],
+    approvalInvariants: ["Do not widen authority beyond the current lane."],
+    approvedBy: "kam",
+  });
+
+  assert.equal(bundle.approval_context?.source, "issue_comment");
+  assert.deepEqual(bundle.approval_context?.shared_invariants, ["Do not widen authority beyond the current lane."]);
+
+  const prompt = renderContextPrompt(bundle);
+  assert.match(prompt, /## Active Approval Context/);
+  assert.match(prompt, /issue_comment/);
+  assert.match(prompt, /Do not widen authority beyond the current lane/);
+  assert.match(prompt, /Prefer explicit review notes over hidden operator intuition/);
+});
+
+test("buildContextBundle merges file-derived approval context with explicit overrides", async () => {
+  const tempDir = await mkdtemp(path.join(os.tmpdir(), "aster-approval-context-"));
+  const approvalContextPath = path.join(tempDir, "approval-context.json");
+
+  await writeFile(
+    approvalContextPath,
+    `${JSON.stringify({
+      source: "issue_comment",
+      source_url: "https://github.com/nilstate/aster/issues/42#issuecomment-2",
+      rationale: "Stay inside the bounded issue-to-plan surface.",
+      approved_by: "kam",
+      operator_notes: [
+        "Cite the prior approval context back to the maintainer when reusing it.",
+      ],
+      shared_invariants: [
+        "Do not open a PR until triage explicitly approves build.",
+      ],
+      decisions: [
+        {
+          gate_id: "issue-triage.plan",
+          reason: "Planning is approved; build is still gated.",
+        },
+      ],
+    }, null, 2)}\n`,
+  );
+
+  try {
+    const bundle = await buildContextBundle({
+      repoRoot,
+      lane: "issue-triage",
+      subjectKind: "github_issue",
+      subjectLocator: "nilstate/aster#issue/42",
+      repo: "nilstate/aster",
+      targetRepo: "nilstate/aster",
+      approvalContextFile: approvalContextPath,
+      approvalNotes: [
+        "Reflect any reused approval context into the receipt packet.",
+      ],
+    });
+
+    assert.equal(bundle.approval_context?.source, "issue_comment");
+    assert.equal(bundle.approval_context?.approved_by, "kam");
+    assert.deepEqual(bundle.approval_context?.shared_invariants, [
+      "Do not open a PR until triage explicitly approves build.",
+    ]);
+    assert.deepEqual(bundle.approval_context?.operator_notes, [
+      "Cite the prior approval context back to the maintainer when reusing it.",
+      "Reflect any reused approval context into the receipt packet.",
+    ]);
+    assert.deepEqual(bundle.approval_context?.decisions, [
+      {
+        gate_id: "issue-triage.plan",
+        reason: "Planning is approved; build is still gated.",
+      },
+    ]);
+
+    const prompt = renderContextPrompt(bundle);
+    assert.match(prompt, /Stay inside the bounded issue-to-plan surface/);
+    assert.match(prompt, /issue-triage\.plan/);
+    assert.match(prompt, /Reflect any reused approval context into the receipt packet/);
+  } finally {
+    await rm(tempDir, { recursive: true, force: true });
+  }
 });
 
 test("renderContextPrompt surfaces authority and dispatch state from control records", () => {

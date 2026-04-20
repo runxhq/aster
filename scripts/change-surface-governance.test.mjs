@@ -64,6 +64,21 @@ test("evaluateLaneChangeSurfacePolicy allows issue-triage operator-memory surfac
   assert.deepEqual(policy.blocked_surfaces, []);
 });
 
+test("evaluateLaneChangeSurfacePolicy allows approval-policy-derive to refresh learned state only", () => {
+  const policy = evaluateLaneChangeSurfacePolicy({
+    lane: "approval-policy-derive",
+    repo: "nilstate/aster",
+    ownerRepo: "nilstate/aster",
+    files: [
+      "state/approved-policies.json",
+      "README.md",
+    ],
+  });
+
+  assert.equal(policy.status, "allowed");
+  assert.deepEqual(policy.blocked_surfaces, []);
+});
+
 test("evaluateLaneChangeSurfacePolicy reports only for external repos", () => {
   const policy = evaluateLaneChangeSurfacePolicy({
     lane: "fix-pr",
