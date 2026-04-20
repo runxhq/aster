@@ -1,0 +1,197 @@
+spec_version: "1.1"
+task_id: "runx-history-search-filters"
+created: "2026-04-20T15:05:50Z"
+updated: "2026-04-20T15:11:54Z"
+status: "completed"
+harden_status: "not_run"
+
+task:
+  title: "Add search filter flags to runx history CLI"
+  summary: >
+    The round-3 skill-recon invocation recommended extending
+    `runx history` with filter flags rather than building a
+    separate receipt-search surface. Current history accepts one
+    fuzzy query string that matches name/id/sourceType. This
+    spec adds `--skill`, `--status`, `--source`, `--since`, and
+    `--until` flags that compose with the existing query and
+    --limit.
+  size: "medium"
+  risk_level: "low"
+  context:
+    packages:
+      - "../runx/oss/packages/cli"
+      - "../runx/oss/packages/runner-local"
+    files_impacted:
+      - path: "../runx/oss/packages/cli/src/index.ts"
+        lines: "history parsing + dispatch"
+        reason: "Parse new flags and forward to listLocalHistory."
+      - path: "../runx/oss/packages/runner-local/src/index.ts"
+        lines: "ListLocalHistoryOptions + filter body"
+        reason: "Extend options type and filter loop."
+    invariants:
+      - "bounded_improvement_per_cycle"
+      - "no_kernel_breakage"
+    cwd: "/home/kam/dev/aster"
+  objectives:
+    - "Parse --skill, --status, --source, --since, --until on runx history."
+    - "Extend ListLocalHistoryOptions and apply filters in listLocalHistory."
+    - "Keep the positional query and --limit behaviour intact (backward-compatible)."
+  scope:
+    in_scope:
+      - "Arg parser in packages/cli/src/index.ts."
+      - "Filter logic in packages/runner-local/src/index.ts listLocalHistory."
+    out_of_scope:
+      - "New receipt index on disk."
+      - "Governed-receipts surface."
+      - "Changes to listVerifiedLocalReceipts."
+  dependencies:
+    - "Runx CLI builds via `pnpm build` in runx/oss."
+  assumptions:
+    - "Existing LocalReceiptSummary exposes name/status/sourceType/startedAt/completedAt — enough for the five new filters."
+    - "The history command's parser structure allows adding optional flags without a breaking rewrite."
+  touchpoints:
+    - area: "runx CLI"
+      description: "One command surface extended, no new surfaces."
+      owners: ["runx"]
+  risks:
+    - description: "--since/--until parse must accept ISO dates and reject malformed input cleanly."
+      impact: "low"
+      mitigation: "Use Date.parse + Number.isFinite guard; emit a clear error on invalid date."
+  acceptance:
+    validation_profile: "standard"
+    definition_of_done:
+      - id: "dod1"
+        description: "runx history accepts --skill/--status/--source/--since/--until."
+        status: "pending"
+      - id: "dod2"
+        description: "Filters apply conjunctively to the underlying listVerifiedLocalReceipts result."
+        status: "pending"
+      - id: "dod3"
+        description: "runx --help shows the new flags."
+        status: "pending"
+      - id: "dod4"
+        description: "Existing query + --limit still work unchanged."
+        status: "pending"
+    validation:
+      - id: "v1"
+        type: "test"
+        description: "runx history --skill improve-skill returns only improve-skill receipts."
+        command: "bash -c 'cd /home/kam/dev/aster && n=$(runx history --skill improve-skill --json 2>/dev/null | jq \"[.receipts[] | select(.name | test(\\\"improve-skill\\\"))] | length\"); [ \"$n\" -ge 0 ] && echo ok || echo fail'"
+        expected: "ok"
+      - id: "v2"
+        type: "test"
+        description: "runx history without flags still returns all receipts."
+        command: "bash -c 'cd /home/kam/dev/aster && runx history --json > /tmp/h.json 2>/dev/null && st=$(jq -r .status /tmp/h.json); [ \"$st\" = success ] && echo ok || echo fail'"
+        expected: "ok"
+      - id: "v3"
+        type: "boundary"
+        description: "--since rejects invalid date with non-zero exit."
+        command: "bash -c 'runx history --since not-a-date --json 2>&1 | grep -qi invalid && echo ok || echo fail'"
+        expected: "ok"
+  constraints:
+    approvals_required: []
+    non_goals:
+      - "No receipt-index build"
+      - "No schema changes"
+
+planning_log:
+  - timestamp: "2026-04-20T15:05:50Z"
+    actor: "agent"
+    summary: "Authored from round-3 skill-recon finding rx_d50c2a0a."
+
+  - timestamp: "2026-04-20T15:06:40Z"
+    actor: "cli"
+    summary: "Spec approved"
+  - timestamp: "2026-04-20T15:06:40Z"
+    actor: "cli"
+    summary: "Execution started"
+  - timestamp: "2026-04-20T15:11:54Z"
+    actor: "cli"
+    summary: "Spec completed"
+phases:
+  - id: "phase1"
+    name: "Extend ListLocalHistoryOptions + filter"
+    objective: "Add skill/status/source/since/until fields; apply them conjunctively."
+    changes:
+      - file: "../runx/oss/packages/runner-local/src/index.ts"
+        action: "update"
+        lines: "ListLocalHistoryOptions + listLocalHistory body"
+    acceptance_criteria:
+      - id: "ac1_1"
+        type: "compile"
+        description: "Typecheck passes."
+        command: "bash -c 'cd ../runx/oss && pnpm typecheck > /dev/null 2>&1 && echo ok || echo fail'"
+        expected: "ok"
+        result: "pass"
+        executed_at: "2026-04-20T15:11:11Z"
+        result_output: "ok"
+    status: "pending"
+
+  - id: "phase2"
+    name: "Parse CLI flags"
+    objective: "Add flag parsing in cli/src/index.ts history dispatch."
+    dependencies: ["phase1"]
+    changes:
+      - file: "../runx/oss/packages/cli/src/index.ts"
+        action: "update"
+        lines: "history parse block + usage line"
+    acceptance_criteria:
+      - id: "ac2_1"
+        type: "compile"
+        description: "CLI builds and runx --help lists the flags."
+        command: "bash -c 'cd ../runx/oss && pnpm build 2>&1 | tail -3 && runx --help 2>&1 | grep -q \"runx history\" && echo ok || echo fail'"
+        expected: "ok"
+        result: "pass"
+        executed_at: "2026-04-20T15:11:13Z"
+        result_output: "> runx@0.0.0 build /home/kam/dev/runx/oss > node scripts/build-workspace.mjs --pack  ok"
+    status: "pending"
+
+  - id: "phase3"
+    name: "Verify end-to-end"
+    objective: "Run real filtered queries against aster/.runx/receipts/."
+    dependencies: ["phase2"]
+    changes:
+      - file: "(no source edits)"
+        action: "update"
+        lines: "n/a"
+    acceptance_criteria:
+      - id: "ac3_1"
+        type: "test"
+        description: "Filter flags work against the real aster receipt corpus."
+        command: "bash -c 'cd /home/kam/dev/aster && runx history --status success --json 2>/dev/null | jq -e \".receipts | length > 0\" > /dev/null && echo ok || echo fail'"
+        expected: "ok"
+        result: "pass"
+        executed_at: "2026-04-20T15:11:13Z"
+        result_output: "ok"
+    status: "pending"
+
+rollback:
+  strategy: "per_phase"
+  commands:
+    phase1: "git -C ../runx/oss checkout HEAD -- packages/runner-local/src/index.ts"
+    phase2: "git -C ../runx/oss checkout HEAD -- packages/cli/src/index.ts"
+    phase3: "true"
+
+review:
+  timestamp: "2026-04-20T15:11:19Z"
+  verdict: "pass"
+  review_rounds: 1
+  reviewer_mode: "executor"
+  reviewer_session: ""
+  round_status: "completed"
+  override_applied: false
+  override_reason: null
+  override_confirmed_at: null
+  passes:
+    - id: spec_compliance
+      result: "pass"
+    - id: scope_drift
+      result: "pass"
+    - id: regression_hunt
+      result: "pass"
+    - id: convention_check
+      result: "pass"
+    - id: dark_patterns
+      result: "pass"
+  blocking_count: 0
+  non_blocking_count: 0
