@@ -1,0 +1,114 @@
+spec_version: "1.1"
+task_id: issue-2
+created: "2026-04-21T00:00:00Z"
+updated: "2026-04-21T04:22:50Z"
+status: "completed"
+task:
+  title: "The issue asks for a docs-only clarification that PR triage comments can run against live PRs, including draft PRs opened by automaton lanes."
+  summary: >-
+    Update the public automaton flow docs to explicitly state that PR triage
+    comments can run against live PRs, including draft PRs opened by automaton
+    lanes, while keeping the lane docs-only and leaving workflow logic and
+    secret handling unchanged.
+  size: micro
+  risk_level: low
+  context:
+    source: github_issue
+    source_id: "2"
+    source_url: "https://github.com/nilstate/aster/issues/2"
+    target_repo: "nilstate/aster"
+    repo_context: "target_repo=nilstate/aster ; git=detached@a817b040f322 ; paths=README.md, package.json, .ai/config.yaml ; root_scripts=check, docs:build, docs:ci, shakeout:local, site:build, site:check, site:ci"
+    files_impacted:
+      - docs/flows.md
+      - .ai/specs/active/issue-2.yaml
+    invariants:
+      - "Keep the remediation docs-only in repo code terms: do not modify workflow logic, secret handling, or unrelated files."
+      - "The clarification must be explicit about live PRs and draft PRs opened by automaton lanes."
+      - "Use the existing docs build validation from package.json: npm run docs:build."
+    assumptions:
+      - "docs/flows.md is the primary target because the issue body identifies it as a likely relevant public page for automaton flow behavior."
+      - "If implementation evidence shows the clarification belongs in a different docs file, revise the spec before mutation instead of widening scope ad hoc."
+  objectives:
+    - "Add one clear public-docs statement covering PR triage comments on live PRs, including draft PRs opened by automaton lanes."
+    - "Keep the implementation docs-only apart from the lifecycle-managed active scafld spec."
+    - "Preserve a passing docs build with npm run docs:build."
+  touchpoints:
+    - path: docs/flows.md
+      description: "Public automaton flow documentation that will receive the behavior clarification."
+    - path: .ai/specs/active/issue-2.yaml
+      description: "Lifecycle-managed scafld spec recorded after start for audit and archival."
+  acceptance:
+    definition_of_done:
+      - "docs/flows.md explicitly states that PR triage comments can run against live PRs, including draft PRs opened by automaton lanes."
+      - "The lane remains docs-only and does not modify workflow logic or secret-handling surfaces."
+      - "`npm run docs:build` passes after the docs update."
+    validation:
+      - command: 'test -n "$(git diff --name-only -- docs/flows.md)"'
+        purpose: "Confirm the targeted docs file is modified in the working tree."
+      - command: 'grep -F "PR triage comments can run against live PRs, including draft PRs opened by automaton lanes." docs/flows.md'
+        purpose: "Confirm the exact clarification text is present in the targeted docs file."
+      - command: 'test -z "$(git diff --name-only -- .github)"'
+        purpose: "Confirm no workflow files were modified."
+      - command: 'test -z "$(git diff --name-only -- .ai/config.yaml)"'
+        purpose: "Confirm the notable automation config path was not modified."
+      - command: 'npm run docs:build'
+        purpose: "Confirm the docs build still succeeds."
+planning_log:
+  - timestamp: "2026-04-21T00:00:00Z"
+    actor: "builder"
+    summary: "Grounded the task in github issue #2 and kept scope to a docs-only clarification plus the lifecycle-managed active spec."
+  - timestamp: "2026-04-21T00:00:00Z"
+    actor: "builder"
+    summary: "Selected docs/flows.md as the primary target from the issue's listed likely pages and used the existing docs:build script from package.json as the validation hook."
+  - timestamp: "2026-04-21T04:20:58Z"
+    actor: "cli"
+    summary: "Spec approved"
+  - timestamp: "2026-04-21T04:20:58Z"
+    actor: "cli"
+    summary: "Execution started"
+  - timestamp: "2026-04-21T04:22:50Z"
+    actor: "cli"
+    summary: "Spec completed"
+phases:
+  - id: phase1
+    name: "Clarify PR triage coverage in public docs"
+    objective: "Document that PR triage comments can operate on live PRs, including draft PRs opened by automaton lanes, without changing workflow behavior."
+    changes:
+      - file: docs/flows.md
+        summary: "Add one explicit clarification sentence about PR triage comment coverage for live and draft PRs."
+      - file: .ai/specs/active/issue-2.yaml
+        summary: "Persist the approved scafld spec that governs this bounded docs-only lane."
+    acceptance_criteria:
+      - 'docs/flows.md contains the exact sentence "PR triage comments can run against live PRs, including draft PRs opened by automaton lanes."'
+      - "No files under .github are modified by the remediation."
+      - "`npm run docs:build` succeeds after the docs update."
+    status: planned
+rollback:
+  strategy: "If the clarification is incorrect, misplaced, or the docs build fails, restore the targeted docs file and remove the lifecycle-managed active spec before abandoning or re-authoring the lane."
+  commands:
+    - "git restore --worktree --staged docs/flows.md"
+    - "rm -f .ai/specs/active/issue-2.yaml"
+
+review:
+  timestamp: "2026-04-21T04:21:45Z"
+  verdict: "pass"
+  review_rounds: 1
+  reviewer_mode: "fresh_agent"
+  reviewer_session: "rx_a8725685eb69443bb7ef1a8774ea5b2f:reviewer-boundary"
+  round_status: "completed"
+  override_applied: false
+  override_reason: null
+  override_confirmed_at: null
+  passes:
+    - id: spec_compliance
+      result: "pass"
+    - id: scope_drift
+      result: "pass"
+    - id: regression_hunt
+      result: "pass"
+    - id: convention_check
+      result: "pass"
+    - id: dark_patterns
+      result: "pass"
+  blocking_count: 0
+  non_blocking_count: 0

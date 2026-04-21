@@ -24,8 +24,9 @@ This lane has two entry modes:
    collaboration/thread-teaching issues are recognized as approval records and
    skipped before objective triage begins
 2. PR mode builds a live PR snapshot, runs it through `github-triage`, and
-   posts a maintainer comment back to the PR. Public-value and replay gates
-   block low-signal or duplicate comments for the same head SHA. Generated
+   posts a maintainer comment back to the PR.
+   PR triage comments can run against live PRs, including draft PRs opened by automaton lanes.
+   Public-value and replay gates block low-signal or duplicate comments for the same head SHA. Generated
    derived-state refresh PRs are blocked before model work because they
    are review surfaces, not new triage subjects
 
