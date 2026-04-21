@@ -5,6 +5,7 @@ import {
   buildLanePrBody,
   buildLaneRequestBody,
   buildPublishPlan,
+  buildSkippedPublish,
 } from "./run-governed-pr-lane.mjs";
 
 test("buildLaneRequestBody appends docs-pr constraints", () => {
@@ -67,4 +68,15 @@ test("buildLanePrBody includes lane guardrails and validation", () => {
   assert.match(body, /Work issue: `nilstate\/aster#222`/);
   assert.match(body, /Ledger revision: `deadbeefcafebabe`/);
   assert.match(body, /Lane Guardrails/);
+});
+
+test("buildSkippedPublish records a proposal-only governed lane run", () => {
+  const publish = buildSkippedPublish({
+    lane: "fix-pr",
+  });
+
+  assert.deepEqual(publish, {
+    status: "not_requested",
+    reason: "fix-pr.publish gate not granted yet",
+  });
 });

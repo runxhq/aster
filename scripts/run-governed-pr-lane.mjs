@@ -230,29 +230,36 @@ export async function runGovernedPrLane(options) {
     });
     await writeFile(prBodyPath, prBody);
 
-    const publishJson = run("node", [
-      path.join(repoRoot, "scripts", "publish-runx-pr.mjs"),
-      "--repo",
-      targetRepo,
-      "--branch",
-      publishPlan.branch,
-      "--title",
-      publishPlan.title,
-      "--commit-message",
-      publishPlan.commitMessage,
-      "--body-file",
-      prBodyPath,
-      "--lane",
-      options.lane,
-    ], { cwd: workDir });
-    await writeFile(path.join(artifactRoot, "publish.json"), `${publishJson}\n`);
-    const publish = JSON.parse(publishJson);
-    const prEval = evaluateGeneratedPr({
-      publish,
-      body: prBody,
-      validation: verificationReport,
+    let publish = buildSkippedPublish({
+      lane: options.lane,
+      reason: options.publishReason,
     });
-    await writeFile(path.join(artifactRoot, "pr-eval.json"), `${JSON.stringify(prEval, null, 2)}\n`);
+    let prEval = null;
+    if (options.publish !== false) {
+      const publishJson = run("node", [
+        path.join(repoRoot, "scripts", "publish-runx-pr.mjs"),
+        "--repo",
+        targetRepo,
+        "--branch",
+        publishPlan.branch,
+        "--title",
+        publishPlan.title,
+        "--commit-message",
+        publishPlan.commitMessage,
+        "--body-file",
+        prBodyPath,
+        "--lane",
+        options.lane,
+      ], { cwd: workDir });
+      publish = JSON.parse(publishJson);
+      prEval = evaluateGeneratedPr({
+        publish,
+        body: prBody,
+        validation: verificationReport,
+      });
+      await writeFile(path.join(artifactRoot, "pr-eval.json"), `${JSON.stringify(prEval, null, 2)}\n`);
+    }
+    await writeFile(path.join(artifactRoot, "publish.json"), `${JSON.stringify(publish, null, 2)}\n`);
 
     if (publish.status === "published" && targetRepo === options.defaultRepo) {
       run("gh", [
@@ -291,6 +298,14 @@ export async function runGovernedPrLane(options) {
       console.error(`cleanup failed for ${options.lane}: ${error.message}`);
     }
   }
+}
+
+export function buildSkippedPublish({ lane, reason } = {}) {
+  const gateId = `${String(lane ?? "").trim()}.publish`;
+  return {
+    status: "not_requested",
+    reason: normalizeString(reason) ?? `${gateId} gate not granted yet`,
+  };
 }
 
 export function buildLaneRequestBody(lane, body) {
@@ -403,7 +418,9 @@ function buildBranchName(lane, requestTitle) {
 }
 
 function parseArgs(argv) {
-  const options = {};
+  const options = {
+    publish: true,
+  };
   for (let index = 0; index < argv.length; index += 1) {
     const token = argv[index];
     if (token === "--lane") {
@@ -454,6 +471,14 @@ function parseArgs(argv) {
       options.phase = requireValue(argv, ++index, token);
       continue;
     }
+    if (token === "--publish") {
+      options.publish = parseBooleanish(requireValue(argv, ++index, token), token);
+      continue;
+    }
+    if (token === "--publish-reason") {
+      options.publishReason = requireValue(argv, ++index, token);
+      continue;
+    }
     if (token === "--scafld-bin") {
       options.scafldBin = requireValue(argv, ++index, token);
       continue;
@@ -485,6 +510,25 @@ function requireValue(argv, index, flag) {
     throw new Error(`${flag} requires a value.`);
   }
   return value;
+}
+
+function parseBooleanish(value, flag) {
+  const normalized = String(value).trim().toLowerCase();
+  if (["true", "1", "yes", "y"].includes(normalized)) {
+    return true;
+  }
+  if (["false", "0", "no", "n"].includes(normalized)) {
+    return false;
+  }
+  throw new Error(`${flag} must be true or false.`);
+}
+
+function normalizeString(value) {
+  if (typeof value !== "string") {
+    return null;
+  }
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
 }
 
 function run(command, args, options = {}) {

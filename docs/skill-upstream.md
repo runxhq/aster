@@ -50,9 +50,10 @@ The shared schema is `schemas/skill-upstream-artifacts.schema.json`.
 
 The hosted workflow is `.github/workflows/skill-upstream.yml`.
 
-Manual dispatch input:
-
-- `issue_number`: work issue number in the `aster` repo
+Normal entry is a work issue whose title begins with `[upstream]`.
+Trusted maintainer replies on that same issue rerun the lane from the
+refreshed work ledger. Manual dispatch with `issue_number` still exists for an
+explicit rerun, but it is no longer the normal maintainer entry path.
 
 The issue body names the target repo and optional target ref, workflow, mode,
 candidate path, and force flag. That same issue thread is the living ledger for

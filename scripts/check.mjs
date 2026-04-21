@@ -148,6 +148,8 @@ const required = [
   ".github/workflows/skill-lab.yml",
   ".github/workflows/skill-upstream.yml",
   ".github/workflows/merge-watch.yml",
+  ".github/ISSUE_TEMPLATE/docs.yml",
+  ".github/ISSUE_TEMPLATE/fix.yml",
   ".github/ISSUE_TEMPLATE/upstream-skill.yml",
   ".ai/specs/archive/2026-04/evidence-projection-derive-cutover.yaml",
 ];

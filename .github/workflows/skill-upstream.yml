@@ -4,6 +4,14 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 on:
+  issues:
+    types:
+      - opened
+      - edited
+      - reopened
+  issue_comment:
+    types:
+      - created
   workflow_dispatch:
     inputs:
       issue_number:
@@ -18,11 +26,29 @@ permissions:
   pull-requests: write
 
 concurrency:
-  group: skill-upstream-${{ inputs.issue_number }}
-  cancel-in-progress: false
+  group: skill-upstream-${{ github.event.issue.number || github.event.inputs.issue_number || github.ref_name }}
+  cancel-in-progress: ${{ github.event_name != 'issue_comment' }}
 
 jobs:
   skill-upstream:
+    if: >-
+      ${{
+        github.event_name == 'workflow_dispatch' ||
+        (
+          github.event_name == 'issues' &&
+          startsWith(github.event.issue.title, '[upstream]')
+        ) ||
+        (
+          github.event_name == 'issue_comment' &&
+          github.event.issue.pull_request == null &&
+          github.event.comment.user.type != 'Bot' &&
+          contains(fromJson('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association) &&
+          !contains(github.event.comment.body, '<!-- aster:runx-skill-lab -->') &&
+          !contains(github.event.comment.body, '<!-- aster:runx-issue-triage -->') &&
+          !contains(github.event.comment.body, '<!-- aster:runx-work-lane:') &&
+          startsWith(github.event.issue.title, '[upstream]')
+        )
+      }}
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ secrets.UPSTREAM_CONTRIBUTION_TOKEN || secrets.RUNX_REPOSITORY_PAT || github.token }}
@@ -32,13 +58,34 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Resolve issue envelope
+        id: issue
+        run: |
+          mkdir -p .artifacts/skill-upstream
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            ISSUE_NUMBER="${{ github.event.inputs.issue_number }}"
+          else
+            ISSUE_NUMBER="${{ github.event.issue.number }}"
+          fi
+          gh issue view "$ISSUE_NUMBER" \
+            --repo "${{ github.repository }}" \
+            --json number,title,body,url \
+            > .artifacts/skill-upstream/issue.json
+          echo "number=$(jq -r '.number' .artifacts/skill-upstream/issue.json)" >> "$GITHUB_OUTPUT"
+          echo "title<<EOF" >> "$GITHUB_OUTPUT"
+          jq -r '.title' .artifacts/skill-upstream/issue.json >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+          echo "body<<EOF" >> "$GITHUB_OUTPUT"
+          jq -r '.body // ""' .artifacts/skill-upstream/issue.json >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+          echo "url=$(jq -r '.url' .artifacts/skill-upstream/issue.json)" >> "$GITHUB_OUTPUT"
+
       - name: Build issue ledger
         id: issue_ledger
         run: |
-          mkdir -p .artifacts/skill-upstream
           node scripts/issue-ledger.mjs \
             --repo "${{ github.repository }}" \
-            --issue "${{ inputs.issue_number }}" \
+            --issue "${{ steps.issue.outputs.number }}" \
             --output .artifacts/skill-upstream/issue-ledger.json
           echo "ledger_revision=$(jq -r '.ledger_revision' .artifacts/skill-upstream/issue-ledger.json)" >> "$GITHUB_OUTPUT"
 
@@ -58,7 +105,7 @@ jobs:
           echo "mode=$(jq -r '.mode' .artifacts/skill-upstream/work-issue-request.json)" >> "$GITHUB_OUTPUT"
           echo "candidate_path=$(jq -r '.candidate_path' .artifacts/skill-upstream/work-issue-request.json)" >> "$GITHUB_OUTPUT"
           echo "force=$(jq -r '.force' .artifacts/skill-upstream/work-issue-request.json)" >> "$GITHUB_OUTPUT"
-          echo "issue_url=$(jq -r '.source_issue.url // \"\"' .artifacts/skill-upstream/work-issue-request.json)" >> "$GITHUB_OUTPUT"
+          echo "issue_url=$(jq -r '.source_issue.url // ""' .artifacts/skill-upstream/work-issue-request.json)" >> "$GITHUB_OUTPUT"
 
       - name: Check out target repo
         uses: actions/checkout@v6
@@ -92,7 +139,7 @@ jobs:
             --candidate-path "${{ steps.request.outputs.candidate_path }}"
             --branch "runx/add-skill-md"
             --work-issue-repo "${{ github.repository }}"
-            --work-issue-number "${{ inputs.issue_number }}"
+            --work-issue-number "${{ steps.issue.outputs.number }}"
           )
           if [ -n "${{ steps.request.outputs.issue_url }}" ]; then
             args+=(--work-issue-url "${{ steps.request.outputs.issue_url }}")
@@ -120,7 +167,7 @@ jobs:
         run: |
           node scripts/check-thread-teaching-gate.mjs \
             --repo "${{ github.repository }}" \
-            --issue "${{ inputs.issue_number }}" \
+            --issue "${{ steps.issue.outputs.number }}" \
             --target-repo "${{ steps.request.outputs.target_repo }}" \
             --subject-locator "${{ steps.request.outputs.target_repo }}" \
             --applies-to "skill-upstream.publish" \
@@ -129,6 +176,8 @@ jobs:
             echo "allowed=true" >> "$GITHUB_OUTPUT"
           else
             echo "allowed=false" >> "$GITHUB_OUTPUT"
+            echo "Upstream proposal refreshed without draft PR publication." >> "$GITHUB_STEP_SUMMARY"
+            echo "Reply in the same work issue with a thread-teaching record that authorizes \`skill-upstream.publish\` to refresh the draft PR." >> "$GITHUB_STEP_SUMMARY"
           fi
 
       - name: Publish draft PR
@@ -169,7 +218,7 @@ jobs:
           set -euo pipefail
           args=(
             --repo "${{ github.repository }}"
-            --issue "${{ inputs.issue_number }}"
+            --issue "${{ steps.issue.outputs.number }}"
             --lane skill-upstream
             --workflow-status "${{ job.status }}"
             --run-url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
@@ -220,7 +269,7 @@ jobs:
         if: ${{ always() }}
         uses: actions/upload-artifact@v7
         with:
-          name: skill-upstream-${{ github.run_id }}
+          name: skill-upstream-${{ steps.issue.outputs.number || github.event.issue.number || github.event.inputs.issue_number }}
           path: |
             .artifacts/skill-upstream
             .artifacts/skill-upstream.prepare.json

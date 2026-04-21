@@ -4,6 +4,14 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 on:
+  issues:
+    types:
+      - opened
+      - edited
+      - reopened
+  issue_comment:
+    types:
+      - created
   workflow_dispatch:
     inputs:
       issue_number:
@@ -18,11 +26,29 @@ permissions:
   pull-requests: write
 
 concurrency:
-  group: fix-pr-${{ inputs.issue_number }}
-  cancel-in-progress: false
+  group: fix-pr-${{ github.event.issue.number || github.event.inputs.issue_number || github.ref_name }}
+  cancel-in-progress: ${{ github.event_name != 'issue_comment' }}
 
 jobs:
   fix-pr:
+    if: >-
+      ${{
+        github.event_name == 'workflow_dispatch' ||
+        (
+          github.event_name == 'issues' &&
+          startsWith(github.event.issue.title, '[fix]')
+        ) ||
+        (
+          github.event_name == 'issue_comment' &&
+          github.event.issue.pull_request == null &&
+          github.event.comment.user.type != 'Bot' &&
+          contains(fromJson('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association) &&
+          !contains(github.event.comment.body, '<!-- aster:runx-skill-lab -->') &&
+          !contains(github.event.comment.body, '<!-- aster:runx-issue-triage -->') &&
+          !contains(github.event.comment.body, '<!-- aster:runx-work-lane:') &&
+          startsWith(github.event.issue.title, '[fix]')
+        )
+      }}
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ secrets.ASTER_GH_TOKEN != '' && secrets.ASTER_GH_TOKEN || secrets.RUNX_REPOSITORY_PAT || github.token }}
@@ -87,14 +113,36 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
+      - name: Resolve issue envelope
+        if: ${{ steps.preflight.outputs.enabled == 'true' }}
+        id: issue
+        run: |
+          mkdir -p .artifacts/fix-pr
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            ISSUE_NUMBER="${{ github.event.inputs.issue_number }}"
+          else
+            ISSUE_NUMBER="${{ github.event.issue.number }}"
+          fi
+          gh issue view "$ISSUE_NUMBER" \
+            --repo "${{ github.repository }}" \
+            --json number,title,body,url \
+            > .artifacts/fix-pr/issue.json
+          echo "number=$(jq -r '.number' .artifacts/fix-pr/issue.json)" >> "$GITHUB_OUTPUT"
+          echo "title<<EOF" >> "$GITHUB_OUTPUT"
+          jq -r '.title' .artifacts/fix-pr/issue.json >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+          echo "body<<EOF" >> "$GITHUB_OUTPUT"
+          jq -r '.body // ""' .artifacts/fix-pr/issue.json >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+          echo "url=$(jq -r '.url' .artifacts/fix-pr/issue.json)" >> "$GITHUB_OUTPUT"
+
       - name: Build issue ledger
         if: ${{ steps.preflight.outputs.enabled == 'true' }}
         id: issue_ledger
         run: |
-          mkdir -p .artifacts/fix-pr
           node scripts/issue-ledger.mjs \
             --repo "${{ github.repository }}" \
-            --issue "${{ inputs.issue_number }}" \
+            --issue "${{ steps.issue.outputs.number }}" \
             --output .artifacts/fix-pr/issue-ledger.json
           echo "ledger_revision=$(jq -r '.ledger_revision' .artifacts/fix-pr/issue-ledger.json)" >> "$GITHUB_OUTPUT"
 
@@ -113,16 +161,23 @@ jobs:
 
       - name: Check work issue authorization
         if: ${{ steps.preflight.outputs.enabled == 'true' }}
+        id: gate
         run: |
           node scripts/check-thread-teaching-gate.mjs \
             --repo "${{ github.repository }}" \
-            --issue "${{ inputs.issue_number }}" \
+            --issue "${{ steps.issue.outputs.number }}" \
             --target-repo "${{ steps.request.outputs.target_repo }}" \
             --subject-locator "${{ steps.request.outputs.target_repo }}" \
             --applies-to "fix-pr.publish" \
             --output .artifacts/fix-pr/thread-teaching-gate.json
-          jq -e '.allowed == true' .artifacts/fix-pr/thread-teaching-gate.json > /dev/null
           jq '.context' .artifacts/fix-pr/thread-teaching-gate.json > .artifacts/fix-pr/thread-teaching-context.json
+          if jq -e '.allowed == true' .artifacts/fix-pr/thread-teaching-gate.json > /dev/null; then
+            echo "allowed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "allowed=false" >> "$GITHUB_OUTPUT"
+            echo "Fix proposal refreshed without draft PR publication." >> "$GITHUB_STEP_SUMMARY"
+            echo "Reply in the same work issue with a thread-teaching record that authorizes \`fix-pr.publish\` to refresh the draft PR." >> "$GITHUB_STEP_SUMMARY"
+          fi
 
       - name: Run fix-pr lane
         if: ${{ steps.preflight.outputs.enabled == 'true' }}
@@ -139,8 +194,12 @@ jobs:
             --thread-teaching-context-file "$GITHUB_WORKSPACE/.artifacts/fix-pr/thread-teaching-context.json"
             --artifact-root "$GITHUB_WORKSPACE/.artifacts/fix-pr"
             --work-root "$GITHUB_WORKSPACE/.artifacts/fix-pr-workspaces"
+            --publish "${{ steps.gate.outputs.allowed == 'true' && 'true' || 'false' }}"
             --scafld-bin "$HOME/.local/bin/scafld"
           )
+          if [ "${{ steps.gate.outputs.allowed }}" != "true" ]; then
+            args+=(--publish-reason "fix-pr.publish gate not granted yet")
+          fi
           node scripts/run-governed-pr-lane.mjs "${args[@]}" > .artifacts/fix-pr/result-summary.json
           cat .artifacts/fix-pr/result-summary.json
 
@@ -150,7 +209,7 @@ jobs:
           set -euo pipefail
           args=(
             --repo "${{ github.repository }}"
-            --issue "${{ inputs.issue_number }}"
+            --issue "${{ steps.issue.outputs.number }}"
             --lane fix-pr
             --workflow-status "${{ job.status }}"
             --run-url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
@@ -177,9 +236,16 @@ jobs:
         run: |
           STATUS="${{ job.status }}"
           TARGET="${{ steps.request.outputs.target_repo || github.repository }}"
-          if [ "$STATUS" = "success" ]; then
+          PUBLISH_STATUS=""
+          if [ -f ".artifacts/fix-pr/result-summary.json" ]; then
+            PUBLISH_STATUS="$(jq -r '.publish.status // ""' .artifacts/fix-pr/result-summary.json)"
+          fi
+          if [ "$STATUS" = "success" ] && [ "$PUBLISH_STATUS" = "published" ]; then
             TITLE="opened a fix PR on ${TARGET}"
-            SUMMARY="diagnosed a bounded bug and opened a review-ready fix PR"
+            SUMMARY="diagnosed a bounded bug from the work issue ledger and refreshed one review-ready fix PR"
+          elif [ "$STATUS" = "success" ]; then
+            TITLE="refreshed a fix proposal on ${TARGET}"
+            SUMMARY="diagnosed a bounded bug from the work issue ledger without refreshing a draft PR"
           else
             TITLE="fix PR failed on ${TARGET}"
             SUMMARY="fix-pr lane failed during execution"
@@ -198,5 +264,5 @@ jobs:
         if: ${{ always() && steps.preflight.outputs.enabled == 'true' }}
         uses: actions/upload-artifact@v7
         with:
-          name: fix-pr-${{ github.run_id }}
+          name: fix-pr-${{ steps.issue.outputs.number || github.event.issue.number || github.event.inputs.issue_number }}
           path: .artifacts/fix-pr

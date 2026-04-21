@@ -49,7 +49,10 @@ jobs:
       ${{
         (
           github.event_name == 'issues' &&
-          !startsWith(github.event.issue.title, '[skill]')
+          !startsWith(github.event.issue.title, '[skill]') &&
+          !startsWith(github.event.issue.title, '[fix]') &&
+          !startsWith(github.event.issue.title, '[docs]') &&
+          !startsWith(github.event.issue.title, '[upstream]')
         ) ||
         (
           github.event_name == 'issue_comment' &&
@@ -59,7 +62,10 @@ jobs:
           !contains(github.event.comment.body, '<!-- aster:runx-skill-lab -->') &&
           !contains(github.event.comment.body, '<!-- aster:runx-issue-triage -->') &&
           !contains(github.event.comment.body, '<!-- aster:runx-work-lane:') &&
-          !startsWith(github.event.issue.title, '[skill]')
+          !startsWith(github.event.issue.title, '[skill]') &&
+          !startsWith(github.event.issue.title, '[fix]') &&
+          !startsWith(github.event.issue.title, '[docs]') &&
+          !startsWith(github.event.issue.title, '[upstream]')
         ) ||
         (github.event_name == 'workflow_dispatch' && inputs.issue_number != '' && inputs.pr_number == '')
       }}

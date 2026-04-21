@@ -6,9 +6,9 @@ This is the live run catalog for `aster`.
 
 ### `issue-triage`
 
-- trigger: GitHub issues except `[skill]` proposals, trusted maintainer issue
-  comments on those work issues, plus PR `opened`, `reopened`,
-  `ready_for_review`, and `synchronize`
+- trigger: GitHub issues except dedicated `[skill]`, `[fix]`, `[docs]`, and
+  `[upstream]` work issues, trusted maintainer issue comments on those work
+  issues, plus PR `opened`, `reopened`, `ready_for_review`, and `synchronize`
 - issue command chain:
   1. `support-triage`
   2. `issue-triage`
@@ -62,31 +62,39 @@ This is the live run catalog for `aster`.
 
 ### `fix-pr`
 
-- trigger: manual workflow dispatch
+- trigger: GitHub issues whose title begins with `[fix]`, trusted maintainer
+  issue comments on those work issues, plus manual workflow dispatch for
+  explicit reruns
 - command: `node scripts/run-governed-pr-lane.mjs --lane fix-pr`
 - purpose: turn one bounded bugfix request into a validated draft `runx/*` PR
   outside issue-triage worker fanout while keeping one rolling machine update
   on the same work issue
 - gate: requires the same work issue thread to authorize `fix-pr.publish`
-- output: normalized request packet, verification report, receipts, draft PR,
-  generated-PR eval, rolling work-issue status comment, change-surface policy,
-  and live provider-trace heartbeat files while hosted caller work is in flight
+- output: normalized request packet, verification report, receipts, rolling
+  work-issue status comment, change-surface policy, optional draft PR,
+  generated-PR eval when a draft PR is refreshed, and live provider-trace
+  heartbeat files while hosted caller work is in flight
 
 ### `docs-pr`
 
-- trigger: manual workflow dispatch
+- trigger: GitHub issues whose title begins with `[docs]`, trusted maintainer
+  issue comments on those work issues, plus manual workflow dispatch for
+  explicit reruns
 - command: `node scripts/run-governed-pr-lane.mjs --lane docs-pr`
 - purpose: turn one bounded docs or explanation request into a validated draft
   `runx/*` PR while constraining the mutation to docs-only scope and keeping
   one rolling machine update on the same work issue
 - gate: requires the same work issue thread to authorize `docs-pr.publish`
-- output: normalized request packet, verification report, receipts, draft PR,
-  generated-PR eval, rolling work-issue status comment, change-surface policy,
-  and live provider-trace heartbeat files while hosted caller work is in flight
+- output: normalized request packet, verification report, receipts, rolling
+  work-issue status comment, change-surface policy, optional draft PR,
+  generated-PR eval when a draft PR is refreshed, and live provider-trace
+  heartbeat files while hosted caller work is in flight
 
 ### `skill-upstream`
 
-- trigger: manual workflow dispatch
+- trigger: GitHub issues whose title begins with `[upstream]`, trusted
+  maintainer issue comments on those work issues, plus manual workflow dispatch
+  for explicit reruns
 - command: `node scripts/prepare-skill-upstream.mjs` followed by
   `node scripts/validate-skill-upstream.mjs`
 - purpose: add a portable upstream `SKILL.md` to a target repo without adding

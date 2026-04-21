@@ -1,0 +1,162 @@
+spec_version: "1.1"
+task_id: "dedicated-work-issue-lane-cutover"
+created: "2026-04-22T00:25:00Z"
+updated: "2026-04-22T00:35:00Z"
+status: "completed"
+
+task:
+  title: "Hard-cut dedicated governed lanes to native work-issue entry"
+  summary: >
+    Finish the one-issue ledger model for dedicated governed lanes. `fix-pr`,
+    `docs-pr`, and `skill-upstream` should start from issue open, rerun from
+    trusted maintainer replies on that same issue, and only gate draft-PR
+    refresh at publish time. The repo should no longer teach or require manual
+    workflow dispatch as the normal entry surface for those lanes.
+  size: "large"
+  risk_level: "high"
+  context:
+    packages:
+      - ".github/workflows"
+      - ".github/ISSUE_TEMPLATE"
+      - "scripts"
+      - "docs"
+      - "README.md"
+      - ".ai/specs"
+    invariants:
+      - "one_issue_per_unit_of_work"
+      - "dedicated_lane_issue_is_living_ledger"
+      - "trusted_human_replies_are_amendments"
+      - "publish_gate_is_late_not_preflight"
+      - "thread_teaching_stays_canonical"
+      - "docs_match_live_behavior"
+    related_docs:
+      - "docs/flows.md"
+      - "docs/operations.md"
+      - "docs/run-catalog.md"
+      - "docs/operating-model.md"
+      - "docs/skill-upstream.md"
+      - "README.md"
+  objectives:
+    - "Make fix-pr listen to [fix] work issues and trusted maintainer replies."
+    - "Make docs-pr listen to [docs] work issues and trusted maintainer replies."
+    - "Make skill-upstream listen to [upstream] work issues and trusted maintainer replies."
+    - "Move governed PR publication from a preflight requirement to a late publish decision."
+    - "Exclude dedicated lane work issues from generic issue-triage."
+    - "Add first-class issue templates for fix-pr and docs-pr."
+    - "Remove docs that still teach manual dispatch as the normal entry mode."
+  scope:
+    in_scope:
+      - "fix-pr workflow trigger and gate cutover"
+      - "docs-pr workflow trigger and gate cutover"
+      - "skill-upstream workflow trigger cutover"
+      - "run-governed-pr-lane optional publish behavior"
+      - "post-work-issue-lane-comment guidance tightening"
+      - "issue-triage dedicated-lane exclusions"
+      - "fix and docs issue templates"
+      - "docs and README alignment"
+    out_of_scope:
+      - "PR-comment reruns for dedicated lanes"
+      - "merge-watch router changes"
+      - "provider-agnostic chat or ticket adapters"
+      - "hosted journal implementation in runx cloud"
+  acceptance:
+    validation_profile: "strict"
+    definition_of_done:
+      - id: "dod1"
+        description: "Dedicated lane workflows accept issue open/edit/reopen and trusted maintainer issue comments as the normal entry surface."
+        status: "completed"
+      - id: "dod2"
+        description: "Governed PR execution can refresh proposal state without requiring publish authorization up front."
+        status: "completed"
+      - id: "dod3"
+        description: "Issue-triage ignores [fix], [docs], and [upstream] work issues."
+        status: "completed"
+      - id: "dod4"
+        description: "Fix and docs issue templates exist and teach the living-ledger model."
+        status: "completed"
+      - id: "dod5"
+        description: "Repo docs stop teaching manual dispatch as the normal entry mode for dedicated lanes."
+        status: "completed"
+    validation:
+      - id: "v1"
+        type: "test"
+        description: "Governed PR runner and work-issue comment tests pass."
+        command: "node --test scripts/run-governed-pr-lane.test.mjs scripts/post-work-issue-lane-comment.test.mjs scripts/prepare-work-issue-request.test.mjs scripts/thread-teaching.test.mjs"
+        expected: "exit code 0"
+      - id: "v2"
+        type: "boundary"
+        description: "Workflow YAML parses after the trigger cutover."
+        command: "python3 -c \"import yaml; [yaml.safe_load(open(p)) for p in ['.github/workflows/issue-triage.yml', '.github/workflows/fix-pr.yml', '.github/workflows/docs-pr.yml', '.github/workflows/skill-upstream.yml']]; print('ok')\""
+        expected: "ok"
+      - id: "v3"
+        type: "boundary"
+        description: "Repo contract check and docs/site build still pass."
+        command: "npm run check && npm run docs:build && git diff --check"
+        expected: "exit code 0"
+
+phases:
+  - id: "phase1"
+    name: "Runtime Cut"
+    objective: "Let governed PR lanes run from the work ledger before publish authorization exists."
+    changes:
+      - file: "scripts/run-governed-pr-lane.mjs"
+        action: "update"
+      - file: "scripts/run-governed-pr-lane.test.mjs"
+        action: "update"
+      - file: "scripts/post-work-issue-lane-comment.mjs"
+        action: "update"
+      - file: "scripts/post-work-issue-lane-comment.test.mjs"
+        action: "update"
+    status: "completed"
+  - id: "phase2"
+    name: "Workflow Cut"
+    objective: "Make dedicated governed lanes speak the same issue-ledger trigger language."
+    dependencies: ["phase1"]
+    changes:
+      - file: ".github/workflows/issue-triage.yml"
+        action: "update"
+      - file: ".github/workflows/fix-pr.yml"
+        action: "update"
+      - file: ".github/workflows/docs-pr.yml"
+        action: "update"
+      - file: ".github/workflows/skill-upstream.yml"
+        action: "update"
+    status: "completed"
+  - id: "phase3"
+    name: "Entry And Docs"
+    objective: "Teach the same one-issue mental model at the maintainer surface."
+    dependencies: ["phase2"]
+    changes:
+      - file: ".github/ISSUE_TEMPLATE/fix.yml"
+        action: "create"
+      - file: ".github/ISSUE_TEMPLATE/docs.yml"
+        action: "create"
+      - file: "README.md"
+        action: "update"
+      - file: "docs/flows.md"
+        action: "update"
+      - file: "docs/operations.md"
+        action: "update"
+      - file: "docs/run-catalog.md"
+        action: "update"
+      - file: "docs/skill-upstream.md"
+        action: "update"
+    status: "completed"
+
+planning_log:
+  - timestamp: "2026-04-22T00:25:00Z"
+    actor: "agent"
+    summary: >
+      Started the final issue-ledger cut after confirming that issue-triage and
+      skill-lab already rerun from trusted work-issue replies, while fix-pr,
+      docs-pr, and skill-upstream still depended on manual dispatch and an
+      early publish gate.
+  - timestamp: "2026-04-22T00:35:00Z"
+    actor: "agent"
+    summary: >
+      Completed the dedicated-lane cutover: fix-pr, docs-pr, and skill-upstream
+      now start from issue open, rerun from trusted maintainer replies, and
+      only gate draft PR refresh at publish time. Added fix/docs issue
+      templates, excluded dedicated-lane issues from generic issue-triage,
+      aligned repo docs, and passed targeted tests, workflow parsing, repo
+      checks, docs build, site check, and diff hygiene.

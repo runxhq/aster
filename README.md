@@ -63,19 +63,23 @@ The governing philosophy is:
   snapshots still run through `github-triage`, pass replay/public gates, and
   publish one high-signal maintainer comment back onto the PR
 - `fix-pr`: runs one bounded bugfix request through the governed PR runner,
-  validates the target repo with its declared verification profile, and opens a
-  draft `runx/*` PR from one work issue ledger
+  validates the target repo with its declared verification profile, reruns from
+  trusted replies on `[fix]` work issues, and refreshes a draft `runx/*` PR
+  only after that same issue authorizes `fix-pr.publish`
 - `docs-pr`: runs one bounded docs or explanation request through the same
-  governed PR runner, keeps the request docs-only, validates the result, and
-  opens a draft `runx/*` PR from one work issue ledger
+  governed PR runner, keeps the request docs-only, reruns from trusted replies
+  on `[docs]` work issues, and refreshes a draft `runx/*` PR only after that
+  same issue authorizes `docs-pr.publish`
 - `skill-lab`: a skill proposal issue runs through
   `objective-to-skill`, materializes a proposal in `docs/skill-proposals/`,
   keeps one rolling machine comment attached to the same issue ledger, and
   refreshes one draft PR only after the same work issue authorizes
   `skill-lab.publish`
 - `skill-upstream`: prepares and validates a portable upstream `SKILL.md`
-  contribution packet, keeps the proposal state on one work issue ledger, and
-  can open a draft PR against the target repo from that same thread
+  contribution packet, reruns from trusted replies on `[upstream]` work
+  issues, keeps the proposal state on one work issue ledger, and can open a
+  draft PR against the target repo only after that same thread authorizes
+  `skill-upstream.publish`
 - `merge-watch`: observes upstream contribution state and emits public proof
   when the status changes
 - `proving-ground`: keeps a draft-first receipt trail for the broader catalog

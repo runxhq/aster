@@ -1,19 +1,18 @@
-name: Issue to PR
-description: Submit one bounded repo change that aster should attempt to turn into a draft PR.
-title: "[issue-to-pr] "
+name: Docs PR
+description: Submit one bounded docs or explanation work issue that aster should turn into a draft PR.
+title: "[docs] "
 body:
   - type: markdown
     attributes:
       value: |
-        This issue is the living ledger for one bounded work item.
+        This work issue is the living ledger for one bounded docs change.
 
         Open it once, then keep refining it by replying in the same thread.
-        Trusted maintainer replies retrigger the relevant lane from the refreshed
-        issue ledger instead of splitting context across new issues.
+        Trusted maintainer replies become amendments, rerun `docs-pr`, and keep
+        the full context, machine updates, and publish authorization in one place.
 
-        If the request is clearly a pure bugfix or a docs-only change, prefer
-        the dedicated `Fix PR` or `Docs PR` template so the owning lane starts
-        from the first issue event.
+        The draft PR is refreshed only after the same work issue authorizes
+        `docs-pr.publish`.
   - type: input
     id: target_repo
     attributes:
@@ -24,8 +23,8 @@ body:
     id: objective
     attributes:
       label: Objective
-      description: Describe the single bounded change that should land as a PR.
-      placeholder: Update the docs so the live flows page explains the skill-learning lane.
+      description: Describe the single bounded docs or explanation change.
+      placeholder: Clarify how the work issue ledger retriggers dedicated lanes from trusted replies.
     validations:
       required: true
   - type: textarea
@@ -33,14 +32,14 @@ body:
     attributes:
       label: Acceptance Criteria
       description: What must be true before the draft PR is useful?
-      placeholder: The docs mention the new workflow, the Sourcey site still builds, and no unrelated files change.
+      placeholder: The docs explain the live flow clearly, the docs build still passes, and no unrelated files change.
     validations:
       required: true
   - type: textarea
     id: context
     attributes:
       label: Context
-      description: Relevant file paths, receipts, or repo context.
+      description: Relevant file paths, receipts, or current wording that should shape the run.
   - type: input
     id: target_ref
     attributes:
@@ -52,4 +51,4 @@ body:
     attributes:
       label: Safety Constraints
       description: What must stay out of scope or thread-teaching-gated?
-      placeholder: No secret handling changes. Keep the change docs-only.
+      placeholder: Keep the change docs-only. Do not widen into feature work or doctrine edits.

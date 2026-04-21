@@ -14,13 +14,16 @@ keeps the public site live even when the external caller bridge is offline.
 
 This lane has two entry modes:
 
-1. issue mode listens for every normal issue except `[skill]` proposals, runs
+1. issue mode listens for every normal issue except dedicated `[skill]`,
+   `[fix]`, `[docs]`, and `[upstream]` work issues, runs
    `support-triage`, prepares one explicit triage decision, optionally runs
    `objective-decompose`, posts or updates one rolling triage comment back to
    the same issue, and starts isolated `issue-to-pr` workers only when thread
-   teaching authorizes bounded build work. Trusted maintainer replies on that
-   work issue are amendments to the living ledger and retrigger triage from the
-   refreshed issue-ledger packet rather than from the stale issue body alone.
+   teaching authorizes bounded build work. Dedicated `[fix]`, `[docs]`, and
+   `[upstream]` work issues bypass this lane and go straight to their owning
+   governed workflow. Trusted maintainer replies on that work issue are
+   amendments to the living ledger and retrigger triage from the refreshed
+   issue-ledger packet rather than from the stale issue body alone.
    Replay guard blocks duplicate reruns for the same ledger fingerprint, and
    the live issue or PR thread is also parsed for reusable lessons, norms, and
    explicit gate authorizations
@@ -60,22 +63,25 @@ change.
 
 ## `fix-pr`
 
-Runs on manual dispatch for one bounded bugfix work issue. The workflow reads
-the living issue ledger, normalizes it into the governed issue-to-PR contract,
-runs the repo through the shared worker path, validates with the target's
-verification profile, opens or refreshes one draft `runx/*` PR plus receipts,
-and posts a rolling machine status comment back into the same work issue.
-Publication is hard-gated by thread teaching on that same work issue through
-`fix-pr.publish`.
+Listens for work issues whose title begins with `[fix]`, plus trusted
+maintainer replies on those same issues. The workflow reads the living issue
+ledger, normalizes it into the governed issue-to-PR contract, runs the repo
+through the shared worker path, validates with the target's verification
+profile, and posts a rolling machine status comment back into the same work
+issue. Draft PR refresh is hard-gated by thread teaching on that same work
+issue through `fix-pr.publish`, so ungated runs stay proposal-only until the
+issue itself authorizes publication.
 
 ## `docs-pr`
 
-Runs on manual dispatch for one bounded docs or explanation work issue. The
-workflow uses the same governed PR runner as `fix-pr`, but tightens the request
-to docs-only changes before validation and draft PR publication. Publication is
-hard-gated by thread teaching on that same work issue through
-`docs-pr.publish`. Hosted provider work writes live trace files while the lane
-is running and the workflow step carries an explicit timeout.
+Listens for work issues whose title begins with `[docs]`, plus trusted
+maintainer replies on those same issues. The workflow uses the same governed PR
+runner as `fix-pr`, but tightens the request to docs-only changes before
+validation and optional draft PR publication. Draft PR refresh is hard-gated by
+thread teaching on that same work issue through `docs-pr.publish`, so ungated
+runs stay proposal-only until the issue itself authorizes publication. Hosted
+provider work writes live trace files while the lane is running and the
+workflow step carries an explicit timeout.
 
 ## `skill-lab`
 
@@ -90,14 +96,14 @@ rolling draft PR for the proposal.
 
 ## `skill-upstream`
 
-Runs on manual dispatch for one upstream work issue. The workflow reads the
-living issue ledger, checks out the target repo named in that issue, prepares a
-portable upstream `SKILL.md`, validates the contribution artifacts and public
-language, uploads the artifact packet, and posts a rolling machine status
-comment back to the same work issue. If that thread already authorizes
-`skill-upstream.publish`, the workflow also opens or refreshes one draft PR
-against the target repo; otherwise it remains proposal-only until the same
-issue is amended and rerun.
+Listens for work issues whose title begins with `[upstream]`, plus trusted
+maintainer replies on those same issues. The workflow reads the living issue
+ledger, checks out the target repo named in that issue, prepares a portable
+upstream `SKILL.md`, validates the contribution artifacts and public language,
+uploads the artifact packet, and posts a rolling machine status comment back to
+the same work issue. If that thread authorizes `skill-upstream.publish`, the
+workflow also opens or refreshes one draft PR against the target repo;
+otherwise it remains proposal-only until the same issue is amended and rerun.
 
 The first proving-ground target is `nilstate/icey-cli`.
 

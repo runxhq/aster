@@ -83,6 +83,7 @@ export function buildWorkIssueLaneComment({
   publish,
   workflowStatus,
 }) {
+  const gateId = `${String(lane).trim()}.publish`;
   const lines = [
     laneMarker(lane),
     `## runx ${lane}`,
@@ -91,10 +92,12 @@ export function buildWorkIssueLaneComment({
     targetRepo ? `- Target repo: \`${String(targetRepo).trim()}\`` : null,
     `- Status: \`${resolveLaneStatus({ publish, workflowStatus })}\``,
     publish?.status === "published" ? `- Draft PR: [#${publish.pr_number}](${publish.pr_url})` : null,
+    publish?.status !== "published" ? `- Publish gate: authorize \`${gateId}\` on this issue to refresh the draft PR` : null,
     ledgerRevision ? `- Ledger revision: \`${ledgerRevision}\`` : null,
     runUrl ? `- Workflow run: ${runUrl}` : null,
     "",
-    "Reply in this work issue with maintainer amendments, constraints, or teaching notes and rerun the lane from the same work ledger.",
+    "Reply in this work issue with maintainer amendments, constraints, or teaching notes.",
+    "Trusted maintainer replies rerun the lane from the same work ledger.",
   ].filter(Boolean);
   return `${lines.join("\n").trim()}\n`;
 }

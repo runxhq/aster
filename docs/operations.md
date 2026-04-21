@@ -83,8 +83,9 @@ Thread teaching is the canonical human-teaching layer:
 - the work issue is the living ledger for one unit of work: the initial request,
   maintainer amendments, machine status comments, and issue-scoped teaching all
   belong in that same thread
-- trusted maintainer replies on a work issue retrigger `issue-triage` or
-  `skill-lab`; bots and untrusted stranger comments do not
+- trusted maintainer replies on a work issue retrigger the owning lane
+  (`issue-triage`, `skill-lab`, `fix-pr`, `docs-pr`, or `skill-upstream`);
+  bots and untrusted stranger comments do not
 - the live lane input is the issue-ledger packet, not only the original issue
   body, so amendments change both runtime context and replay fingerprints
 - issue and PR replay guards block duplicate reruns before public comments are
@@ -94,6 +95,9 @@ Thread teaching is the canonical human-teaching layer:
 - work-specific approval or teaching lives as a comment on the same work issue
 - docs PRs, fix PRs, skill-lab draft PR publication, and upstream skill
   publication still require explicit publish authorization in thread teaching
+- dedicated `[fix]`, `[docs]`, and `[upstream]` work issues now start their own
+  governed lanes directly instead of sending maintainers back to manual
+  workflow dispatch as the normal entry path
 - skill-lab opens draft PRs only after `skill-lab.publish` is authorized
 - skill-upstream opens draft PRs only, and upstream changes stay limited to
   portable `SKILL.md` unless a maintainer explicitly authorizes more
