@@ -56,11 +56,13 @@ test("buildLanePrBody includes lane guardrails and validation", () => {
     targetRepo: "nilstate/aster",
     taskId: "docs-pr-clarify-deploy-docs",
     verificationProfile: "aster.site-ci",
+    bootstrapCommands: ["npm --prefix site ci"],
     validationCommands: ["npm run site:ci"],
   });
 
   assert.match(body, /This draft PR was opened by the `aster` docs-pr lane/);
   assert.match(body, /verification profile: `aster\.site-ci`/);
+  assert.match(body, /`npm --prefix site ci`/);
   assert.match(body, /`npm run site:ci`/);
   assert.match(body, /Collaboration issue: `nilstate\/aster#222`/);
   assert.match(body, /Lane Guardrails/);

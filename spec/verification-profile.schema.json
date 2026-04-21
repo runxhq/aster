@@ -6,7 +6,7 @@
   "type": "object",
   "properties": {
     "version": {
-      "const": "runx.verification_profile_catalog.v1"
+      "const": "runx.verification_profile_catalog.v2"
     },
     "repo_defaults": {
       "type": "object",
@@ -43,6 +43,13 @@
           "type": "string",
           "minLength": 1
         },
+        "bootstrap_commands": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
         "commands": {
           "type": "array",
           "minItems": 1,
@@ -55,6 +62,7 @@
       "required": [
         "repo",
         "description",
+        "bootstrap_commands",
         "commands"
       ],
       "additionalProperties": false

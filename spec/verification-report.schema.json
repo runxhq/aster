@@ -26,6 +26,12 @@
         "skipped"
       ]
     },
+    "bootstrap_commands": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/commandResult"
+      }
+    },
     "commands": {
       "type": "array",
       "items": {
@@ -48,6 +54,7 @@
     "target_repo",
     "verification_profile",
     "status",
+    "bootstrap_commands",
     "commands"
   ],
   "additionalProperties": false,

@@ -84,6 +84,14 @@ test("buildVerificationReport emits the canonical verification report shape", ()
     targetRepo: "nilstate/aster",
     verificationProfile: "aster.site-ci",
     status: "pass",
+    bootstrapCommands: [
+      {
+        command: "npm --prefix site ci",
+        status: "pass",
+        exit_code: 0,
+        summary: "command completed successfully",
+      },
+    ],
     commands: [
       {
         command: "npm run site:ci",
@@ -97,5 +105,6 @@ test("buildVerificationReport emits the canonical verification report shape", ()
 
   assert.equal(report.report_id, "verification-101");
   assert.equal(report.status, "pass");
+  assert.equal(report.bootstrap_commands[0].command, "npm --prefix site ci");
   assert.equal(report.commands[0].command, "npm run site:ci");
 });

@@ -199,22 +199,35 @@ async function runWorker({ options, workerRequest, index, verificationCatalog })
       cwd: workDir,
     });
 
-    const verificationCommands = runVerificationCommands(verificationPlan.commands, { cwd: workDir });
+    const bootstrapCommands = runCommandPhase(verificationPlan.bootstrap_commands, { cwd: workDir });
+    const verificationCommands = bootstrapCommands.error
+      ? {
+          status: "skipped",
+          commands: [],
+          error: null,
+        }
+      : runCommandPhase(verificationPlan.commands, { cwd: workDir });
     const verificationReport = buildVerificationReport({
       reportId: `verification-${taskId}`,
       targetRepo,
       verificationProfile: verificationPlan.profile_id,
-      status: verificationCommands.status,
+      status: bootstrapCommands.error ? "fail" : verificationCommands.status,
+      bootstrapCommands: bootstrapCommands.commands,
       commands: verificationCommands.commands,
     });
     await writeFile(
       path.join(artifactDir, "verification-report.json"),
       `${JSON.stringify(verificationReport, null, 2)}\n`,
     );
+    if (bootstrapCommands.error) {
+      throw bootstrapCommands.error;
+    }
     if (verificationCommands.error) {
       throw verificationCommands.error;
     }
 
+    const bootstrapCommandList = verificationPlan.bootstrap_commands;
+    const validationCommands = verificationPlan.commands;
     const prBodyPath = path.join(artifactDir, "pr-body.md");
     await writeFile(
       prBodyPath,
@@ -224,6 +237,7 @@ async function runWorker({ options, workerRequest, index, verificationCatalog })
         targetRepo,
         taskId,
         workerNumber,
+        bootstrapCommands: bootstrapCommandList,
         validationCommands,
         verificationProfile: verificationPlan.profile_id,
       }),
@@ -276,6 +290,7 @@ async function runWorker({ options, workerRequest, index, verificationCatalog })
       task_id: taskId,
       status: "completed",
       verification_profile: verificationPlan.profile_id,
+      bootstrap_commands: bootstrapCommandList,
       validation_commands: validationCommands,
       publish,
     };
@@ -479,9 +494,13 @@ function buildPrBody({
   targetRepo,
   taskId,
   workerNumber,
+  bootstrapCommands,
   validationCommands,
   verificationProfile,
 }) {
+  const bootstrapSection = bootstrapCommands.length > 0
+    ? bootstrapCommands.map((command) => `- \`${command}\``).join("\n")
+    : "- no bootstrap command was declared";
   const validationSection = validationCommands.length > 0
     ? validationCommands.map((command) => `- \`${command}\``).join("\n")
     : "- no repo-specific validation command was declared";
@@ -499,6 +518,9 @@ This draft PR was opened by the \`aster\` issue triage lane.
 ## Validation
 
 - verification profile: \`${verificationProfile}\`
+### Bootstrap
+${bootstrapSection}
+### Proof
 ${validationSection}
 - scafld review completed before PR publication
 - receipts uploaded with this workflow run
@@ -671,23 +693,30 @@ export function buildVerificationReport({
   targetRepo,
   verificationProfile,
   status,
+  bootstrapCommands,
   commands,
   executedAt = new Date().toISOString(),
   receiptId,
 }) {
-  const normalizedStatus = normalizeVerificationStatus(status, commands);
+  const normalizedStatus = normalizeVerificationStatus(status, bootstrapCommands, commands);
   const report = {
     report_id: reportId,
     target_repo: targetRepo,
     verification_profile: verificationProfile,
     status: normalizedStatus,
+    bootstrap_commands: bootstrapCommands.map((command) => ({
+      command: command.command,
+      status: command.status,
+      exit_code: command.exit_code ?? null,
+      summary: command.summary,
+    })),
     commands: commands.map((command) => ({
       command: command.command,
       status: command.status,
       exit_code: command.exit_code ?? null,
       summary: command.summary,
     })),
-    summary: summarizeVerificationOutcome(normalizedStatus, commands),
+    summary: summarizeVerificationOutcome(normalizedStatus, bootstrapCommands, commands),
     executed_at: executedAt,
   };
   if (receiptId) {
@@ -698,7 +727,7 @@ export function buildVerificationReport({
   });
 }
 
-export function runVerificationCommands(commands, options = {}) {
+export function runCommandPhase(commands, options = {}) {
   const results = [];
   for (const command of commands) {
     try {
@@ -732,29 +761,38 @@ export function runVerificationCommands(commands, options = {}) {
   };
 }
 
-function normalizeVerificationStatus(status, commands) {
+function normalizeVerificationStatus(status, bootstrapCommands, commands) {
   if (status === "pending" || status === "pass" || status === "fail" || status === "skipped") {
     return status;
+  }
+  if (bootstrapCommands.some((command) => command.status === "fail")) {
+    return "fail";
   }
   if (commands.some((command) => command.status === "fail")) {
     return "fail";
   }
-  if (commands.length === 0) {
+  if (bootstrapCommands.length === 0 && commands.length === 0) {
     return "skipped";
   }
   return "pass";
 }
 
-function summarizeVerificationOutcome(status, commands) {
-  if (status === "skipped") {
-    return "No verification commands were declared.";
-  }
+function summarizeVerificationOutcome(status, bootstrapCommands, commands) {
+  const bootstrapPassed = bootstrapCommands.filter((command) => command.status === "pass").length;
+  const bootstrapFailed = bootstrapCommands.filter((command) => command.status === "fail").length;
   const passed = commands.filter((command) => command.status === "pass").length;
   const failed = commands.filter((command) => command.status === "fail").length;
-  if (status === "fail") {
-    return `${passed} verification command(s) passed; ${failed} failed.`;
+
+  if (status === "skipped" && bootstrapCommands.length === 0 && commands.length === 0) {
+    return "No bootstrap or verification commands were declared.";
   }
-  return `${passed} verification command(s) passed.`;
+  if (bootstrapFailed > 0) {
+    return `${bootstrapPassed} bootstrap command(s) passed; ${bootstrapFailed} failed. Verification commands were not executed.`;
+  }
+  if (status === "fail") {
+    return `${bootstrapPassed} bootstrap command(s) passed; ${passed} verification command(s) passed; ${failed} failed.`;
+  }
+  return `${bootstrapPassed} bootstrap command(s) passed; ${passed} verification command(s) passed.`;
 }
 
 function serializeCommandError(error) {

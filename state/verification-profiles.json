@@ -1,5 +1,5 @@
 {
-  "version": "runx.verification_profile_catalog.v1",
+  "version": "runx.verification_profile_catalog.v2",
   "repo_defaults": {
     "nilstate/aster": "aster.site-ci"
   },
@@ -7,6 +7,9 @@
     "aster.site-ci": {
       "repo": "nilstate/aster",
       "description": "Full repo contract checks for aster changes before draft PR publication.",
+      "bootstrap_commands": [
+        "npm --prefix site ci"
+      ],
       "commands": [
         "npm run site:ci"
       ]

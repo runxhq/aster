@@ -14,7 +14,7 @@ import {
 import { loadRunxControlSchemaSync } from "./runx-control-schemas.mjs";
 
 const catalog = validateVerificationProfileCatalog({
-  version: "runx.verification_profile_catalog.v1",
+  version: "runx.verification_profile_catalog.v2",
   repo_defaults: {
     "nilstate/aster": "aster.site-ci",
   },
@@ -22,6 +22,7 @@ const catalog = validateVerificationProfileCatalog({
     "aster.site-ci": {
       repo: "nilstate/aster",
       description: "Run the site CI checks.",
+      bootstrap_commands: ["npm --prefix site ci"],
       commands: ["npm run site:ci"],
     },
   },
@@ -107,6 +108,7 @@ test("resolveVerificationPlan maps legacy validation commands onto a declared pr
 
   assert.equal(resolved.profile_id, "aster.site-ci");
   assert.equal(resolved.compatibility_mode, "legacy_validation_command_mapping");
+  assert.deepEqual(resolved.bootstrap_commands, ["npm --prefix site ci"]);
   assert.deepEqual(resolved.commands, ["npm run site:ci"]);
 });
 

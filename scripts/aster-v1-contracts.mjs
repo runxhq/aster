@@ -56,9 +56,9 @@ export function validateVerificationProfileCatalog(value) {
     label: "verification profile catalog",
   });
   const version = firstString(value.version);
-  if (version !== "runx.verification_profile_catalog.v1") {
+  if (version !== "runx.verification_profile_catalog.v2") {
     throw new Error(
-      `verification profile catalog version must be 'runx.verification_profile_catalog.v1' (${CONTROL_SCHEMA_REFS.verification_profile_catalog}).`,
+      `verification profile catalog version must be 'runx.verification_profile_catalog.v2' (${CONTROL_SCHEMA_REFS.verification_profile_catalog}).`,
     );
   }
 
@@ -78,6 +78,10 @@ export function validateVerificationProfileCatalog(value) {
 
     const repo = requireString(record.repo, `profiles.${profileId}.repo`);
     const description = requireString(record.description, `profiles.${profileId}.description`);
+    const bootstrapCommands = normalizeStringArray(
+      record.bootstrap_commands,
+      `profiles.${profileId}.bootstrap_commands`,
+    );
     const commands = normalizeStringArray(record.commands, `profiles.${profileId}.commands`, {
       minLength: 1,
     });
@@ -85,6 +89,7 @@ export function validateVerificationProfileCatalog(value) {
     profiles[profileId] = {
       repo,
       description,
+      bootstrap_commands: bootstrapCommands,
       commands,
     };
   }
@@ -271,6 +276,7 @@ export function resolveVerificationPlan({ catalog, targetRepo, issueToPrRequest 
 
     return {
       profile_id: inferred[0],
+      bootstrap_commands: inferred[1].bootstrap_commands,
       commands: inferred[1].commands,
       compatibility_mode: "legacy_validation_command_mapping",
     };
@@ -295,6 +301,7 @@ export function resolveVerificationPlan({ catalog, targetRepo, issueToPrRequest 
 
   return {
     profile_id: profileId,
+    bootstrap_commands: profile.bootstrap_commands,
     commands: profile.commands,
     compatibility_mode: "canonical",
   };

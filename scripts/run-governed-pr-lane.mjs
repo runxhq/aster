@@ -17,8 +17,8 @@ import {
   normalizeTaskId,
   prepareWorkspace,
   resolveRunxSkillPath,
+  runCommandPhase,
   runRunxBridgeWithRetry,
-  runVerificationCommands,
   sanitizeIssueBody,
 } from "./run-issue-triage-workers.mjs";
 
@@ -162,18 +162,29 @@ export async function runGovernedPrLane(options) {
       cwd: workDir,
     });
 
-    const verificationCommands = runVerificationCommands(verificationPlan.commands, { cwd: workDir });
+    const bootstrapCommands = runCommandPhase(verificationPlan.bootstrap_commands, { cwd: workDir });
+    const verificationCommands = bootstrapCommands.error
+      ? {
+          status: "skipped",
+          commands: [],
+          error: null,
+        }
+      : runCommandPhase(verificationPlan.commands, { cwd: workDir });
     const verificationReport = buildVerificationReport({
       reportId: `verification-${taskId}`,
       targetRepo,
       verificationProfile: verificationPlan.profile_id,
-      status: verificationCommands.status,
+      status: bootstrapCommands.error ? "fail" : verificationCommands.status,
+      bootstrapCommands: bootstrapCommands.commands,
       commands: verificationCommands.commands,
     });
     await writeFile(
       path.join(artifactRoot, "verification-report.json"),
       `${JSON.stringify(verificationReport, null, 2)}\n`,
     );
+    if (bootstrapCommands.error) {
+      throw bootstrapCommands.error;
+    }
     if (verificationCommands.error) {
       throw verificationCommands.error;
     }
@@ -197,6 +208,7 @@ export async function runGovernedPrLane(options) {
       targetRepo,
       taskId,
       verificationProfile: verificationPlan.profile_id,
+      bootstrapCommands: verificationPlan.bootstrap_commands,
       validationCommands: verificationPlan.commands,
     });
     await writeFile(prBodyPath, prBody);
@@ -292,8 +304,12 @@ export function buildLanePrBody({
   targetRepo,
   taskId,
   verificationProfile,
+  bootstrapCommands,
   validationCommands,
 }) {
+  const bootstrapSection = bootstrapCommands.length > 0
+    ? bootstrapCommands.map((command) => `- \`${command}\``).join("\n")
+    : "- no bootstrap command was declared";
   const validationSection = validationCommands.map((command) => `- \`${command}\``).join("\n");
   const intent = lane === "docs-pr"
     ? "This draft PR was opened by the `aster` docs-pr lane to make one bounded explanation/docs improvement."
@@ -324,6 +340,9 @@ export function buildLanePrBody({
     "## Validation",
     "",
     `- verification profile: \`${verificationProfile}\``,
+    "### Bootstrap",
+    bootstrapSection,
+    "### Proof",
     validationSection,
     "- scafld review completed before PR publication",
     "- receipts uploaded with this workflow run",
