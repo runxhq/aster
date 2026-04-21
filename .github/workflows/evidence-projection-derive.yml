@@ -40,26 +40,36 @@ jobs:
 
       - name: Prepare rolling projection branch
         run: |
+          mkdir -p "$GITHUB_WORKSPACE/.artifacts/evidence-projection-derive"
+          git fetch --no-tags origin main
           if git ls-remote --exit-code --heads origin runx/evidence-projection-derive >/dev/null 2>&1; then
-            git fetch --no-tags origin main runx/evidence-projection-derive:refs/remotes/origin/runx/evidence-projection-derive
-            git checkout -B runx/evidence-projection-derive refs/remotes/origin/runx/evidence-projection-derive
-            git merge --no-edit origin/main
-          else
-            git fetch --no-tags origin main
-            git checkout -B runx/evidence-projection-derive origin/main
+            git fetch --no-tags origin runx/evidence-projection-derive:refs/remotes/origin/runx/evidence-projection-derive
+            if ! git show refs/remotes/origin/runx/evidence-projection-derive:state/evidence-projections.json > "$GITHUB_WORKSPACE/.artifacts/evidence-projection-derive/previous-state.json" 2>/dev/null; then
+              rm -f "$GITHUB_WORKSPACE/.artifacts/evidence-projection-derive/previous-state.json"
+            fi
           fi
+          git checkout -B runx/evidence-projection-derive origin/main
 
       - name: Derive evidence projections
         run: |
           mkdir -p .artifacts/evidence-projection-derive
-          node scripts/derive-evidence-projections.mjs \
-            --repo-root "$GITHUB_WORKSPACE" \
-            --repo "${{ github.repository }}" \
-            --output "$GITHUB_WORKSPACE/state/evidence-projections.json" \
-            --report-output "$GITHUB_WORKSPACE/.artifacts/evidence-projection-derive/report.json" \
+          ARGS=(
+            --repo-root "$GITHUB_WORKSPACE"
+            --repo "${{ github.repository }}"
+            --output "$GITHUB_WORKSPACE/state/evidence-projections.json"
+            --report-output "$GITHUB_WORKSPACE/.artifacts/evidence-projection-derive/report.json"
+            --latest-batch-output "$GITHUB_WORKSPACE/.artifacts/evidence-projection-derive/latest-batch-summary.json"
+            --latest-batch-markdown-output "$GITHUB_WORKSPACE/.artifacts/evidence-projection-derive/latest-batch-summary.md"
+            --workflow-run-id "${{ github.run_id }}"
+            --workflow-run-url "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
             --download-root "$GITHUB_WORKSPACE/.artifacts/evidence-projection-derive/downloads"
+          )
+          if [ -f "$GITHUB_WORKSPACE/.artifacts/evidence-projection-derive/previous-state.json" ]; then
+            ARGS+=(--state-input "$GITHUB_WORKSPACE/.artifacts/evidence-projection-derive/previous-state.json")
+          fi
+          node scripts/derive-evidence-projections.mjs "${ARGS[@]}"
           cp "$GITHUB_WORKSPACE/state/evidence-projections.json" "$GITHUB_WORKSPACE/.artifacts/evidence-projection-derive/state-evidence-projections.json"
-          jq -r '"Scanned " + (.scanned_artifacts | tostring) + " artifacts; processed " + (.state.stats.newly_processed_artifacts | tostring) + " new artifact bundles and applied " + (.state.stats.applied_summaries | tostring) + " promotion summaries."' "$GITHUB_WORKSPACE/.artifacts/evidence-projection-derive/report.json" >> "$GITHUB_STEP_SUMMARY"
+          cat "$GITHUB_WORKSPACE/.artifacts/evidence-projection-derive/latest-batch-summary.md" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Publish rolling draft PR when projections change
         run: |
@@ -72,12 +82,16 @@ jobs:
           - `history/`, `reflections/`, and target dossiers are rebuilt as compact derived projections
           - this surface intentionally updates one rolling review thread instead of opening one PR per triage event
           EOF
+          printf '\n\n' >> "$GITHUB_WORKSPACE/.artifacts/evidence-projection-derive/pr-body.md"
+          cat "$GITHUB_WORKSPACE/.artifacts/evidence-projection-derive/latest-batch-summary.md" >> "$GITHUB_WORKSPACE/.artifacts/evidence-projection-derive/pr-body.md"
           node scripts/publish-runx-pr.mjs \
             --repo "${{ github.repository }}" \
             --branch "runx/evidence-projection-derive" \
             --title "[runx] refresh evidence projections" \
             --commit-message "state(evidence): refresh evidence projections" \
             --body-file "$GITHUB_WORKSPACE/.artifacts/evidence-projection-derive/pr-body.md" \
+            --include-change-summary-in-body \
+            --force-with-lease \
             --lane evidence-projection-derive \
             > "$GITHUB_WORKSPACE/.artifacts/evidence-projection-derive/publish.json"
           cat "$GITHUB_WORKSPACE/.artifacts/evidence-projection-derive/publish.json" >> "$GITHUB_STEP_SUMMARY"

@@ -74,13 +74,20 @@ async function main() {
     throw new Error(`change surface policy blocked publication: ${changeSurfacePolicy.reasons.join(", ")}`);
   }
 
-  const prBody = ensureGeneratedPrPolicyBlock(readFileSync(options.bodyFile, "utf8"), {
+  let prBodyInput = readFileSync(options.bodyFile, "utf8");
+  if (options.includeChangeSummaryInBody) {
+    prBodyInput = appendChangeSummaryBlock(prBodyInput, changeSummary);
+  }
+
+  const prBody = ensureGeneratedPrPolicyBlock(prBodyInput, {
     lane: options.lane,
     changeSurfacePolicy,
   });
 
   run("git", ["commit", "-m", options.commitMessage]);
-  run("git", buildPushArgs(options.branch, remoteLease));
+  run("git", buildPushArgs(options.branch, remoteLease, {
+    forceWithLease: options.forceWithLease,
+  }));
 
   let pr = findExistingPr(options.repo, options.branch);
   if (!pr) {
@@ -99,7 +106,7 @@ async function main() {
       "--body",
       prBody,
     ]);
-      pr = findExistingPr(options.repo, options.branch);
+    pr = findExistingPr(options.repo, options.branch);
   } else {
     updatePullRequest(options.repo, pr.number, {
       title: options.title,
@@ -189,6 +196,14 @@ function parseArgs(argv) {
       options.ownerRepo = requireValue(argv, ++index, token);
       continue;
     }
+    if (token === "--force-with-lease") {
+      options.forceWithLease = true;
+      continue;
+    }
+    if (token === "--include-change-summary-in-body") {
+      options.includeChangeSummaryInBody = true;
+      continue;
+    }
     if (token === "--close-existing-if-noop") {
       options.closeExistingIfNoop = true;
       continue;
@@ -235,7 +250,10 @@ export function ensureRemoteLease(branch, runner = run) {
   return remoteTip;
 }
 
-export function buildPushArgs(branch, remoteLease) {
+export function buildPushArgs(branch, remoteLease, options = {}) {
+  if (options.forceWithLease) {
+    return ["push", "--force-with-lease", "-u", "origin", branch];
+  }
   return ["push", "-u", "origin", branch];
 }
 
@@ -336,6 +354,28 @@ function findExistingPr(repo, branch) {
     ]),
   );
   return listing[0];
+}
+
+function appendChangeSummaryBlock(body, changeSummary) {
+  const trimmed = String(body ?? "").trim();
+  const existingRemoved = trimmed.replace(/## Latest Commit Change Set\n[\s\S]*?(?=\n## |\s*$)/, "").trim();
+  const lines = [
+    "## Latest Commit Change Set",
+    "",
+    `- Files touched: \`${Number(changeSummary?.file_count ?? 0)}\``,
+    `- Additions: \`${Number(changeSummary?.additions ?? 0)}\``,
+    `- Deletions: \`${Number(changeSummary?.deletions ?? 0)}\``,
+  ];
+
+  const files = Array.isArray(changeSummary?.files) ? changeSummary.files : [];
+  if (files.length > 0) {
+    lines.push("", "### Files", "");
+    for (const file of files) {
+      lines.push(`- \`${file}\``);
+    }
+  }
+
+  return [existingRemoved, lines.join("\n")].filter(Boolean).join("\n\n").trim();
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {

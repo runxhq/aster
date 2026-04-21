@@ -15,7 +15,7 @@ test("ensureRemoteLease fetches the remote automation branch before pushing", ()
   const runner = (command, args) => {
     calls.push([command, args]);
     if (args[0] === "ls-remote") {
-      return "abc123\trefs/heads/runx/operator-memory-issue-triage-pr-8\n";
+      return "abc123\trefs/heads/runx/issue-8-nilstate-aster-01\n";
     }
     if (args[0] === "fetch") {
       return "";
@@ -23,18 +23,18 @@ test("ensureRemoteLease fetches the remote automation branch before pushing", ()
     throw new Error(`unexpected command: ${command} ${args.join(" ")}`);
   };
 
-  const lease = ensureRemoteLease("runx/operator-memory-issue-triage-pr-8", runner);
+  const lease = ensureRemoteLease("runx/issue-8-nilstate-aster-01", runner);
 
   assert.equal(lease, "abc123");
   assert.deepEqual(calls, [
-    ["git", ["ls-remote", "--heads", "origin", "runx/operator-memory-issue-triage-pr-8"]],
+    ["git", ["ls-remote", "--heads", "origin", "runx/issue-8-nilstate-aster-01"]],
     [
       "git",
       [
         "fetch",
         "--no-tags",
         "origin",
-        "runx/operator-memory-issue-triage-pr-8:refs/remotes/origin/runx/operator-memory-issue-triage-pr-8",
+        "runx/issue-8-nilstate-aster-01:refs/remotes/origin/runx/issue-8-nilstate-aster-01",
       ],
     ],
   ]);
@@ -88,6 +88,16 @@ test("buildPushArgs uses the same non-destructive push shape for new branches", 
     "-u",
     "origin",
     "runx/generated-docs-pr",
+  ]);
+});
+
+test("buildPushArgs can force-push a derived rolling branch with lease protection", () => {
+  assert.deepEqual(buildPushArgs("runx/evidence-projection-derive", "abc123", { forceWithLease: true }), [
+    "push",
+    "--force-with-lease",
+    "-u",
+    "origin",
+    "runx/evidence-projection-derive",
   ]);
 });
 

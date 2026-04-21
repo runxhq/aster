@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import {
   buildVerificationReport,
   buildInlineRepoSnapshot,
+  findExistingGeneratedIssuePr,
   isRetryableBridgeFailure,
   normalizeTaskId,
   sanitizeIssueBody,
@@ -107,4 +108,55 @@ test("buildVerificationReport emits the canonical verification report shape", ()
   assert.equal(report.status, "pass");
   assert.equal(report.bootstrap_commands[0].command, "npm --prefix site ci");
   assert.equal(report.commands[0].command, "npm run site:ci");
+});
+
+test("findExistingGeneratedIssuePr reuses the most recent open generated PR for the same issue", () => {
+  const result = findExistingGeneratedIssuePr({
+    repo: "nilstate/aster",
+    issueNumber: "12",
+    runner(command, args) {
+      assert.equal(command, "gh");
+      assert.deepEqual(args, [
+        "pr",
+        "list",
+        "--repo",
+        "nilstate/aster",
+        "--state",
+        "open",
+        "--limit",
+        "100",
+        "--json",
+        "number,title,url,headRefName,isDraft,updatedAt",
+      ]);
+      return JSON.stringify([
+        {
+          number: 40,
+          title: "[runx] resolve issue #9 (01)",
+          url: "https://github.com/nilstate/aster/pull/40",
+          headRefName: "runx/issue-9-nilstate-aster-01",
+          isDraft: true,
+          updatedAt: "2026-04-21T04:00:00Z",
+        },
+        {
+          number: 41,
+          title: "[runx] resolve issue #12 (01)",
+          url: "https://github.com/nilstate/aster/pull/41",
+          headRefName: "runx/issue-12-nilstate-aster-01",
+          isDraft: true,
+          updatedAt: "2026-04-21T04:01:00Z",
+        },
+        {
+          number: 42,
+          title: "[runx] resolve issue #12 (02)",
+          url: "https://github.com/nilstate/aster/pull/42",
+          headRefName: "runx/issue-12-nilstate-aster-02",
+          isDraft: true,
+          updatedAt: "2026-04-21T04:05:00Z",
+        },
+      ]);
+    },
+  });
+
+  assert.equal(result?.number, 42);
+  assert.equal(result?.url, "https://github.com/nilstate/aster/pull/42");
 });

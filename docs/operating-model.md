@@ -128,7 +128,9 @@ That progression should be gradual:
   uploaded workflow artifacts rather than mutating repo-owned memory directly
 - `evidence-projection-derive` rebuilds repo-owned `history/`, `reflections/`,
   target dossier outcomes, and `state/evidence-projections.json` from those
-  artifacts and keeps that work on one rolling draft PR
+  artifacts, suppresses repeated retries onto one latest projection per bounded
+  objective, and keeps that work on one rolling draft PR with a current
+  latest-batch summary
 - generated derived-state refresh PRs are review surfaces and are not fed back
   into PR-mode `issue-triage`
 - `fix-pr` turns one bounded bugfix request into a verified draft PR through

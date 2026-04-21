@@ -144,7 +144,7 @@ That means:
 - `aster` is the backstage cognition and preparation layer
 - Kam is the public accountable identity on GitHub
 - public threads should not be asked to parse internal operator theater
-- internal nouns like `lane`, `receipt`, `operator memory`, and `workflow` are not part of the intended outward voice
+- internal nouns like `lane`, `receipt`, `evidence projection`, and `workflow` are not part of the intended outward voice
 
 The standard for a public GitHub action is not "can the system produce a
 comment?" It is "would a maintainer rather hear this from Kam than from a
@@ -294,7 +294,7 @@ Use:
 
 This is enough to prove the loop and keep the system inspectable.
 
-### Layer 1: Git-native operator memory
+### Layer 1: Git-native evidence projections
 
 Add:
 

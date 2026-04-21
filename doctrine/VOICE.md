@@ -35,7 +35,7 @@ Public GitHub writing should not be:
 - theatrical
 - support-desk flavored
 - process-heavy
-- padded with internal nouns like `lane`, `receipt`, `workflow`, or `operator memory`
+- padded with internal nouns like `lane`, `receipt`, `workflow`, or `evidence projection`
 
 ## Preferred Shape
 

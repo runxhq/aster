@@ -23,7 +23,7 @@ export function inferGeneratedPrLane({ headRefName, title, body }) {
   }
   const branch = String(headRefName ?? "").trim().toLowerCase();
   const normalizedTitle = String(title ?? "").trim().toLowerCase();
-  if (branch.startsWith("runx/operator-memory-issue-triage-") || normalizedTitle.includes("issue-triage operator memory")) {
+  if (branch.startsWith("runx/issue-") || normalizedTitle.startsWith("[runx] resolve issue #")) {
     return "issue-triage";
   }
   if (branch.startsWith("runx/evidence-projection-derive") || normalizedTitle.includes("evidence projections")) {

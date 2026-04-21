@@ -323,8 +323,9 @@ export function scoreOpportunity({
   if (!lane_allowed) {
     veto_reasons.push("lane_not_allowed_by_target");
   }
-  if (String(opportunity.head_ref_name ?? "").startsWith("runx/operator-memory-")) {
-    veto_reasons.push("subject_is_operator_memory_pr");
+  const headRefName = String(opportunity.head_ref_name ?? "");
+  if (headRefName.startsWith("runx/issue-") || headRefName.startsWith("runx/evidence-projection-derive")) {
+    veto_reasons.push("subject_is_generated_review_surface");
   }
   if (opportunity.lane === "issue-triage") {
     const publicCommentPolicy = evaluatePublicCommentOpportunity({

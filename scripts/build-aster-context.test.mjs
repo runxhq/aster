@@ -28,6 +28,7 @@ test("buildContextBundle loads doctrine, state, and target dossier", async () =>
   });
 
   assert.equal(bundle.lane, "issue-triage");
+  assert.equal(bundle.objective_fingerprint, null);
   assert.equal(bundle.subject.kind, "github_issue");
   assert.ok(bundle.state.control);
   assert.equal(bundle.state.target?.title, "Target Dossier — nilstate/aster");
@@ -116,6 +117,7 @@ test("buildContextBundle and prompt carry thread teaching context", async () => 
     });
 
     assert.equal(bundle.thread_teaching_context?.records[0]?.source_type, "issue_comment");
+    assert.equal(bundle.objective_fingerprint, "issue:runx-42");
     assert.equal(bundle.thread_teaching_context?.records[0]?.recorded_by, "kam");
     assert.deepEqual(bundle.thread_teaching_context?.records[0]?.invariants, [
       "Do not open a PR until triage explicitly approves build.",
@@ -135,6 +137,7 @@ test("buildContextBundle and prompt carry thread teaching context", async () => 
     assert.match(prompt, /Stay inside the bounded issue-to-plan surface/);
     assert.match(prompt, /issue-triage\.plan/);
     assert.match(prompt, /## Active Thread Teaching/);
+    assert.match(prompt, /objective_fingerprint: `issue:runx-42`/);
     assert.match(prompt, /Do not open a PR until triage explicitly approves build/);
   } finally {
     await rm(tempDir, { recursive: true, force: true });

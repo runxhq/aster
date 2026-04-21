@@ -83,6 +83,7 @@ export async function buildContextBundle(options = {}) {
   return {
     generated_at: new Date().toISOString(),
     lane: options.lane ?? "unknown",
+    objective_fingerprint: firstString(options.objectiveFingerprint) || null,
     subject: {
       kind: options.subjectKind ?? "repository",
       locator: options.subjectLocator ?? targetRepo,
@@ -140,6 +141,9 @@ export function renderContextPrompt(bundle) {
   }
   if (bundle.subject.pr_number) {
     lines.push(`- pr_number: \`${bundle.subject.pr_number}\``);
+  }
+  if (bundle.objective_fingerprint) {
+    lines.push(`- objective_fingerprint: \`${bundle.objective_fingerprint}\``);
   }
 
   lines.push(

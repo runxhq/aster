@@ -31,13 +31,20 @@ This lane has two entry modes:
 
 ## `evidence-projection-derive`
 
-This lane is the replacement for per-event operator-memory publication.
+This lane is the only repo-owned evidence projection lane.
 
 It downloads uploaded workflow artifacts from `issue-triage` and `skill-lab`,
-replays their promotion packets back into repo-owned `history/`,
-`reflections/`, and target dossiers, records the processed artifact ids in
-`state/evidence-projections.json`, and updates one rolling draft PR instead of
+rebuilds repo-owned `history/`, `reflections/`, and target dossiers from those
+canonical artifacts, records the processed artifact ids and projection groups
+in `state/evidence-projections.json`, dedupes repeated retries onto one latest
+projection per bounded objective, and updates one rolling draft PR instead of
 spawning one PR per event.
+
+The rolling branch is reset from `main` on every derive run, then rebuilt from
+artifact evidence and force-pushed as a derived review surface. The PR body and
+uploaded artifact bundle carry a latest-batch summary so reviewers can inspect
+the current derive pass without treating the whole open diff as one opaque
+change.
 
 ## `collaboration-record`
 

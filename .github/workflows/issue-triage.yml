@@ -296,10 +296,19 @@ jobs:
             --issue-title "$ISSUE_TITLE" \
             --issue-body "$ISSUE_BODY" \
             --issue-url "${{ steps.issue.outputs.url }}" \
+            --objective-fingerprint "$(jq -r '.fingerprint // empty' "$GITHUB_WORKSPACE/.artifacts/issue-triage/issue/replay-guard.json")" \
             --scafld-bin "$HOME/.local/bin/scafld" \
             --artifact-root "$GITHUB_WORKSPACE/.artifacts/issue-triage/issue/workers" \
             --work-root "$GITHUB_WORKSPACE/.artifacts/issue-triage/issue/workspaces" \
             --output "$GITHUB_WORKSPACE/.artifacts/issue-triage/issue/worker-run-summary.json"
+          if [ "$(jq '[.workers[]? | select(.status == "reused" and .publish.status == "reused")] | length' "$GITHUB_WORKSPACE/.artifacts/issue-triage/issue/worker-run-summary.json")" -gt 0 ]; then
+            printf '\n\n' >> "$GITHUB_WORKSPACE/.artifacts/issue-triage/issue/triage-comment.md"
+            {
+              echo "A matching draft PR is already open, so this run reused it instead of opening another one."
+              echo ""
+              jq -r '.workers[]? | select(.status == "reused" and .publish.status == "reused") | "- existing draft PR: " + .publish.pr_url' "$GITHUB_WORKSPACE/.artifacts/issue-triage/issue/worker-run-summary.json"
+            } >> "$GITHUB_WORKSPACE/.artifacts/issue-triage/issue/triage-comment.md"
+          fi
 
       - name: Evaluate issue comment quality
         if: ${{ steps.preflight.outputs.enabled == 'true' && steps.issue_mode.outputs.mode == 'triage' && steps.target_scope.outputs.allowed == 'true' && steps.issue_replay_guard.outputs.status == 'run' }}

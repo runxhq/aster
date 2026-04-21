@@ -45,7 +45,7 @@
     "blocked_head_ref_prefixes": [
       "renovate/",
       "dependabot/",
-      "runx/operator-memory-",
+      "runx/issue-",
       "runx/evidence-projection-derive"
     ],
     "blocked_exact_labels": [

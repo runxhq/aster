@@ -59,7 +59,7 @@ This means:
   Kam's accountable voice
 - internal branding like `Aster triage` is not part of the intended public
   surface
-- internal nouns like `lane`, `receipt`, `operator memory`, and `workflow`
+- internal nouns like `lane`, `receipt`, `evidence projection`, and `workflow`
   should stay out of ordinary GitHub conversation
 - if an outbound action does not feel good as a permanent statement from Kam,
   the workflow should choose `no_op`
@@ -78,29 +78,33 @@ Minimal disclosure is allowed only when it is materially useful, for example:
 Thread teaching is the canonical human-teaching layer:
 
 - `issue-triage` comments first; `objective-decompose` may run when thread
-  memory authorizes planning, and repo-scoped `issue-to-pr` workers start only
-  when thread memory authorizes bounded build work
+  teaching authorizes planning, and repo-scoped `issue-to-pr` workers start only
+  when thread teaching authorizes bounded build work
 - issue and PR replay guards block duplicate reruns before public comments are
   regenerated or reposted
 - public comment quality must clear the Kam-voice bar before posting
 - issue triage writes comments only through the dedicated workflow
 - docs PRs, fix PRs, and upstream skill publication require a collaboration
-  issue with explicit publish authorization in thread memory
+  issue with explicit publish authorization in thread teaching
 - `collaboration-record` is the dedicated approval-record workflow: it validates
   canonical collaboration issues, records ops evidence, and queues
   `thread-teaching-derive` instead of entering objective triage
 - collaboration issues that already contain a canonical thread-teaching record
   are treated as approval evidence, not as fresh objective-triage work; malformed
-  collaboration issues are held for repair instead of spawning memory PRs
+  collaboration issues are held for repair instead of spawning derived-state PRs
 - skill-lab opens draft PRs only
 - skill-upstream opens draft PRs only, and upstream changes stay limited to
   portable `SKILL.md` unless a maintainer explicitly authorizes more
 - generated PR policy enforcement keeps `runx/*` PRs draft-only and explicitly
   human-reviewed
-- `evidence-projection-derive` is now the only repo-memory projection surface:
+- `evidence-projection-derive` is now the only repo-owned evidence projection surface:
   it rebuilds `history/`, `reflections/`, target dossier outcomes, and
-  `state/evidence-projections.json` from uploaded workflow artifacts and updates
+  `state/evidence-projections.json` from uploaded workflow artifacts, suppresses
+  repeated retries onto one latest projection per bounded objective, and updates
   one rolling draft PR instead of opening one PR per triage event
+- the rolling projection branch is reset from `main` and rebuilt on every derive
+  run; the PR body and derive artifact bundle carry a latest-batch summary so
+  reviewers can inspect the current pass directly
 - merge-watch is read-only against upstream repos. It records PR state, checks,
   merge commit, and upstream blob metadata, then emits an internal
   registry-binding request after merge

@@ -48,6 +48,7 @@ export function buildPromotionDrafts({ lane, contextBundle, runResult, now = new
     summary: signal.summary,
     feed_channel: feedChannelForLane(lane, runResult?.status ?? "unknown"),
     main_feed_eligible: isMainFeedEligible(lane, runResult?.status ?? "unknown"),
+    objective_fingerprint: firstString(contextBundle?.objective_fingerprint) || null,
     subject: contextBundle?.subject ?? {},
     thread_teaching_context: contextBundle?.thread_teaching_context ?? null,
     gate_decisions: Array.isArray(contextBundle?.gate_decisions) ? contextBundle.gate_decisions : [],
@@ -128,6 +129,9 @@ function buildReflectionDraft({ date, lane, contextBundle, packet }) {
   if (packet.receipt_id) {
     lines.push(`receipt_id: ${packet.receipt_id}`);
   }
+  if (packet.objective_fingerprint) {
+    lines.push(`objective_fingerprint: ${packet.objective_fingerprint}`);
+  }
   if (subject.kind) {
     lines.push(`subject_kind: ${subject.kind}`);
   }
@@ -150,6 +154,9 @@ function buildReflectionDraft({ date, lane, contextBundle, packet }) {
   lines.push(`- Status: \`${packet.status}\``);
   if (packet.receipt_id) {
     lines.push(`- Receipt: \`${packet.receipt_id}\``);
+  }
+  if (packet.objective_fingerprint) {
+    lines.push(`- Objective Fingerprint: \`${packet.objective_fingerprint}\``);
   }
 
   appendThreadTeachingLines(lines, packet);
@@ -203,6 +210,9 @@ function buildHistoryDraft({ date, lane, contextBundle, packet }) {
   if (packet.receipt_id) {
     lines.push(`receipt_id: ${packet.receipt_id}`);
   }
+  if (packet.objective_fingerprint) {
+    lines.push(`objective_fingerprint: ${packet.objective_fingerprint}`);
+  }
   lines.push(
     "---",
     "",
@@ -214,6 +224,9 @@ function buildHistoryDraft({ date, lane, contextBundle, packet }) {
   );
   if (packet.receipt_id) {
     lines.push("", `Receipt reference: \`${packet.receipt_id}\`.`);
+  }
+  if (packet.objective_fingerprint) {
+    lines.push("", `Objective fingerprint: \`${packet.objective_fingerprint}\`.`);
   }
   appendThreadTeachingLines(lines, packet);
   lines.push("");

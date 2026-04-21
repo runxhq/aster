@@ -104,6 +104,32 @@ async function runWorker({ options, workerRequest, index, verificationCatalog })
   );
   const issueTitle = firstString(issueToPrRequest.issue_title) ?? options.issueTitle;
   const issueBody = sanitizeIssueBody(firstString(issueToPrRequest.issue_body) ?? options.issueBody);
+  const existingPr = findExistingGeneratedIssuePr({
+    repo: targetRepo,
+    issueNumber: options.issueNumber,
+  });
+  if (existingPr) {
+    return {
+      worker: workerRequest.worker,
+      target_repo: targetRepo,
+      branch: firstString(existingPr.headRefName) || branchName,
+      task_id: taskId,
+      status: "reused",
+      reuse_reason: "existing_generated_pr",
+      verification_profile: verificationPlan.profile_id,
+      bootstrap_commands: verificationPlan.bootstrap_commands,
+      validation_commands: verificationPlan.commands,
+      publish: {
+        status: "reused",
+        pr_number: existingPr.number,
+        pr_url: existingPr.url,
+        branch: firstString(existingPr.headRefName) || branchName,
+        title: firstString(existingPr.title) || null,
+        is_draft: existingPr.isDraft === true,
+        updated_at: firstString(existingPr.updatedAt) || null,
+      },
+    };
+  }
   const artifactDir = path.resolve(options.artifactRoot, workerKey);
   const workDir = path.resolve(options.workRoot, workerKey);
 
@@ -148,6 +174,8 @@ async function runWorker({ options, workerRequest, index, verificationCatalog })
       options.issueNumber,
       "--issue-url",
       options.issueUrl,
+      "--objective-fingerprint",
+      options.objectiveFingerprint,
       "--snapshot",
       repoSnapshotPath,
       "--receipt-dir",
@@ -315,6 +343,40 @@ export async function prepareWorkspace({ targetRepo, defaultRepo, workDir }) {
   return async () => {
     await rm(workDir, { recursive: true, force: true });
   };
+}
+
+export function findExistingGeneratedIssuePr({ repo, issueNumber, runner = run }) {
+  const issueToken = String(issueNumber ?? "").trim();
+  if (!repo || !issueToken) {
+    return null;
+  }
+
+  const listing = JSON.parse(
+    runner("gh", [
+      "pr",
+      "list",
+      "--repo",
+      repo,
+      "--state",
+      "open",
+      "--limit",
+      "100",
+      "--json",
+      "number,title,url,headRefName,isDraft,updatedAt",
+    ]),
+  );
+
+  return listing
+    .filter((entry) => {
+      const headRefName = firstString(entry?.headRefName);
+      const title = firstString(entry?.title);
+      return headRefName.startsWith(`runx/issue-${issueToken}-`)
+        || new RegExp(`^\\[runx\\] resolve issue #${issueToken}(?:\\s|\\(|$)`).test(title);
+    })
+    .sort((left, right) =>
+      Date.parse(firstString(right?.updatedAt) || "")
+      - Date.parse(firstString(left?.updatedAt) || "")
+    )[0] ?? null;
 }
 
 export function buildRepoSnapshot(workDir, targetRepo) {
@@ -572,6 +634,10 @@ function parseArgs(argv) {
       options.issueUrl = requireValue(argv, ++index, token);
       continue;
     }
+    if (token === "--objective-fingerprint") {
+      options.objectiveFingerprint = requireValue(argv, ++index, token);
+      continue;
+    }
     if (token === "--artifact-root") {
       options.artifactRoot = requireValue(argv, ++index, token);
       continue;
@@ -591,7 +657,7 @@ function parseArgs(argv) {
     throw new Error(`Unknown argument: ${token}`);
   }
 
-  for (const required of ["decision", "runxRoot", "defaultRepo", "issueNumber", "issueTitle", "issueBody", "issueUrl", "scafldBin"]) {
+  for (const required of ["decision", "runxRoot", "defaultRepo", "issueNumber", "issueTitle", "issueBody", "issueUrl", "scafldBin", "objectiveFingerprint"]) {
     if (!options[required]) {
       throw new Error(`--${required.replace(/[A-Z]/g, (value) => `-${value.toLowerCase()}`)} is required.`);
     }

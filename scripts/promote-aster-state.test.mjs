@@ -28,6 +28,7 @@ test("buildPromotionDrafts creates reflection and history drafts", () => {
     lane: "issue-triage",
     now: new Date("2026-04-16T00:00:00Z"),
     contextBundle: {
+      objective_fingerprint: "issue:aster-101",
       subject: {
         locator: "nilstate/aster#issue/101",
       },
@@ -72,8 +73,10 @@ test("buildPromotionDrafts creates reflection and history drafts", () => {
   assert.match(drafts.reflection.content, /Prefer a draft PR over a direct mutation/);
   assert.match(drafts.reflection.content, /gate\.alpha/);
   assert.match(drafts.history.content, /receipt_id: rcpt_123/);
+  assert.match(drafts.history.content, /objective_fingerprint: issue:aster-101/);
   assert.match(drafts.history.content, /README command drift/);
   assert.equal(drafts.packet.thread_teaching_context?.records[0]?.recorded_by, "kam");
   assert.equal(drafts.packet.gate_decisions[0]?.gate_id, "gate.alpha");
   assert.equal(drafts.packet.receipt_id, "rcpt_123");
+  assert.equal(drafts.packet.objective_fingerprint, "issue:aster-101");
 });

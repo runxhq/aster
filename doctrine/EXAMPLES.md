@@ -92,7 +92,7 @@ Situation:
 Bad shape:
 
 - sprawling diff
-- internal language about lanes, workflows, or operator memory
+- internal language about lanes, workflows, or evidence projections
 - body explains machinery more than user value
 - unclear reason why the repo should accept the change
 
