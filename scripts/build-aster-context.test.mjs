@@ -244,3 +244,77 @@ test("renderContextPrompt surfaces authority and dispatch state from control rec
   assert.match(prompt, /latest dispatch status: `dispatched`/);
   assert.match(prompt, /selected target dispatches: `1`/);
 });
+
+test("renderContextPrompt strips machine status comment bodies from issue-ledger snapshots", () => {
+  const prompt = renderContextPrompt({
+    generated_at: "2026-04-21T00:00:00Z",
+    lane: "skill-lab",
+    subject: {
+      kind: "github_issue",
+      locator: "nilstate/aster#issue/110",
+      repo: "nilstate/aster",
+      target_repo: "nilstate/aster",
+      issue_number: "110",
+      pr_number: null,
+      issue_url: "https://github.com/nilstate/aster/issues/110",
+    },
+    doctrine: [],
+    state: {
+      control: null,
+      priorities: null,
+      capabilities: null,
+      target: null,
+      target_summary: null,
+    },
+    history: [],
+    reflections: [],
+    artifact_signals: [],
+    snapshot: {
+      kind: "runx.aster-issue-ledger.v2",
+      generated_at: "2026-04-21T00:00:00Z",
+      repo: "nilstate/aster",
+      issue: {
+        number: 110,
+        title: "[skill] Collaboration subject distillation",
+      },
+      comments: [
+        {
+          id: 1,
+          body: "Hard-cut the contract to subject_locator, subject_memory, and publication_target.",
+          is_machine_status_comment: false,
+        },
+      ],
+      machine_status_comments: [
+        {
+          id: 2,
+          body: "Opened draft PR for this run: https://github.com/nilstate/aster/pull/111",
+          created_at: "2026-04-21T07:25:06Z",
+          url: "https://github.com/nilstate/aster/issues/110#issuecomment-2",
+          is_machine_status_comment: true,
+        },
+      ],
+      trusted_human_comments: [],
+      amendments: [],
+      comment_summary: {
+        total_count: 2,
+        substantive_count: 1,
+        machine_status_count: 1,
+        latest_machine_status_comment_at: "2026-04-21T07:25:06Z",
+        latest_machine_status_comment_url: "https://github.com/nilstate/aster/issues/110#issuecomment-2",
+      },
+      amendment_summary: {
+        trusted_human_comment_count: 0,
+        included_count: 0,
+        omitted_count: 0,
+        latest_trusted_human_comment_at: null,
+        latest_trusted_human_comment_url: null,
+      },
+      ledger_revision: "deadbeefcafebabe",
+      ledger_body: "# Issue Ledger",
+    },
+  });
+
+  assert.match(prompt, /machine_status_count\": 1/);
+  assert.doesNotMatch(prompt, /Opened draft PR for this run/);
+  assert.match(prompt, /Hard-cut the contract to subject_locator, subject_memory, and publication_target/);
+});

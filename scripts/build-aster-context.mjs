@@ -240,10 +240,53 @@ export function renderContextPrompt(bundle) {
   }
 
   if (bundle.snapshot) {
-    lines.push("", "## Supplied Snapshot", "", trimForPrompt(JSON.stringify(bundle.snapshot, null, 2), 2400));
+    lines.push("", "## Supplied Snapshot", "", trimForPrompt(JSON.stringify(buildPromptSafeSnapshot(bundle.snapshot), null, 2), 2400));
   }
 
   return lines.join("\n").trim();
+}
+
+function buildPromptSafeSnapshot(snapshot) {
+  if (!snapshot || typeof snapshot !== "object") {
+    return snapshot;
+  }
+  if (!isIssueLedgerSnapshot(snapshot)) {
+    return snapshot;
+  }
+
+  const substantiveComments = Array.isArray(snapshot.comments)
+    ? snapshot.comments.filter((comment) => comment?.is_machine_status_comment !== true)
+    : [];
+  const machineStatusComments = Array.isArray(snapshot.machine_status_comments)
+    ? snapshot.machine_status_comments
+    : [];
+
+  return {
+    kind: snapshot.kind,
+    generated_at: snapshot.generated_at ?? null,
+    repo: snapshot.repo ?? null,
+    issue: snapshot.issue ?? null,
+    comments: substantiveComments,
+    trusted_human_comments: Array.isArray(snapshot.trusted_human_comments) ? snapshot.trusted_human_comments : [],
+    amendments: Array.isArray(snapshot.amendments) ? snapshot.amendments : [],
+    comment_summary: {
+      total_count: Number(snapshot.comment_summary?.total_count ?? (substantiveComments.length + machineStatusComments.length)),
+      substantive_count: substantiveComments.length,
+      machine_status_count: machineStatusComments.length,
+      latest_machine_status_comment_at: firstString(
+        snapshot.comment_summary?.latest_machine_status_comment_at,
+        machineStatusComments.at(-1)?.updated_at,
+        machineStatusComments.at(-1)?.created_at,
+      ) ?? null,
+      latest_machine_status_comment_url: firstString(
+        snapshot.comment_summary?.latest_machine_status_comment_url,
+        machineStatusComments.at(-1)?.url,
+      ) ?? null,
+    },
+    amendment_summary: snapshot.amendment_summary ?? null,
+    ledger_revision: snapshot.ledger_revision ?? null,
+    ledger_body: snapshot.ledger_body ?? null,
+  };
 }
 
 function parseArgs(argv) {
@@ -366,6 +409,10 @@ function buildThreadTeachingContext(suppliedContext = null, criteria = {}) {
     records,
     gate_authorizations: buildGateAuthorizations(records),
   };
+}
+
+function isIssueLedgerSnapshot(snapshot) {
+  return typeof snapshot?.kind === "string" && snapshot.kind.startsWith("runx.aster-issue-ledger.");
 }
 
 function buildDerivedThreadTeaching({ threadTeachingState, targetRepo, criteria }) {

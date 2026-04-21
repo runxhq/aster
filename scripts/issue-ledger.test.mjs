@@ -54,6 +54,11 @@ test("buildIssueLedgerPacket renders a living issue ledger from trusted human co
     ],
   });
 
+  assert.equal(packet.kind, "runx.aster-issue-ledger.v2");
+  assert.equal(packet.comments.length, 3);
+  assert.equal(packet.machine_status_comments.length, 0);
+  assert.equal(packet.comment_summary.total_count, 3);
+  assert.equal(packet.comment_summary.substantive_count, 3);
   assert.equal(packet.trusted_human_comments.length, 2);
   assert.equal(packet.amendments.length, 2);
   assert.match(packet.ledger_body, /Original Request/);
@@ -129,7 +134,11 @@ test("buildIssueLedgerPacket excludes machine status comments from trusted amend
     ],
   });
 
-  assert.equal(packet.comments.length, 2);
+  assert.equal(packet.comments.length, 1);
+  assert.equal(packet.machine_status_comments.length, 1);
+  assert.equal(packet.comment_summary.total_count, 2);
+  assert.equal(packet.comment_summary.substantive_count, 1);
+  assert.equal(packet.comment_summary.machine_status_count, 1);
   assert.equal(packet.trusted_human_comments.length, 1);
   assert.equal(packet.amendments.length, 1);
   assert.match(packet.ledger_body, /Hard-cut the contract/);

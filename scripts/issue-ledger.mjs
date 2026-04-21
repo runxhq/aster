@@ -35,7 +35,9 @@ export async function main(argv = process.argv.slice(2)) {
 export function buildIssueLedgerPacket({ repo, issue, comments = [], maxAmendments = DEFAULT_MAX_AMENDMENTS }) {
   const normalizedIssue = normalizeIssue(issue);
   const normalizedComments = comments.map(normalizeIssueComment).filter(Boolean);
-  const trustedHumanComments = normalizedComments.filter(
+  const substantiveComments = normalizedComments.filter((comment) => comment.is_machine_status_comment !== true);
+  const machineStatusComments = normalizedComments.filter((comment) => comment.is_machine_status_comment === true);
+  const trustedHumanComments = substantiveComments.filter(
     (comment) => isTrustedHumanComment(comment) && comment.is_machine_status_comment !== true,
   );
   const amendmentLimit = Math.max(1, Number(maxAmendments ?? DEFAULT_MAX_AMENDMENTS));
@@ -47,11 +49,22 @@ export function buildIssueLedgerPacket({ repo, issue, comments = [], maxAmendmen
   });
 
   return {
-    kind: "runx.aster-issue-ledger.v1",
+    kind: "runx.aster-issue-ledger.v2",
     generated_at: new Date().toISOString(),
     repo,
     issue: normalizedIssue,
-    comments: normalizedComments,
+    comments: substantiveComments,
+    machine_status_comments: machineStatusComments,
+    comment_summary: {
+      total_count: normalizedComments.length,
+      substantive_count: substantiveComments.length,
+      machine_status_count: machineStatusComments.length,
+      latest_machine_status_comment_at: firstNonEmpty(
+        machineStatusComments.at(-1)?.updated_at,
+        machineStatusComments.at(-1)?.created_at,
+      ) ?? null,
+      latest_machine_status_comment_url: machineStatusComments.at(-1)?.url ?? null,
+    },
     trusted_human_comments: trustedHumanComments,
     amendments,
     amendment_summary: {
