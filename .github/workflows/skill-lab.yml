@@ -32,10 +32,10 @@ jobs:
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ secrets.ASTER_GH_TOKEN != '' && secrets.ASTER_GH_TOKEN || github.token }}
-      RUNX_CALLER_MODEL: ${{ vars.RUNX_CALLER_MODEL || 'gpt-5.4' }}
-      RUNX_CALLER_REASONING_EFFORT: ${{ vars.RUNX_CALLER_REASONING_EFFORT || 'xhigh' }}
-      RUNX_CALLER_MAX_ATTEMPTS: ${{ vars.RUNX_CALLER_MAX_ATTEMPTS || '3' }}
-      RUNX_CALLER_REQUEST_TIMEOUT_MS: ${{ vars.RUNX_CALLER_REQUEST_TIMEOUT_MS || '300000' }}
+      RUNX_CALLER_MODEL: ${{ vars.RUNX_CALLER_SKILL_LAB_MODEL || vars.RUNX_CALLER_MODEL || 'gpt-5.4' }}
+      RUNX_CALLER_REASONING_EFFORT: ${{ vars.RUNX_CALLER_SKILL_LAB_REASONING_EFFORT || vars.RUNX_CALLER_REASONING_EFFORT || 'high' }}
+      RUNX_CALLER_MAX_ATTEMPTS: ${{ vars.RUNX_CALLER_SKILL_LAB_MAX_ATTEMPTS || vars.RUNX_CALLER_MAX_ATTEMPTS || '3' }}
+      RUNX_CALLER_REQUEST_TIMEOUT_MS: ${{ vars.RUNX_CALLER_SKILL_LAB_REQUEST_TIMEOUT_MS || vars.RUNX_CALLER_REQUEST_TIMEOUT_MS || '900000' }}
     steps:
       - name: Check lane prerequisites
         id: preflight
@@ -119,13 +119,27 @@ jobs:
           echo "EOF" >> "$GITHUB_OUTPUT"
           echo "url=$(jq -r '.url' .artifacts/skill-lab/issue.json)" >> "$GITHUB_OUTPUT"
 
+      - name: Prepare skill-lab request
+        if: ${{ steps.preflight.outputs.enabled == 'true' }}
+        id: request
+        run: |
+          node scripts/prepare-skill-lab-input.mjs \
+            --input ".artifacts/skill-lab/issue.json" \
+            --output ".artifacts/skill-lab/request.json"
+          echo "objective<<EOF" >> "$GITHUB_OUTPUT"
+          jq -r '.objective' .artifacts/skill-lab/request.json >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+          echo "project_context<<EOF" >> "$GITHUB_OUTPUT"
+          jq -r '.project_context // ""' .artifacts/skill-lab/request.json >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
       - name: Run objective-to-skill
         if: ${{ steps.preflight.outputs.enabled == 'true' }}
         timeout-minutes: 30
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          ISSUE_TITLE: ${{ steps.issue.outputs.title }}
-          ISSUE_BODY: ${{ steps.issue.outputs.body }}
+          ISSUE_OBJECTIVE: ${{ steps.request.outputs.objective }}
+          ISSUE_CONTEXT: ${{ steps.request.outputs.project_context }}
         run: |
           node scripts/aster-core.mjs \
             --lane skill-lab \
@@ -142,16 +156,17 @@ jobs:
             --output "$GITHUB_WORKSPACE/.artifacts/skill-lab/result.json" \
             -- \
             skill "$GITHUB_WORKSPACE/.runx/runx/skills/objective-to-skill" \
-            --objective "$ISSUE_TITLE" \
-            --project_context "$ISSUE_BODY"
+            --objective "$ISSUE_OBJECTIVE" \
+            --project_context "$ISSUE_CONTEXT"
 
       - name: Materialize proposal
         if: ${{ steps.preflight.outputs.enabled == 'true' }}
         run: |
           node scripts/write-skill-proposal.mjs \
             --input ".artifacts/skill-lab/result.json" \
-            --title "${{ github.event.issue.title }}" \
-            --issue-url "${{ github.event.issue.html_url }}"
+            --title "${{ steps.request.outputs.objective }}" \
+            --issue-url "${{ steps.issue.outputs.url }}" \
+            --issue-packet ".artifacts/skill-lab/request.json"
 
       - name: Validate repo after skill proposal
         if: ${{ steps.preflight.outputs.enabled == 'true' }}
@@ -177,8 +192,7 @@ jobs:
 
           ## Validation
 
-          - \`npm run check\`
-          - \`npm run docs:build\`
+          - \`npm run docs:ci\`
           - receipts uploaded with this workflow run
           EOF
 

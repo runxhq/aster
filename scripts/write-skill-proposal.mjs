@@ -1,33 +1,83 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
-const options = parseArgs(process.argv.slice(2));
-const report = JSON.parse(await readFile(options.input, "utf8"));
-const payload = JSON.parse(report.execution.stdout);
-const skillName = payload.skill_spec?.name ?? slugify(options.title);
-const slug = slugify(skillName);
-const outputDir = path.resolve(options.outputDir ?? "docs/skill-proposals");
-const markdownPath = path.join(outputDir, `${slug}.md`);
-const jsonPath = path.join(outputDir, `${slug}.json`);
+async function main(argv = process.argv.slice(2)) {
+  const options = parseArgs(argv);
+  const result = await materializeSkillProposal(options);
+  process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+}
 
-await mkdir(outputDir, { recursive: true });
-await writeFile(jsonPath, `${JSON.stringify(payload, null, 2)}\n`);
-await writeFile(
-  markdownPath,
-  `${[
+export async function materializeSkillProposal(options) {
+  const report = JSON.parse(await readFile(options.input, "utf8"));
+  const payload = JSON.parse(report.execution.stdout);
+  const issuePacket = options.issuePacket
+    ? JSON.parse(await readFile(path.resolve(options.issuePacket), "utf8"))
+    : null;
+  const skillName = payload.skill_spec?.name ?? slugify(options.title);
+  const slug = slugify(skillName);
+  const outputDir = path.resolve(options.outputDir ?? "docs/skill-proposals");
+  const markdownPath = path.join(outputDir, `${slug}.md`);
+  const jsonPath = path.join(outputDir, `${slug}.json`);
+
+  await mkdir(outputDir, { recursive: true });
+  await writeFile(jsonPath, `${JSON.stringify(payload, null, 2)}\n`);
+  await writeFile(
+    markdownPath,
+    `${buildSkillProposalMarkdown({
+      payload,
+      title: options.title,
+      issueUrl: issuePacket?.source_issue?.url ?? options.issueUrl,
+      issuePacket,
+      jsonPath,
+    })}\n`,
+  );
+
+  return {
+    status: "written",
+    markdown_path: markdownPath,
+    json_path: jsonPath,
+  };
+}
+
+export function buildSkillProposalMarkdown({ payload, title, issueUrl, issuePacket, jsonPath }) {
+  const proposalTitle = payload.skill_spec?.name ?? title;
+  const proposalDescription = payload.skill_spec?.description ?? "Generated skill proposal.";
+  const acceptanceChecks =
+    Array.isArray(payload.acceptance_checks) && payload.acceptance_checks.length > 0
+      ? payload.acceptance_checks.map((item) => `- ${item}`)
+      : ["- none supplied"];
+
+  const sourceSections = issuePacket?.sections ?? {};
+  const lines = [
     "---",
-    `title: ${payload.skill_spec?.name ?? options.title}`,
-    `description: ${payload.skill_spec?.description ?? "Generated skill proposal."}`,
+    `title: ${yamlString(proposalTitle)}`,
+    `description: ${yamlString(proposalDescription)}`,
     "---",
     "",
-    `# ${payload.skill_spec?.name ?? options.title}`,
+    `# ${proposalTitle}`,
     "",
-    `Source issue: ${options.issueUrl}`,
+    `Source issue: ${issueUrl ?? "n/a"}`,
     "",
     "## Objective",
     "",
-    options.title,
+    title,
     "",
+  ];
+
+  if (sourceSections.why_it_matters) {
+    lines.push("## Why It Matters", "", sourceSections.why_it_matters, "");
+  }
+  if (sourceSections.constraints) {
+    lines.push("## Constraints", "", sourceSections.constraints, "");
+  }
+  if (sourceSections.evidence) {
+    lines.push("## Evidence", "", sourceSections.evidence, "");
+  }
+  if (sourceSections.additional_notes) {
+    lines.push("## Additional Notes", "", sourceSections.additional_notes, "");
+  }
+
+  lines.push(
     "## Skill Contract",
     "",
     `- name: \`${payload.skill_spec?.name ?? "unknown"}\``,
@@ -47,26 +97,16 @@ await writeFile(
     "",
     "## Acceptance Checks",
     "",
-    ...((payload.acceptance_checks ?? []).map((item) => `- ${item}`)),
+    ...acceptanceChecks,
     "",
     "## Raw Packet",
     "",
     `See [${path.basename(jsonPath)}](./${path.basename(jsonPath)}).`,
     "",
-  ].join("\n")}\n`,
-);
+  );
 
-process.stdout.write(
-  `${JSON.stringify(
-    {
-      status: "written",
-      markdown_path: markdownPath,
-      json_path: jsonPath,
-    },
-    null,
-    2,
-  )}\n`,
-);
+  return lines.join("\n");
+}
 
 function parseArgs(argv) {
   const options = {};
@@ -82,6 +122,10 @@ function parseArgs(argv) {
     }
     if (token === "--issue-url") {
       options.issueUrl = requireValue(argv, ++index, token);
+      continue;
+    }
+    if (token === "--issue-packet") {
+      options.issuePacket = requireValue(argv, ++index, token);
       continue;
     }
     if (token === "--output-dir") {
@@ -109,4 +153,12 @@ function slugify(value) {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
+}
+
+function yamlString(value) {
+  return JSON.stringify(String(value));
+}
+
+if (process.argv[1] && import.meta.url === new URL(`file://${process.argv[1]}`).href) {
+  await main();
 }
