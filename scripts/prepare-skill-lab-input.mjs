@@ -17,11 +17,23 @@ async function main(argv = process.argv.slice(2)) {
 export function prepareSkillLabInput(issue = {}) {
   const sourceIssue = issue?.issue && typeof issue.issue === "object" ? issue.issue : issue;
   const sourceRepo = normalizeString(issue?.repo) ?? null;
-  const amendments = Array.isArray(issue?.amendments)
+  const rawAmendments = Array.isArray(issue?.amendments)
     ? issue.amendments
     : Array.isArray(issue?.trusted_human_comments)
       ? issue.trusted_human_comments
       : [];
+  const amendments = rawAmendments
+    .filter((amendment) => amendment?.is_machine_status_comment !== true)
+    .map((amendment) => ({
+      author: normalizeString(amendment.author) ?? null,
+      url: normalizeString(amendment.url) ?? null,
+      body: normalizeString(amendment.body) ?? null,
+      recorded_at: firstNonEmpty(amendment.updated_at, amendment.created_at),
+      thread_teaching_record:
+        amendment?.thread_teaching_record && typeof amendment.thread_teaching_record === "object"
+          ? amendment.thread_teaching_record
+          : null,
+    }));
   const rawTitle = normalizeString(sourceIssue.title) ?? "Untitled skill proposal";
   const rawBody = normalizeString(sourceIssue.body) ?? "";
   const sectionExtraction = extractNamedSections(rawBody);
@@ -66,13 +78,11 @@ export function prepareSkillLabInput(issue = {}) {
       constraints,
       evidence,
       additional_notes: notes,
+      maintainer_amendments: amendments.length > 0
+        ? formatAmendments(amendments, { latestFirst: true })
+        : null,
     },
-    amendments: amendments.map((amendment) => ({
-      author: normalizeString(amendment.author) ?? null,
-      url: normalizeString(amendment.url) ?? null,
-      body: normalizeString(amendment.body) ?? null,
-      recorded_at: firstNonEmpty(amendment.updated_at, amendment.created_at),
-    })),
+    amendments,
   };
 }
 
@@ -207,12 +217,13 @@ function formatBulletList(items) {
     .join("\n");
 }
 
-function formatAmendments(amendments) {
-  return amendments
+function formatAmendments(amendments, options = {}) {
+  const ordered = options.latestFirst ? [...amendments].reverse() : amendments;
+  return ordered
     .map((amendment) => {
       const header = [
         normalizeString(amendment.author) ?? "unknown",
-        firstNonEmpty(amendment.updated_at, amendment.created_at),
+        amendment.recorded_at,
         normalizeString(amendment.url),
       ].filter(Boolean).join(" | ");
       const summary = amendment.thread_teaching_record

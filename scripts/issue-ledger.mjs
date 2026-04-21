@@ -6,6 +6,14 @@ import path from "node:path";
 import { parseThreadTeachingRecordBody, TRUSTED_ASSOCIATIONS } from "./thread-teaching.mjs";
 
 const DEFAULT_MAX_AMENDMENTS = 12;
+const MACHINE_STATUS_MARKERS = [
+  "<!-- aster:runx-skill-lab -->",
+  "<!-- aster:runx-issue-triage -->",
+  "<!-- aster:runx-work-lane:",
+];
+const MACHINE_STATUS_PATTERNS = [
+  /^Opened draft PR for this run:\s+https:\/\/github\.com\//i,
+];
 
 export async function main(argv = process.argv.slice(2)) {
   const options = parseArgs(argv);
@@ -27,7 +35,9 @@ export async function main(argv = process.argv.slice(2)) {
 export function buildIssueLedgerPacket({ repo, issue, comments = [], maxAmendments = DEFAULT_MAX_AMENDMENTS }) {
   const normalizedIssue = normalizeIssue(issue);
   const normalizedComments = comments.map(normalizeIssueComment).filter(Boolean);
-  const trustedHumanComments = normalizedComments.filter(isTrustedHumanComment);
+  const trustedHumanComments = normalizedComments.filter(
+    (comment) => isTrustedHumanComment(comment) && comment.is_machine_status_comment !== true,
+  );
   const amendmentLimit = Math.max(1, Number(maxAmendments ?? DEFAULT_MAX_AMENDMENTS));
   const amendments = trustedHumanComments.slice(-amendmentLimit);
   const omittedCount = Math.max(0, trustedHumanComments.length - amendments.length);
@@ -134,6 +144,17 @@ export function isTrustedHumanComment(comment) {
   return TRUSTED_ASSOCIATIONS.has(String(comment.author_association ?? "").toUpperCase());
 }
 
+export function isMachineStatusComment(comment) {
+  const body = String(comment?.body ?? "").trim();
+  if (body.length === 0) {
+    return false;
+  }
+  if (MACHINE_STATUS_MARKERS.some((marker) => body.includes(marker))) {
+    return true;
+  }
+  return MACHINE_STATUS_PATTERNS.some((pattern) => pattern.test(body));
+}
+
 function renderAmendmentBody(comment) {
   if (comment.thread_teaching_record) {
     const decisions = (comment.thread_teaching_record.decisions ?? [])
@@ -177,6 +198,7 @@ function normalizeIssueComment(comment) {
     created_at: firstNonEmpty(comment.created_at, comment.createdAt) ?? null,
     updated_at: firstNonEmpty(comment.updated_at, comment.updatedAt) ?? null,
     is_bot: isBotAuthor(comment),
+    is_machine_status_comment: isMachineStatusComment(comment),
     is_thread_teaching_record: Boolean(parsedThreadTeachingRecord),
     thread_teaching_record: parsedThreadTeachingRecord,
   };

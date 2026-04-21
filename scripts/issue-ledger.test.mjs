@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import {
   buildIssueLedgerPacket,
   computeIssueLedgerRevision,
+  isMachineStatusComment,
   isTrustedHumanComment,
 } from "./issue-ledger.mjs";
 
@@ -97,6 +98,60 @@ test("isTrustedHumanComment rejects bots and untrusted associations", () => {
     isTrustedHumanComment({
       author_association: "OWNER",
       is_bot: true,
+    }),
+    false,
+  );
+});
+
+test("buildIssueLedgerPacket excludes machine status comments from trusted amendments", () => {
+  const packet = buildIssueLedgerPacket({
+    repo: "nilstate/aster",
+    issue: {
+      number: 110,
+      title: "[skill] Add a collaboration issue distillation skill",
+      body: "Objective: Add a skill.",
+    },
+    comments: [
+      {
+        id: 1,
+        body: "Opened draft PR for this run: https://github.com/nilstate/aster/pull/111",
+        created_at: "2026-04-21T07:25:06Z",
+        user: { login: "kam", type: "User" },
+        author_association: "OWNER",
+      },
+      {
+        id: 2,
+        body: "Hard-cut the contract to subject_locator, subject_memory, and publication_target.",
+        created_at: "2026-04-21T12:24:06Z",
+        user: { login: "kam", type: "User" },
+        author_association: "OWNER",
+      },
+    ],
+  });
+
+  assert.equal(packet.comments.length, 2);
+  assert.equal(packet.trusted_human_comments.length, 1);
+  assert.equal(packet.amendments.length, 1);
+  assert.match(packet.ledger_body, /Hard-cut the contract/);
+  assert.doesNotMatch(packet.ledger_body, /Opened draft PR for this run/);
+});
+
+test("isMachineStatusComment detects machine-authored issue status surfaces", () => {
+  assert.equal(
+    isMachineStatusComment({
+      body: "<!-- aster:runx-skill-lab -->\n## runx skill lab",
+    }),
+    true,
+  );
+  assert.equal(
+    isMachineStatusComment({
+      body: "Opened draft PR for this run: https://github.com/nilstate/aster/pull/111",
+    }),
+    true,
+  );
+  assert.equal(
+    isMachineStatusComment({
+      body: "Hard-cut the contract to subject_locator, subject_memory, and publication_target.",
     }),
     false,
   );

@@ -46,8 +46,12 @@ export function buildSkillProposalMarkdown({ payload, title, issueUrl, issuePack
     ?? payload.skill_spec?.summary
     ?? "Generated skill proposal.";
   const acceptanceChecks = formatAcceptanceChecks(payload.acceptance_checks);
+  const effectiveObjective =
+    firstNonEmptyString(payload.skill_spec?.objective, payload.skill_spec?.summary, title)
+    ?? "Generated skill proposal objective not supplied.";
 
   const sourceSections = issuePacket?.sections ?? {};
+  const maintainerAmendments = Array.isArray(issuePacket?.amendments) ? issuePacket.amendments : [];
   const workIssueRepo = firstNonEmptyString(issuePacket?.source_issue?.repo);
   const workIssueNumber = normalizeWorkIssueNumber(issuePacket?.source_issue?.number);
   const workIssueRef = workIssueRepo && workIssueNumber
@@ -70,11 +74,32 @@ export function buildSkillProposalMarkdown({ payload, title, issueUrl, issuePack
     "- Maintainer amendments stay on the same work issue thread.",
     "- Draft PR refresh requires `skill-lab.publish` authorization on the same work issue.",
     "",
+  ];
+
+  if (maintainerAmendments.length > 0) {
+    lines.push(
+      "## Maintainer Amendments",
+      "",
+      "Later maintainer amendments on the living ledger take precedence over stale original wording when they conflict.",
+      "",
+      ...formatMaintainerAmendments(maintainerAmendments),
+      "",
+    );
+  }
+
+  lines.push(
     "## Objective",
     "",
-    title,
+    effectiveObjective,
     "",
-  ];
+  );
+
+  if (
+    sourceSections.objective &&
+    normalizeComparableText(sourceSections.objective) !== normalizeComparableText(effectiveObjective)
+  ) {
+    lines.push("## Original Request", "", sourceSections.objective, "");
+  }
 
   if (sourceSections.why_it_matters) {
     lines.push("## Why It Matters", "", sourceSections.why_it_matters, "");
@@ -194,6 +219,50 @@ function formatAcceptanceChecks(value) {
   });
 }
 
+function formatMaintainerAmendments(amendments) {
+  return [...amendments]
+    .reverse()
+    .flatMap((amendment, index) => {
+      const header = [
+        `### Amendment ${index + 1}`,
+        "",
+        amendment.recorded_at ? `- recorded_at: ${amendment.recorded_at}` : null,
+        amendment.author ? `- author: ${amendment.author}` : null,
+        amendment.url ? `- url: ${amendment.url}` : null,
+        amendment.thread_teaching_record
+          ? `- structured_teaching: ${amendment.thread_teaching_record.kind} — ${amendment.thread_teaching_record.summary}`
+          : null,
+        "",
+      ].filter(Boolean);
+      const body = amendment.thread_teaching_record
+        ? formatThreadTeachingRecord(amendment.thread_teaching_record)
+        : firstNonEmptyString(amendment.body);
+      return body ? [...header, body, ""] : header;
+    });
+}
+
+function formatThreadTeachingRecord(record) {
+  const lines = [];
+  const appliesTo = Array.isArray(record?.applies_to) ? record.applies_to.filter(Boolean) : [];
+  const decisions = Array.isArray(record?.decisions) ? record.decisions : [];
+  if (appliesTo.length > 0) {
+    lines.push(`Applies to: ${appliesTo.join(", ")}`);
+  }
+  if (decisions.length > 0) {
+    lines.push("Decisions:");
+    for (const decision of decisions) {
+      if (!decision || typeof decision !== "object") {
+        continue;
+      }
+      const gateId = firstNonEmptyString(decision.gate_id) ?? "unknown";
+      const outcome = firstNonEmptyString(decision.decision) ?? "unknown";
+      const reason = firstNonEmptyString(decision.reason);
+      lines.push(`- ${gateId} = ${outcome}${reason ? ` | ${reason}` : ""}`);
+    }
+  }
+  return lines.join("\n");
+}
+
 function firstNonEmptyString(...values) {
   for (const value of values) {
     if (typeof value === "string" && value.trim().length > 0) {
@@ -201,6 +270,13 @@ function firstNonEmptyString(...values) {
     }
   }
   return null;
+}
+
+function normalizeComparableText(value) {
+  return String(value ?? "")
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function normalizeWorkIssueNumber(value) {

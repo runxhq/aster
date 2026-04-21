@@ -99,3 +99,40 @@ test("prepareSkillLabInput includes issue-ledger amendments in project context",
   assert.match(prepared.project_context, /Keep the first pass proposal-only/);
   assert.match(prepared.project_context, /structured teaching: approval/);
 });
+
+test("prepareSkillLabInput filters machine status comments and preserves teaching records", () => {
+  const prepared = prepareSkillLabInput({
+    issue: {
+      number: 110,
+      title: "[skill] Add a collaboration issue distillation skill",
+      body: "Objective: Distill a collaboration subject",
+    },
+    amendments: [
+      {
+        author: "kam",
+        created_at: "2026-04-21T07:25:06Z",
+        body: "Opened draft PR for this run: https://github.com/nilstate/aster/pull/111",
+        is_machine_status_comment: true,
+      },
+      {
+        author: "kam",
+        created_at: "2026-04-21T12:24:06Z",
+        body: "Hard-cut the contract to subject_locator, subject_memory, and publication_target.",
+      },
+      {
+        author: "kam",
+        created_at: "2026-04-21T12:30:59Z",
+        thread_teaching_record: {
+          kind: "publish_authorization",
+          summary: "Refresh the single rolling draft PR from the same work ledger.",
+        },
+      },
+    ],
+  });
+
+  assert.equal(prepared.amendments.length, 2);
+  assert.equal(prepared.amendments[0]?.body, "Hard-cut the contract to subject_locator, subject_memory, and publication_target.");
+  assert.equal(prepared.amendments[1]?.thread_teaching_record?.kind, "publish_authorization");
+  assert.doesNotMatch(prepared.project_context, /Opened draft PR for this run/);
+  assert.match(prepared.sections.maintainer_amendments ?? "", /publish_authorization/);
+});
