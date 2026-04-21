@@ -33,10 +33,6 @@ const liveTargets = trackedTargets.filter((entry: ControlTarget) => entry.state 
 const queueSize = priorities.filter((entry: ControlPriority) => entry.status === "selected" || entry.status === "dispatched").length;
 const selectedTarget = latestCycle?.dispatch?.target_repo ?? latestCycle?.authority?.target_repo ?? "No target selected";
 const isDemoSurface = activity.mode !== "live" || String(latestCycle?.cycle_id ?? "").startsWith("demo-");
-const liveProofCount = activity.mainFeed.filter((item) => !item.isDemo).length;
-const demoProofCount = activity.mainFeed.filter((item) => item.isDemo).length;
-const liveOpsCount = activity.opsFeed.filter((item) => !item.isDemo).length;
-const demoOpsCount = activity.opsFeed.filter((item) => item.isDemo).length;
 const topPriorities = priorities.slice(0, 3);
 const topTargets = model.targets.slice(0, 4);
 ---
@@ -57,9 +53,9 @@ const topTargets = model.targets.slice(0, 4);
               {model.thesis?.excerpt ?? "A public operator built on runx, optimized for bounded work that strangers are glad exists."}
             </p>
             <p class="hero-support">
-              Aster’s job is to make the runx thesis legible in the world: doctrine first,
-              proof before narrative, and one bounded public action at a time. This surface
-              shows the constitution, the current queue, and the receipts-backed feed.
+              Aster is runx, in public. This surface keeps public proof separate from
+              ops/status so you can tell the difference between public-value work and
+              control-plane exhaust. If proof is quiet, it should say that plainly.
             </p>
             <div class="action-row">
               <a class="action-link action-link--primary" href="/activity/">Open proof feed</a>
@@ -92,14 +88,14 @@ const topTargets = model.targets.slice(0, 4);
             <span class="metric-detail">{priorities.length} persisted priority objects in the learned layer</span>
           </article>
           <article class="metric-card">
-            <span class="metric-label">latest cycle</span>
-            <strong class="metric-value">{latestCycle?.status ?? "none"}</strong>
-            <span class="metric-detail">{latestCycle?.reason ?? "No cycle has been persisted yet."}</span>
+            <span class="metric-label">proof lane</span>
+            <strong class="metric-value">{activity.proofLaneState}</strong>
+            <span class="metric-detail">{activity.proofLaneSummary}</span>
           </article>
           <article class="metric-card">
-            <span class="metric-label">feed mode</span>
-            <strong class="metric-value">{activity.mode}</strong>
-            <span class="metric-detail">{liveProofCount + liveOpsCount} live rows · {demoProofCount + demoOpsCount} demo rows</span>
+            <span class="metric-label">ops lane</span>
+            <strong class="metric-value">{activity.opsLaneState}</strong>
+            <span class="metric-detail">{activity.opsLaneSummary}</span>
           </article>
         </div>
       </div>
@@ -135,13 +131,13 @@ const topTargets = model.targets.slice(0, 4);
           <div class="signal-list">
             <div class="signal-row">
               <span>public proof</span>
-              <strong>{latestProof?.title ?? "No proof rows yet"}</strong>
-              <p>{latestProof?.summary ?? latestHistory?.excerpt ?? "The thesis feed is waiting for its first externally legible proof."}</p>
+              <strong>{latestProof?.title ?? "Proof lane is quiet"}</strong>
+              <p>{latestProof?.summary ?? activity.proofLaneSummary}</p>
             </div>
             <div class="signal-row">
               <span>ops/status</span>
-              <strong>{latestOps?.title ?? "No ops rows yet"}</strong>
-              <p>{latestOps?.summary ?? "Operational exhaust stays here instead of polluting the main proof wall."}</p>
+              <strong>{latestOps?.title ?? "Ops lane is quiet"}</strong>
+              <p>{latestOps?.summary ?? activity.opsLaneSummary}</p>
             </div>
           </div>
         </div>
@@ -156,14 +152,20 @@ const topTargets = model.targets.slice(0, 4);
           <div>
             <p class="panel-title">▐ public proof feed</p>
             <p class="panel-lede">
-              Thesis-relevant public artifacts only. If this goes quiet for too long, aster has stopped making the runx thesis legible.
+              Public proof only. If this lane is quiet, aster has no public proof to show yet.
             </p>
           </div>
         </div>
+        {activity.liveProofCount === 0 ? (
+          <div class="status-strip" style="margin-bottom: var(--space-4);">
+            <span class="status-pill">proof quiet</span>
+            <p class="section-lede">{activity.proofLaneSummary}</p>
+          </div>
+        ) : null}
         <FeedList
           items={activity.mainFeed.slice(0, 4)}
           emptyTitle="No proof items yet"
-          emptyDetail="Seeded or live proof rows land here when aster makes externally legible progress."
+          emptyDetail="This lane stays empty until aster has public proof worth showing."
         />
       </div>
     </article>
@@ -174,7 +176,7 @@ const topTargets = model.targets.slice(0, 4);
           <div>
             <p class="panel-title">▐ ops / status feed</p>
             <p class="panel-lede">
-              Selector cycles, site builds, and proving-ground exhaust stay here where they can be inspected without pretending to be public impact.
+              Selector cycles, site builds, and proving-ground exhaust stay here without pretending to be public proof.
             </p>
           </div>
         </div>

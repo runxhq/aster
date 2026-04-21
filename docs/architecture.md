@@ -65,6 +65,8 @@ The rule is simple:
 - `runx` may host the machine
 - `aster` owns the mind
 
+In plain language: runx may host the machine and aster owns the mind.
+
 ## Topology
 
 The current full shape is:

@@ -15,12 +15,25 @@ export async function readActivityModel({ limit = 48 } = {}) {
     }
   }
 
+  const liveProofCount = mainFeed.filter((item) => !item.isDemo).length;
+  const demoProofCount = mainFeed.filter((item) => item.isDemo).length;
+  const liveOpsCount = opsFeed.filter((item) => !item.isDemo).length;
+  const demoOpsCount = opsFeed.filter((item) => item.isDemo).length;
+
   return {
     fetchedAt: new Date().toISOString(),
     mainFeed,
     opsFeed,
-    liveCount: [...mainFeed, ...opsFeed].filter((item) => !item.isDemo).length,
-    demoCount: [...mainFeed, ...opsFeed].filter((item) => item.isDemo).length,
+    liveProofCount,
+    demoProofCount,
+    liveOpsCount,
+    demoOpsCount,
+    liveCount: liveProofCount + liveOpsCount,
+    demoCount: demoProofCount + demoOpsCount,
+    proofLaneState: liveProofCount > 0 ? "live" : "quiet",
+    opsLaneState: liveOpsCount > 0 ? "active" : "quiet",
+    proofLaneSummary: buildProofLaneSummary({ liveProofCount, demoProofCount }),
+    opsLaneSummary: buildOpsLaneSummary({ liveOpsCount, demoOpsCount }),
     mode:
       [...mainFeed, ...opsFeed].length === 0
         ? "empty"
@@ -30,6 +43,26 @@ export async function readActivityModel({ limit = 48 } = {}) {
             ? "mixed"
             : "live",
   };
+}
+
+function buildProofLaneSummary({ liveProofCount, demoProofCount }) {
+  if (liveProofCount > 0) {
+    return `${formatCount(liveProofCount, "live proof row")} visible${demoProofCount > 0 ? ` · ${formatCount(demoProofCount, "demo row")} still flagged separately` : ""}.`;
+  }
+  if (demoProofCount > 0) {
+    return `No live public proof is visible. ${formatCount(demoProofCount, "demo starter row")} remain flagged separately.`;
+  }
+  return "No live public proof is visible.";
+}
+
+function buildOpsLaneSummary({ liveOpsCount, demoOpsCount }) {
+  if (liveOpsCount > 0) {
+    return `${formatCount(liveOpsCount, "live ops row")} visible${demoOpsCount > 0 ? ` · ${formatCount(demoOpsCount, "demo row")} still flagged separately` : ""}.`;
+  }
+  if (demoOpsCount > 0) {
+    return `No live ops/status rows are visible. ${formatCount(demoOpsCount, "demo starter row")} remain flagged separately.`;
+  }
+  return "No live ops/status rows are visible.";
 }
 
 async function readAsterFeed(limit) {
@@ -168,4 +201,8 @@ function formatTimestamp(value) {
     timeZone: "UTC",
     timeZoneName: "short",
   }).format(new Date(timestamp));
+}
+
+function formatCount(value, label) {
+  return `${value} ${label}${value === 1 ? "" : "s"}`;
 }
