@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-21T06:22:32.730Z",
+  "generated_at": "2026-04-21T06:28:54.389Z",
   "source": {
     "type": "github_actions_artifacts",
     "repo": "nilstate/aster",
@@ -10,95 +10,14 @@
     "artifact_limit": 200
   },
   "stats": {
-    "tracked_artifacts": 79,
+    "tracked_artifacts": 76,
     "newly_processed_artifacts": 0,
     "applied_summaries": 0,
     "suppressed_summaries": 0,
-    "skipped_artifacts": 9,
+    "skipped_artifacts": 10,
     "errors": 0
   },
   "artifacts": [
-    {
-      "artifact_id": 6523256583,
-      "name": "issue-triage-pr-47",
-      "created_at": "2026-04-20T02:40:32Z",
-      "updated_at": "2026-04-20T02:40:32Z",
-      "workflow_run_id": 24645817598,
-      "head_branch": "runx/operator-memory-issue-triage-nilstate-aster-pr-46",
-      "head_sha": "99e0ed4ae625bb050d2fceb454f02e7964a5d81e",
-      "summaries": [
-        {
-          "lane": "issue-triage",
-          "status": "success",
-          "receipt_id": "rx_1cffa2fbedbb48b3a537c1cace3d7917",
-          "summary": "lane finished with success",
-          "packet_created_at": "2026-04-20T02:40:26.337Z",
-          "subject_locator": "nilstate/aster#pr/47",
-          "target_repo": "nilstate/aster",
-          "objective_fingerprint": null,
-          "projection_key": "issue-triage::nilstate/aster#pr/47",
-          "reflection_path": "reflections/2026-04-20-issue-triage-nilstate-aster-pr-47-lane-finished-with-success.md",
-          "history_path": "history/2026-04-20-issue-triage-nilstate-aster-pr-47-lane-finished-with-success.md",
-          "target_dossier_path": "state/targets/nilstate-aster.md",
-          "promotion_scope": "state_only",
-          "public_projection_reasons": []
-        }
-      ]
-    },
-    {
-      "artifact_id": 6523277196,
-      "name": "issue-triage-pr-48",
-      "created_at": "2026-04-20T02:43:29Z",
-      "updated_at": "2026-04-20T02:43:29Z",
-      "workflow_run_id": 24645896693,
-      "head_branch": "runx/operator-memory-issue-triage-nilstate-aster-pr-47",
-      "head_sha": "243dec432802570baf47cbb3f7e46cbaa99f4818",
-      "summaries": [
-        {
-          "lane": "issue-triage",
-          "status": "success",
-          "receipt_id": "rx_87adc33753d242f489de7d8a5a090614",
-          "summary": "lane finished with success",
-          "packet_created_at": "2026-04-20T02:43:25.782Z",
-          "subject_locator": "nilstate/aster#pr/48",
-          "target_repo": "nilstate/aster",
-          "objective_fingerprint": null,
-          "projection_key": "issue-triage::nilstate/aster#pr/48",
-          "reflection_path": "reflections/2026-04-20-issue-triage-nilstate-aster-pr-48-lane-finished-with-success.md",
-          "history_path": "history/2026-04-20-issue-triage-nilstate-aster-pr-48-lane-finished-with-success.md",
-          "target_dossier_path": "state/targets/nilstate-aster.md",
-          "promotion_scope": "state_only",
-          "public_projection_reasons": []
-        }
-      ]
-    },
-    {
-      "artifact_id": 6523305968,
-      "name": "issue-triage-pr-49",
-      "created_at": "2026-04-20T02:47:32Z",
-      "updated_at": "2026-04-20T02:47:32Z",
-      "workflow_run_id": 24645963935,
-      "head_branch": "runx/operator-memory-issue-triage-nilstate-aster-pr-48",
-      "head_sha": "2aca6f9ac1347c9097a6d7d37a9f9e2b85627172",
-      "summaries": [
-        {
-          "lane": "issue-triage",
-          "status": "success",
-          "receipt_id": "rx_20a179cb14ef4f88a1b675aed68fbf16",
-          "summary": "lane finished with success",
-          "packet_created_at": "2026-04-20T02:47:28.780Z",
-          "subject_locator": "nilstate/aster#pr/49",
-          "target_repo": "nilstate/aster",
-          "objective_fingerprint": null,
-          "projection_key": "issue-triage::nilstate/aster#pr/49",
-          "reflection_path": "reflections/2026-04-20-issue-triage-nilstate-aster-pr-49-lane-finished-with-success.md",
-          "history_path": "history/2026-04-20-issue-triage-nilstate-aster-pr-49-lane-finished-with-success.md",
-          "target_dossier_path": "state/targets/nilstate-aster.md",
-          "promotion_scope": "state_only",
-          "public_projection_reasons": []
-        }
-      ]
-    },
     {
       "artifact_id": 6523337889,
       "name": "issue-triage-pr-50",
@@ -2762,57 +2681,6 @@
       "objective_fingerprint": null,
       "selected_artifact_id": 6546948405,
       "selected_receipt_id": "rx_602114bd55e24506911d69e1ce79c42b",
-      "selected_summary": "lane finished with success",
-      "selected_promotion_scope": "state_only",
-      "public_selected_artifact_id": null,
-      "public_selected_receipt_id": null,
-      "public_selected_summary": null,
-      "public_selected_promotion_scope": null,
-      "public_projection_reasons": [],
-      "suppressed_artifact_ids": []
-    },
-    {
-      "projection_key": "issue-triage::nilstate/aster#pr/47",
-      "lane": "issue-triage",
-      "subject_locator": "nilstate/aster#pr/47",
-      "target_repo": "nilstate/aster",
-      "objective_fingerprint": null,
-      "selected_artifact_id": 6523256583,
-      "selected_receipt_id": "rx_1cffa2fbedbb48b3a537c1cace3d7917",
-      "selected_summary": "lane finished with success",
-      "selected_promotion_scope": "state_only",
-      "public_selected_artifact_id": null,
-      "public_selected_receipt_id": null,
-      "public_selected_summary": null,
-      "public_selected_promotion_scope": null,
-      "public_projection_reasons": [],
-      "suppressed_artifact_ids": []
-    },
-    {
-      "projection_key": "issue-triage::nilstate/aster#pr/48",
-      "lane": "issue-triage",
-      "subject_locator": "nilstate/aster#pr/48",
-      "target_repo": "nilstate/aster",
-      "objective_fingerprint": null,
-      "selected_artifact_id": 6523277196,
-      "selected_receipt_id": "rx_87adc33753d242f489de7d8a5a090614",
-      "selected_summary": "lane finished with success",
-      "selected_promotion_scope": "state_only",
-      "public_selected_artifact_id": null,
-      "public_selected_receipt_id": null,
-      "public_selected_summary": null,
-      "public_selected_promotion_scope": null,
-      "public_projection_reasons": [],
-      "suppressed_artifact_ids": []
-    },
-    {
-      "projection_key": "issue-triage::nilstate/aster#pr/49",
-      "lane": "issue-triage",
-      "subject_locator": "nilstate/aster#pr/49",
-      "target_repo": "nilstate/aster",
-      "objective_fingerprint": null,
-      "selected_artifact_id": 6523305968,
-      "selected_receipt_id": "rx_20a179cb14ef4f88a1b675aed68fbf16",
       "selected_summary": "lane finished with success",
       "selected_promotion_scope": "state_only",
       "public_selected_artifact_id": null,
