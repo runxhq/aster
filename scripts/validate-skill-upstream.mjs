@@ -9,7 +9,7 @@ const skillPath = path.join(targetRoot, options.candidatePath);
 const skill = await readRequired(skillPath);
 const prBody = await readRequired(path.join(artifactsDir, "pr-body.md"));
 const opportunity = await readJson("skill_opportunity.json");
-const research = await readJson("skill_recon_report.json");
+const research = await readJson("prior_art_report.json");
 const candidate = await readJson("skill_candidate.json");
 const contribution = await readJson("contribution_packet.json");
 const feedEvent = await readJson("public_feed_event.json");
@@ -26,7 +26,7 @@ const checks = [
   ["PR body cites Anthropic skills repository", /https:\/\/github\.com\/anthropics\/skills/.test(prBody)],
   ["PR body cites Claude Skills overview", /https:\/\/claude\.com\/docs\/skills\/overview/.test(prBody)],
   ["opportunity schema", opportunity.schema === "runx.skill_opportunity.v1" && opportunity.state === "discovered"],
-  ["research schema", research.schema === "runx.skill_recon_report.v1" && Array.isArray(research.findings) && research.findings.length > 0],
+  ["research schema", research.schema === "runx.prior_art_report.v1" && Array.isArray(research.findings) && research.findings.length > 0],
   ["candidate schema", candidate.schema === "runx.skill_candidate.v1" && candidate.skill?.portable === true && candidate.skill?.requires_runx === false],
   ["contribution schema", contribution.schema === "runx.skill_upstream.v1" && contribution.state === "contribution_ready"],
   ["only portable SKILL.md changes declared", Array.isArray(contribution.changes) && contribution.changes.length === 1 && contribution.changes[0]?.path === options.candidatePath],

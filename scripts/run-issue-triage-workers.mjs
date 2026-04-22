@@ -570,7 +570,7 @@ This draft PR was opened by the \`aster\` issue triage lane.
 - Work issue URL: ${issueUrl}
 - Target repo: \`${targetRepo}\`
 - Worker: \`${workerNumber}\`
-- Lane: \`support-triage -> issue-triage -> issue-to-pr worker\`
+- Lane: \`request-triage -> issue-triage -> issue-to-pr worker\`
 - scafld task: \`${taskId}\`
 
 ## Validation

@@ -62,7 +62,7 @@ async function main(argv = process.argv.slice(2)) {
     bridgeOutput,
     "--",
     "skill",
-    path.join(runxRoot, "skills", "objective-decompose"),
+    path.join(runxRoot, "skills", "work-plan"),
     "--objective",
     requireString(firstString(planRequest.objective), "workspace_change_plan_request.objective"),
     "--project_context",
@@ -81,7 +81,7 @@ async function main(argv = process.argv.slice(2)) {
   const payload = parseExecutionPayload(bridgeResult);
   const workspaceChangePlan = asRecord(payload?.workspace_change_plan);
   if (!workspaceChangePlan) {
-    throw new Error("objective-decompose did not return workspace_change_plan.");
+    throw new Error("work-plan did not return workspace_change_plan.");
   }
 
   const objectiveSummary = requireString(firstString(payload?.objective_summary), "objective_summary");

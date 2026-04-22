@@ -16,8 +16,8 @@ This lane has two entry modes:
 
 1. issue mode listens for every normal issue except dedicated `[skill]`,
    `[fix]`, `[docs]`, and `[upstream]` work issues, runs
-   `support-triage`, prepares one explicit triage decision, optionally runs
-   `objective-decompose`, posts or updates one rolling triage comment back to
+   `request-triage`, prepares one explicit triage decision, optionally runs
+   `work-plan`, posts or updates one rolling triage comment back to
    the same issue, and starts isolated `issue-to-pr` workers only when thread
    teaching authorizes bounded build work. Dedicated `[fix]`, `[docs]`, and
    `[upstream]` work issues bypass this lane and go straight to their owning
@@ -27,7 +27,7 @@ This lane has two entry modes:
    Replay guard blocks duplicate reruns for the same ledger fingerprint, and
    the live issue or PR thread is also parsed for reusable lessons, norms, and
    explicit gate authorizations
-2. PR mode builds a live PR snapshot, runs it through `github-triage`, and
+2. PR mode builds a live PR snapshot, runs it through `issue-triage`, and
    posts a maintainer comment back to the PR. Public-value and replay gates
    block low-signal or duplicate comments for the same head SHA. Generated
    derived-state refresh PRs are blocked before model work because they
@@ -86,7 +86,7 @@ workflow step carries an explicit timeout.
 ## `skill-lab`
 
 Listens for issues whose title begins with `[skill]`, runs
-`objective-to-skill`, materializes the result under `docs/skill-proposals/`,
+`design-skill`, materializes the result under `docs/skill-proposals/`,
 refreshes the proposal from the work ledger, and posts or updates one rolling
 issue comment back onto the same work issue. Trusted maintainer replies on that
 issue become maintainer amendments and retrigger skill-lab from the refreshed

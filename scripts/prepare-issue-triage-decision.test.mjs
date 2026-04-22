@@ -95,7 +95,7 @@ test("prepareIssueTriageDecision holds at a review comment when mutation should 
           severity: "medium",
           summary: "Cross-repo abandoned cart recovery",
           suggested_reply: "This needs planning before a build lane starts.",
-          recommended_lane: "objective-decompose",
+          recommended_lane: "work-plan",
           rationale: "The request spans multiple repo-scoped deliverables.",
           needs_human: true,
           commence_decision: "approve",
@@ -148,7 +148,7 @@ test("prepareIssueTriageDecision falls back to an issue comment when draft PR re
   assert.match(decision.comment_body, /no draft PR exists yet/i);
 });
 
-test("prepareIssueTriageDecision starts a planning lane for objective-decompose before any worker starts", () => {
+test("prepareIssueTriageDecision starts a planning lane for work-plan before any worker starts", () => {
   const decision = prepareIssueTriageDecision({
     execution: {
       stdout: JSON.stringify({
@@ -157,7 +157,7 @@ test("prepareIssueTriageDecision starts a planning lane for objective-decompose 
           severity: "high",
           summary: "Abandoned cart recovery spans api and app.",
           suggested_reply: "runx is opening a shared planning lane before any repo worker starts.",
-          recommended_lane: "objective-decompose",
+          recommended_lane: "work-plan",
           rationale: "The work crosses repo boundaries and needs one frozen plan first.",
           needs_human: false,
           commence_decision: "approve",
@@ -181,7 +181,7 @@ test("prepareIssueTriageDecision starts a planning lane for objective-decompose 
           summary: "Roll out abandoned cart recovery.",
           category: "feature_request",
           severity: "high",
-          recommended_lane: "objective-decompose",
+          recommended_lane: "work-plan",
           commence_decision: "approve",
           action_decision: "proceed_to_plan",
           target_surfaces: [
@@ -199,7 +199,7 @@ test("prepareIssueTriageDecision starts a planning lane for objective-decompose 
   assert.equal(decision.triage_decision.should_start_planner, true);
   assert.equal(decision.triage_decision.should_start_worker, false);
   assert.equal(decision.workspace_change_plan_request.change_set_id, "change-set-204");
-  assert.match(decision.comment_body, /Planning lane: `objective-decompose`/);
+  assert.match(decision.comment_body, /Planning lane: `work-plan`/);
 });
 
 test("prepareIssueTriageDecision stops non-mutating reply-only requests without inventing a worker", () => {

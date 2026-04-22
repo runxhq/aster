@@ -29,7 +29,7 @@ await mkdir(outputDir, { recursive: true });
 
 await writeFile(skillPath, skill.markdown);
 await writeJson(path.join(outputDir, "skill_opportunity.json"), opportunity);
-await writeJson(path.join(outputDir, "skill_recon_report.json"), research);
+await writeJson(path.join(outputDir, "prior_art_report.json"), research);
 await writeJson(path.join(outputDir, "skill_candidate.json"), candidate);
 await writeJson(path.join(outputDir, "contribution_packet.json"), contribution);
 await writeJson(path.join(outputDir, "public_feed_event.json"), feedEvent);
@@ -403,7 +403,7 @@ function buildOpportunity(context, opportunityId, generatedAt, options) {
 
 function buildResearchReport(context, opportunityId, options) {
   return {
-    schema: "runx.skill_recon_report.v1",
+    schema: "runx.prior_art_report.v1",
     opportunity_id: opportunityId,
     state: "researched",
     findings: [

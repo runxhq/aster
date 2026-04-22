@@ -76,9 +76,9 @@ Every proposal must fit in a receipt and be reviewable by a human.
 
 That proposal layer now has explicit runx capability front doors:
 
-- `support-triage` for issues
-- `github-triage` for PRs
-- `objective-to-skill` for new capability proposals
+- `request-triage` for issues
+- `issue-triage` for PRs
+- `design-skill` for new capability proposals
 
 This proposal phase is where `aster` defends itself against vague
 automation. If a task cannot be expressed as a bounded proposal with a clear
@@ -124,7 +124,7 @@ lane policy:
   content
 - `issue-triage` turns a work issue into a public triage artifact, keeps one
   rolling triage comment in that same thread, reruns when trusted maintainer
-  replies amend the issue ledger, then runs `objective-decompose` when the gate
+  replies amend the issue ledger, then runs `work-plan` when the gate
   approves planning, and only starts an `issue-to-pr` worker when the gate
   approves bounded build work
 - `issue-triage` comments on open PRs with a runx-authored maintainer response

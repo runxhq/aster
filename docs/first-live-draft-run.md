@@ -20,10 +20,10 @@ This repo has already been exercised as a real `runx` target in draft mode.
 - `content-pipeline`
   Result: reached `agent_step.research.output` with operator and target-entity
   context.
-- `market-intelligence`
+- `ecosystem-brief`
   Result: reached `agent_step.research.output` with repo-scoped brief inputs.
 - `skill-testing`
-  Result: reached `agent_step.evaluate-skill.output` while evaluating
+  Result: reached `agent_step.review-skill.output` while evaluating
   `sourcey`.
 - `research`
   Result: reached `agent_step.research.output` with a bounded repo-improvement
@@ -41,6 +41,6 @@ This repo has already been exercised as a real `runx` target in draft mode.
 
 - add a scafld bootstrap path so `issue-triage` can graduate from
   comment-first triage into real `issue-to-pr` worker runs directly here
-- connect live issue intake for `open-source-triage`
+- connect live issue intake for `skill-lab`
 - allow selected runs to continue past the first caller boundary when an agent
   or answer file is available

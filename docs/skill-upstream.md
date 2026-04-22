@@ -38,7 +38,7 @@ documentation and as portable agent context.
 The lane writes these artifacts under `.artifacts/skill-upstream/`:
 
 - `skill_opportunity.json`
-- `skill_recon_report.json`
+- `prior_art_report.json`
 - `skill_candidate.json`
 - `contribution_packet.json`
 - `public_feed_event.json`

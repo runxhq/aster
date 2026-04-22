@@ -77,7 +77,7 @@ Minimal disclosure is allowed only when it is materially useful, for example:
 
 Thread teaching is the canonical human-teaching layer:
 
-- `issue-triage` comments first; `objective-decompose` may run when thread
+- `issue-triage` comments first; `work-plan` may run when thread
   teaching authorizes planning, and repo-scoped `issue-to-pr` workers start only
   when thread teaching authorizes bounded build work
 - the work issue is the living ledger for one unit of work: the initial request,

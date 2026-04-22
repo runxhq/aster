@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "urn:aster:schema:workspace-change-plan-request:v1",
   "title": "runx Workspace Change Plan Request",
-  "description": "Canonical prerelease v1 schema for objective-decompose requests before any repo worker starts.",
+  "description": "Canonical prerelease v1 schema for work-plan requests before any repo worker starts.",
   "type": "object",
   "properties": {
     "change_set_id": {

@@ -7,7 +7,7 @@ content runs.
 
 - the public site should publish a machine-readable run catalog and receipt map
 - issue triage should evolve from one comment into structured review-check output
-- issue-triage should enforce dependency edges from `objective-decompose`
+- issue-triage should enforce dependency edges from `work-plan`
   when a phased plan contains ordered repo workers
 - skill-lab should feed skill-upstream packets before any runx
   registry binding is drafted

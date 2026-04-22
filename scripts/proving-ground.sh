@@ -72,8 +72,8 @@ if [[ "$PROVING_GROUND_PROFILE" != "minimal" ]]; then
     --target_entities aster \
     --target_entities runx
 
-  run_json market-intelligence \
-    skill "$SKILLS_ROOT/market-intelligence" \
+  run_json ecosystem-brief \
+    skill "$SKILLS_ROOT/ecosystem-brief" \
     --objective "Identify the highest-signal change in the aster repo this week" \
     --audience operators \
     --domain "oss repo operations" \

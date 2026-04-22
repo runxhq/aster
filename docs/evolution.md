@@ -65,7 +65,7 @@ starts becoming skill proposals.
 Signals at this stage:
 
 - new skill ideas arrive through issues
-- `objective-to-skill` produces proposal PRs
+- `design-skill` produces proposal PRs
 - proposals reference concrete receipts and repeated operator needs
 - the system gets more capable without skipping governance
 

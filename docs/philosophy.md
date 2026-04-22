@@ -110,12 +110,12 @@ The philosophy is only real if it changes repo behavior.
 That is why the live lanes must remain subordinate to the doctrine, even
 though the operational lane catalog now lives outside `doctrine/`:
 
-- `support-triage` makes issue routing public before mutation
+- `request-triage` makes issue routing public before mutation
 - `issue-triage` decides whether planning or a worker may start at all
 - `issue-to-pr` converts bounded approved work into reviewable draft PRs
-- `github-triage` makes PR review guidance visible and attributable
+- `issue-triage` makes PR review guidance visible and attributable
 - `docs-pr` keeps the repo's public explanation aligned with the live system
-- `objective-to-skill` turns repeated needs into governed capability proposals
+- `design-skill` turns repeated needs into governed capability proposals
 
 The long-term story is not "aster became autonomous."
 

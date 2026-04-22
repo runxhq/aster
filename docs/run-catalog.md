@@ -15,12 +15,12 @@ lanes against real repo work.
   `[upstream]` work issues, trusted maintainer issue comments on those work
   issues, plus PR `opened`, `reopened`, `ready_for_review`, and `synchronize`
 - runx skills and chains:
-  1. `support-triage`
+  1. `request-triage`
   2. `issue-triage`
-  3. optional `objective-decompose`
+  3. optional `work-plan`
   4. optional `issue-to-pr` worker fanout
   5. draft PR publication per worker
-- PR command: `runx skill <runx>/skills/github-triage --runner respond`
+- PR command: `runx skill <runx>/skills/issue-triage --runner respond`
 - purpose: make issue and PR routing public before mutation, start bounded
   workers only after thread teaching authorizes build, keep PR review legible,
   treat the work issue as the living ledger for amendments and machine updates,
@@ -36,7 +36,7 @@ lanes against real repo work.
 
 - trigger: GitHub issues whose title begins with `[skill]`, plus trusted
   maintainer issue comments on those work issues
-- runx chain: `objective-to-skill`
+- runx chain: `skill-lab`
 - purpose: turn a proposed new capability into a concrete skill package
   proposal, materialize it under `docs/skill-proposals/`, keep one rolling
   machine comment on the same work issue, and refresh one draft PR only after
@@ -161,6 +161,6 @@ lanes against real repo work.
 
 These are still missing or intentionally deferred:
 
-- `skill-recon` for explicit skill research packets before adoption work starts
+- `prior-art` for explicit skill research packets before adoption work starts
 - `trust-audit` for public evaluation of lanes, targets, and skills
 - `market-brief` for periodic ecosystem briefs with explicit source sets

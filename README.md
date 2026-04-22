@@ -56,11 +56,11 @@ The governing philosophy is:
 `aster` now has seven concrete live lanes:
 
 - `issue-triage`: covers both issue intake and PR review. Issues run through
-  `support-triage`, can open `objective-decompose` when planning is approved,
+  `request-triage`, can open `work-plan` when planning is approved,
   and only then start one or more repo-scoped `issue-to-pr` workers when build
   is approved. The work issue is the living ledger: trusted maintainer replies
   retrigger the lane, the rolling triage comment updates in place, and PR
-  snapshots still run through `github-triage`, pass replay/public gates, and
+  snapshots still run through `issue-triage`, pass replay/public gates, and
   publish one high-signal maintainer comment back onto the PR
 - `fix-pr`: runs one bounded bugfix request through the governed PR runner,
   validates the target repo with its declared verification profile, reruns from
@@ -71,7 +71,7 @@ The governing philosophy is:
   on `[docs]` work issues, and refreshes a draft `runx/*` PR only after that
   same issue authorizes `docs-pr.publish`
 - `skill-lab`: a skill proposal issue runs through
-  `objective-to-skill`, materializes a proposal in `docs/skill-proposals/`,
+  `design-skill`, materializes a proposal in `docs/skill-proposals/`,
   keeps one rolling machine comment attached to the same issue ledger, and
   refreshes one draft PR only after the same work issue authorizes
   `skill-lab.publish`
@@ -170,10 +170,10 @@ the draft-first observability lanes continue to run.
 - [scripts/runx-agent-bridge.mjs](./scripts/runx-agent-bridge.mjs): external
   caller that answers `runx` `agent-step` requests without internal shortcuts
 - [scripts/prepare-issue-triage-decision.mjs](./scripts/prepare-issue-triage-decision.mjs):
-  converts a `support-triage` result into one explicit triage decision plus
+  converts a `request-triage` result into one explicit triage decision plus
   optional planning and worker requests
 - [scripts/run-issue-triage-plan.mjs](./scripts/run-issue-triage-plan.mjs):
-  runs `objective-decompose` when the triage approves planning and appends a
+  runs `work-plan` when the triage approves planning and appends a
   phased plan summary to the issue comment
 - [scripts/run-issue-triage-workers.mjs](./scripts/run-issue-triage-workers.mjs):
   executes one or more isolated `issue-to-pr` workers and publishes the
@@ -219,7 +219,7 @@ node scripts/runx-agent-bridge.mjs \
   --runx-root /home/kam/dev/runx \
   --receipt-dir .artifacts/issue-triage/manual \
   -- \
-  skill /home/kam/dev/runx/oss/skills/support-triage \
+  skill /home/kam/dev/runx/oss/skills/request-triage \
   --title "Example bounded issue" \
   --body "Describe the concrete repo problem here." \
   --source github_issue \

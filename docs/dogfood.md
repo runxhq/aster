@@ -13,15 +13,15 @@ re-run.
 ```
 1. pick objective + target skill
 2. runx <target-skill> ...           → produces receipt rx_*
-3. runx receipt-review --receipt rx_*  → produces diagnosis (verdict + proposals)
-4. runx harness-author --diagnosis ...  → produces skill edit + fixture patch
+3. runx review-receipt --receipt rx_*  → produces diagnosis (verdict + proposals)
+4. runx write-harness --diagnosis ...  → produces skill edit + fixture patch
 5. apply the patch, bump the skill version, re-run the harness
 6. land the change + record the cycle in the catalog below
 ```
 
 Step 3+4 together are the `improve-skill` composite. A cycle can call
 `runx improve-skill --receipt rx_*` to run them as one step, or split
-them when iterating on receipt-review or harness-author themselves.
+them when iterating on review-receipt or write-harness themselves.
 
 ## Skill catalog
 
@@ -32,24 +32,24 @@ listed here rotate through cycles. "Last cycle" records the cycle id
 | Skill | Status | Last cycle | Version after last cycle | Notes |
 | --- | --- | --- | --- | --- |
 | improve-skill | dogfooded | dogfood-cycle-1-improve-skill | oss@6f0bfa6 + harness expanded to 2 cases | Calibrated in cycle 1: added `improve-skill-passes-on-paused-chain` harness case. |
-| receipt-review | dogfooded | dogfood-cycle-2-receipt-review | oss working tree + SKILL.md pause paragraph + 2 harness cases | Cycle 2 closed the pause-vs-failure gap at the component level. |
-| harness-author | dogfooded | dogfood-cycle-3-harness-author | oss working tree + SKILL.md pass-verdict paragraph + 3 harness cases | Cycle 3 specified behaviour on pass-verdict review input. |
-| skill-recon | dogfooded | dogfood-cycle-4-skill-recon | oss working tree + SKILL.md reuse paragraph + 2 harness cases | Cycle 4 elevated 'recommend reuse' as first-class output. |
-| evaluate-skill | dogfooded | dogfood-round-2-coverage-pass | oss + needs-skill-ref negative case | Round 2 added negative-case fixture. |
-| objective-decompose | surveyed (cycle 6) | — | 2 harness cases | Cycle 6 audit only. |
-| objective-to-skill | dogfooded | dogfood-round-2-coverage-pass | oss + needs-objective negative case | Round 2 added negative-case fixture. |
+| review-receipt | dogfooded | dogfood-cycle-2-review-receipt | oss working tree + SKILL.md pause paragraph + 2 harness cases | Cycle 2 closed the pause-vs-failure gap at the component level. |
+| write-harness | dogfooded | dogfood-cycle-3-write-harness | oss working tree + SKILL.md pass-verdict paragraph + 3 harness cases | Cycle 3 specified behaviour on pass-verdict review input. |
+| prior-art | dogfooded | dogfood-cycle-4-prior-art | oss working tree + SKILL.md reuse paragraph + 2 harness cases | Cycle 4 elevated 'recommend reuse' as first-class output. |
+| review-skill | dogfooded | dogfood-round-2-coverage-pass | oss + needs-skill-ref negative case | Round 2 added negative-case fixture. |
+| work-plan | surveyed (cycle 6) | — | 2 harness cases | Cycle 6 audit only. |
+| design-skill | dogfooded | dogfood-round-2-coverage-pass | oss + needs-objective negative case | Round 2 added negative-case fixture. |
 | evolve | surveyed (cycle 6) | — | 2 harness cases | Cycle 6 audit only. |
 | research | dogfooded | dogfood-round-2-coverage-pass | oss + needs-objective negative case | Round 2 added negative-case fixture. |
-| market-intelligence | dogfooded | dogfood-round-2-coverage-pass | oss + minimal-inputs boundary case | Round 2 added boundary fixture. |
+| ecosystem-brief | dogfooded | dogfood-round-2-coverage-pass | oss + minimal-inputs boundary case | Round 2 added boundary fixture. |
 | content-pipeline | dogfooded | dogfood-round-2-coverage-pass | oss + needs-objective negative case | Round 2 added negative-case fixture. |
 | draft-content | surveyed (cycle 6) | — | 2 harness cases | Cycle 6 audit only. |
 | bug-to-pr | removed | — | — | Empty directory; not implemented. Removed from catalog. |
 | issue-to-pr | dogfooded | dogfood-cycle-9-issue-to-pr-full-chain | issue-to-pr 0.1.2 + three harness cases including full-chain success | Cycle 9 exercises every agent-step hand-off through scafld-complete. |
-| github-triage | surveyed (cycle 6) | — | 2 harness cases | Cycle 6 audit only. |
-| open-source-triage | dogfooded | dogfood-round-2-coverage-pass | oss + minimal-inputs boundary case | Round 2 added boundary fixture. |
+| issue-triage | surveyed (cycle 6) | — | 2 harness cases | Cycle 6 audit only. |
+| skill-lab | dogfooded | dogfood-round-2-coverage-pass | oss + minimal-inputs boundary case | Round 2 added boundary fixture. |
 | ecosystem-vuln-scan | dogfooded | dogfood-round-2-coverage-pass | oss + needs-target negative case | Round 2 added negative-case fixture. |
 | moltbook | surveyed (cycle 6) | — | 2 harness cases | Cycle 6 audit only. |
-| moltbook-presence | dogfooded | dogfood-round-2-coverage-pass | oss + minimal-inputs boundary case | Round 2 added boundary fixture. |
+| moltbook | dogfooded | dogfood-round-2-coverage-pass | oss + minimal-inputs boundary case | Round 2 added boundary fixture. |
 | scafld | dogfooded | dogfood-round-2-coverage-pass | oss + agent-needs-required-inputs case | Round 2 added boundary fixture. |
 
 Every skill here graduates to `dogfooded` once it has at least one cycle
@@ -62,7 +62,7 @@ Cycle 1: **improve-skill** itself. Calibrate the dogfood instrument
 before we use it on everyone else. If improve-skill is broken, every
 downstream cycle is compromised.
 
-Cycle 2–3: **receipt-review**, **harness-author**. The two halves of
+Cycle 2–3: **review-receipt**, **write-harness**. The two halves of
 improve-skill; once we've dogfooded the composite, drill into the
 components.
 
@@ -79,8 +79,8 @@ Each cycle writes to `.artifacts/dogfood-cycles/<cycle-id>/`:
   <cycle-id>/
     objective.md              # one-paragraph real objective and success criterion
     receipt.json              # the runx <target-skill> receipt
-    diagnosis.json            # receipt-review output
-    improvement.md            # harness-author output + rationale
+    diagnosis.json            # review-receipt output
+    improvement.md            # write-harness output + rationale
     patch.diff                # the landed change to the skill or spec
     cycle_metadata.json       # summary: skill, receipt_id, verdict, version_before, version_after
 ```
@@ -123,9 +123,9 @@ Populated per cycle as each one completes.
 | Cycle id | Skill | Verdict | Version bump | Improvement | Receipt bytes | Evidence path |
 | --- | --- | --- | --- | --- | --- | --- |
 | dogfood-cycle-1-improve-skill | improve-skill | needs_update | oss working tree (no skill-level version field yet) | Added paused-chain pass-case to improve-skill harness | 3274 | [.artifacts/dogfood-cycles/dogfood-cycle-1-improve-skill/](../.artifacts/dogfood-cycles/dogfood-cycle-1-improve-skill/) |
-| dogfood-cycle-2-receipt-review | receipt-review | needs_update | oss working tree; SKILL.md expanded + harness at 2 cases | Added agent-mediated-suspension paragraph and pass-on-paused harness case | 1820 | [.artifacts/dogfood-cycles/dogfood-cycle-2-receipt-review/](../.artifacts/dogfood-cycles/dogfood-cycle-2-receipt-review/) |
-| dogfood-cycle-3-harness-author | harness-author | needs_update | oss working tree; SKILL.md expanded + harness at 3 cases | Added pass-verdict paragraph and harness-author-honors-pass-verdict case; surfaced `runx resume` local-path defect as follow-up | 896 | [.artifacts/dogfood-cycles/dogfood-cycle-3-harness-author/](../.artifacts/dogfood-cycles/dogfood-cycle-3-harness-author/) |
-| dogfood-cycle-4-skill-recon | skill-recon | needs_update | oss working tree; SKILL.md expanded + harness at 2 cases | Elevated 'recommend reuse' as first-class output; added skill-recon-recommends-reuse harness case | 716 | [.artifacts/dogfood-cycles/dogfood-cycle-4-skill-recon/](../.artifacts/dogfood-cycles/dogfood-cycle-4-skill-recon/) |
+| dogfood-cycle-2-review-receipt | review-receipt | needs_update | oss working tree; SKILL.md expanded + harness at 2 cases | Added agent-mediated-suspension paragraph and pass-on-paused harness case | 1820 | [.artifacts/dogfood-cycles/dogfood-cycle-2-review-receipt/](../.artifacts/dogfood-cycles/dogfood-cycle-2-review-receipt/) |
+| dogfood-cycle-3-write-harness | write-harness | needs_update | oss working tree; SKILL.md expanded + harness at 3 cases | Added pass-verdict paragraph and write-harness-honors-pass-verdict case; surfaced `runx resume` local-path defect as follow-up | 896 | [.artifacts/dogfood-cycles/dogfood-cycle-3-write-harness/](../.artifacts/dogfood-cycles/dogfood-cycle-3-write-harness/) |
+| dogfood-cycle-4-prior-art | prior-art | needs_update | oss working tree; SKILL.md expanded + harness at 2 cases | Elevated 'recommend reuse' as first-class output; added prior-art-recommends-reuse harness case | 716 | [.artifacts/dogfood-cycles/dogfood-cycle-4-prior-art/](../.artifacts/dogfood-cycles/dogfood-cycle-4-prior-art/) |
 | dogfood-cycle-5-issue-to-pr | issue-to-pr | needs_update | oss working tree; first harness case added | Filled the zero-case harness gap with a smoke-test fixture | 214 | [.artifacts/dogfood-cycles/dogfood-cycle-5-issue-to-pr/](../.artifacts/dogfood-cycles/dogfood-cycle-5-issue-to-pr/) |
 | dogfood-cycle-6-catalog-sweep | (catalog) | audit | docs/dogfood.md | Round-1 close: surveyed 14 skills, identified systemic 1-case pattern, queued round 2 | 0 | [.artifacts/dogfood-cycles/dogfood-cycle-6-catalog-sweep/](../.artifacts/dogfood-cycles/dogfood-cycle-6-catalog-sweep/) |
 | fix-scafld-new-in-harness | scafld+issue-to-pr | pass_with_issues | scafld 1.4.0 → 1.4.1 (auto-init in bare cwd); issue-to-pr chain prelude | Fix for harness-isolation gap surfaced in cycle 5; follow-up: wire task_id into scafld-* step inputs | 0 | — |
@@ -136,7 +136,7 @@ Populated per cycle as each one completes.
 | harness-cli-tool-sandbox-fix | runx harness + scafld | (infra) | packages/harness/src/runner.ts + skills/scafld/run.mjs | Harness now sandboxes cli-tool cwd to tempdir; scafld honors RUNX_CWD. Unlocks full-chain harness cases. | 0 | — |
 | dogfood-cycle-9-issue-to-pr-full-chain | issue-to-pr | needs_update | issue-to-pr 0.1.1 → 0.1.2; +full-chain harness case | First full-chain harness case: chain executes all 15 steps through scafld-complete with status success | 480 | [.artifacts/dogfood-cycles/dogfood-cycle-9-issue-to-pr-full-chain/](../.artifacts/dogfood-cycles/dogfood-cycle-9-issue-to-pr-full-chain/) |
 | dogfood-cycle-10-sweep-final | skill-testing + sourcey | needs_update | +1 harness case per skill | Closes round-2 coverage floor: every catalog X.yaml has ≥2 passing cases | 0 | [.artifacts/dogfood-cycles/dogfood-cycle-10-sweep-final/](../.artifacts/dogfood-cycles/dogfood-cycle-10-sweep-final/) |
-| dogfood-round-3-real-traffic | 4 real invocations | pass | +4 persistent receipts, 5359 bytes | research + skill-recon + objective-decompose + evaluate-skill each produced actionable findings with persisted receipts. 3 follow-up specs queued. | 5359 | [.artifacts/dogfood-cycles/dogfood-round-3-real-traffic/](../.artifacts/dogfood-cycles/dogfood-round-3-real-traffic/) |
+| dogfood-round-3-real-traffic | 4 real invocations | pass | +4 persistent receipts, 5359 bytes | research + prior-art + work-plan + review-skill each produced actionable findings with persisted receipts. 3 follow-up specs queued. | 5359 | [.artifacts/dogfood-cycles/dogfood-round-3-real-traffic/](../.artifacts/dogfood-cycles/dogfood-round-3-real-traffic/) |
 
 ## Platform pressure signals
 
@@ -148,11 +148,11 @@ truth for the platform-next-move decision.
 | --- | --- | --- | --- |
 | Total receipts | 10 | receipt search/replay would materially reduce review time | — |
 | Total receipt bytes | 12699 | — | local store starts hitting IO or concurrency pressure |
-| Distinct subject identities | 9 (improve-skill, receipt-review, harness-author, skill-recon, issue-to-pr, research, objective-decompose, evaluate-skill, market-intelligence) | — | cross-session context lookups become common |
+| Distinct subject identities | 9 (improve-skill, review-receipt, write-harness, prior-art, issue-to-pr, research, work-plan, review-skill, ecosystem-brief) | — | cross-session context lookups become common |
 | Manual receipt scrolls / week | 0 | governed receipts search wins | — |
 
 Latest end-to-end receipt: `rx_0df2fb9885bf4b67b4c8bc6f3d1204ad`
-(improve-skill on a synthetic market-intelligence paused receipt),
+(improve-skill on a synthetic ecosystem-brief paused receipt),
 landed under `~/dev/scafld/.runx/receipts/`. Receipt dir is
 working-directory-relative — confirming the earlier cycle-6
 pressure observation that cross-session context lookups do not
@@ -174,18 +174,18 @@ pass rather than bespoke cycles per skill.
 | Skill | Harness status | Cases |
 | --- | --- | --- |
 | evolve | success | 2 |
-| objective-decompose | success | 2 |
-| objective-to-skill | success | 1 |
-| evaluate-skill | success | 1 |
+| work-plan | success | 2 |
+| design-skill | success | 1 |
+| review-skill | success | 1 |
 | research | success | 1 |
-| market-intelligence | success | 1 |
+| ecosystem-brief | success | 1 |
 | content-pipeline | success | 1 |
 | draft-content | success | 2 |
-| github-triage | success | 2 |
-| open-source-triage | success | 1 |
+| issue-triage | success | 2 |
+| skill-lab | success | 1 |
 | ecosystem-vuln-scan | success | 1 |
 | moltbook | success | 2 |
-| moltbook-presence | success | 1 |
+| moltbook | success | 1 |
 | scafld | success | 1 |
 
 ## Round 1 — close note
@@ -193,9 +193,9 @@ pass rather than bespoke cycles per skill.
 **Six cycles landed** over campaign round 1:
 
 1. `dogfood-cycle-1-improve-skill` — added a paused-chain pass-case.
-2. `dogfood-cycle-2-receipt-review` — SKILL.md pause-semantics + pass-case.
-3. `dogfood-cycle-3-harness-author` — SKILL.md pass-verdict + pass-case.
-4. `dogfood-cycle-4-skill-recon` — SKILL.md recommend-reuse + reuse case.
+2. `dogfood-cycle-2-review-receipt` — SKILL.md pause-semantics + pass-case.
+3. `dogfood-cycle-3-write-harness` — SKILL.md pass-verdict + pass-case.
+4. `dogfood-cycle-4-prior-art` — SKILL.md recommend-reuse + reuse case.
 5. `dogfood-cycle-5-issue-to-pr` — filled a zero-case harness gap.
 6. `dogfood-cycle-6-catalog-sweep` — surveyed 14 skills, queued round 2.
 
@@ -258,15 +258,15 @@ cognitive-work request. Every invocation persisted a receipt to
   brief. Primary finding: defer both governed receipts and
   hosted memory; set a review checkpoint at ~30 persistent
   receipts or ~10 distinct subjects.
-- **skill-recon** (`rx_d50c2a0a…`) — recommended extending the
+- **prior-art** (`rx_d50c2a0a…`) — recommended extending the
   existing `runx history` CLI with filter flags rather than
   building a separate receipt-search surface. Reuses the filter
   primitives already in `export-receipts`.
-- **objective-decompose** (`rx_dc720d86…`) — decomposed
+- **work-plan** (`rx_dc720d86…`) — decomposed
   "fail-closed on unresolved production runs" into three steps:
   classify-run-context, gate-on-unresolved-requests, ergonomic
   `--allow-pause` opt-out.
-- **evaluate-skill** (`rx_04739717…`) — rated `receipt-review`
+- **review-skill** (`rx_04739717…`) — rated `review-receipt`
   tier-2. Weaknesses: no CLI fallback, no partial-success
   taxonomy class, no runtime output-schema validation.
 
@@ -280,9 +280,9 @@ deferral.
 Three actionable follow-up drafts are queued from round 3:
 
 1. Extend `runx history` with `--skill`, `--status`, `--subject`,
-   `--since`, `--until` filter flags (from skill-recon).
+   `--since`, `--until` filter flags (from prior-art).
 2. Fail-closed policy for unresolved production runs via
    `RUNX_PRODUCTION` env or `--production` flag (from
-   objective-decompose).
-3. Codify `receipt-review` output as JSON Schema and validate at
-   runtime (from evaluate-skill).
+   work-plan).
+3. Codify `review-receipt` output as JSON Schema and validate at
+   runtime (from review-skill).

@@ -141,7 +141,7 @@ export function buildTriageComment({
     lines.push(`- Worker fanout: \`${workerCount}\``);
   }
   if (shouldStartPlanner) {
-    lines.push("- Planning lane: `objective-decompose`");
+    lines.push("- Planning lane: `work-plan`");
   }
 
   const narrative = firstString(
@@ -223,7 +223,7 @@ function defaultActionDecision({ commenceDecision, recommendedLane }) {
   if (commenceDecision !== "approve") {
     return "stop";
   }
-  if (recommendedLane === "objective-decompose") {
+  if (recommendedLane === "work-plan") {
     return "proceed_to_plan";
   }
   if (recommendedLane === "issue-to-pr" || recommendedLane === "multi-repo-issue-to-pr") {
