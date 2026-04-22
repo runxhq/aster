@@ -152,9 +152,9 @@ jobs:
             --output ".artifacts/skill-lab/request.json"
           jq -r '.objective // ""' .artifacts/skill-lab/request.json > .artifacts/skill-lab/objective.txt
           jq -r '.project_context // ""' .artifacts/skill-lab/request.json > .artifacts/skill-lab/project-context.txt
-          echo "source_repo=$(jq -r '.source_issue.repo // \"\"' .artifacts/skill-lab/request.json)" >> "$GITHUB_OUTPUT"
-          echo "ledger_revision=$(jq -r '.source_issue.ledger_revision // \"\"' .artifacts/skill-lab/request.json)" >> "$GITHUB_OUTPUT"
-          echo "objective_present=$(jq -r 'if (.objective // \"\") != \"\" then \"true\" else \"false\" end' .artifacts/skill-lab/request.json)" >> "$GITHUB_OUTPUT"
+          echo "source_repo=$(jq -r '.source_issue.repo // ""' .artifacts/skill-lab/request.json)" >> "$GITHUB_OUTPUT"
+          echo "ledger_revision=$(jq -r '.source_issue.ledger_revision // ""' .artifacts/skill-lab/request.json)" >> "$GITHUB_OUTPUT"
+          echo "objective_present=$(jq -r 'if (.objective // "") != "" then "true" else "false" end' .artifacts/skill-lab/request.json)" >> "$GITHUB_OUTPUT"
 
       - name: Run design-skill
         if: ${{ steps.preflight.outputs.enabled == 'true' }}
