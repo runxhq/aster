@@ -149,7 +149,7 @@ jobs:
         run: |
           node scripts/prepare-skill-lab-input.mjs \
             --input ".artifacts/skill-lab/issue-ledger.json" \
-            --catalog-file "$GITHUB_WORKSPACE/.runx/runx/oss/packages/cli/src/official-skills.lock.json" \
+            --catalog-file "$GITHUB_WORKSPACE/.runx/runx/packages/cli/src/official-skills.lock.json" \
             --output ".artifacts/skill-lab/request.json"
           jq -r '.objective // ""' .artifacts/skill-lab/request.json > .artifacts/skill-lab/objective.txt
           jq -r '.project_context // ""' .artifacts/skill-lab/request.json > .artifacts/skill-lab/project-context.txt
@@ -204,7 +204,7 @@ jobs:
           node scripts/evaluate-skill-proposal-quality.mjs \
             --result-json ".artifacts/skill-lab/result.json" \
             --issue-packet ".artifacts/skill-lab/request.json" \
-            --catalog-file "$GITHUB_WORKSPACE/.runx/runx/oss/packages/cli/src/official-skills.lock.json" \
+            --catalog-file "$GITHUB_WORKSPACE/.runx/runx/packages/cli/src/official-skills.lock.json" \
             --output ".artifacts/skill-lab/proposal-quality.json"
           echo "status=$(jq -r '.status' .artifacts/skill-lab/proposal-quality.json)" >> "$GITHUB_OUTPUT"
           echo "score=$(jq -r '.score' .artifacts/skill-lab/proposal-quality.json)" >> "$GITHUB_OUTPUT"

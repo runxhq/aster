@@ -177,7 +177,15 @@ function requireValue(argv, index, flag) {
 }
 
 async function readCatalogEntries(file) {
-  const raw = JSON.parse(await readFile(file, "utf8"));
+  let raw;
+  try {
+    raw = JSON.parse(await readFile(file, "utf8"));
+  } catch (error) {
+    if (error && typeof error === "object" && "code" in error && error.code === "ENOENT") {
+      return [];
+    }
+    throw error;
+  }
   if (!Array.isArray(raw)) {
     return [];
   }
