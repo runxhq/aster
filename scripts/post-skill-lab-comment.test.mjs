@@ -105,5 +105,6 @@ test("buildSkillLabComment reports proposal_refreshed when publish is not reques
   });
 
   assert.match(comment, /Status: `proposal_refreshed`/);
-  assert.match(comment, /Publication remains gated until `skill-lab\.publish` is explicitly authorized/);
+  assert.match(comment, /Publication remains gated until a trusted reply on this work issue authorizes `skill-lab\.publish`/);
+  assert.match(comment, /`Applies To:` \+ `Decision:` lines or a full thread-teaching record/);
 });

@@ -237,7 +237,7 @@ jobs:
           else
             echo "allowed=false" >> "$GITHUB_OUTPUT"
             echo "Skill proposal refreshed without draft PR publication." >> "$GITHUB_STEP_SUMMARY"
-            echo "Reply in the same work issue with a thread-teaching record that authorizes \`skill-lab.publish\` to refresh the draft PR." >> "$GITHUB_STEP_SUMMARY"
+            echo "Reply in the same work issue with trusted \`Applies To:\` + \`Decision:\` lines, or a full thread-teaching record, that authorizes \`skill-lab.publish\` to refresh the draft PR." >> "$GITHUB_STEP_SUMMARY"
           fi
 
       - name: Write PR body
@@ -261,7 +261,7 @@ jobs:
 
           ## Publication
 
-          - Draft PR refresh is allowed only when the same work issue authorizes \`skill-lab.publish\`
+          - Draft PR refresh is allowed only when the same work issue authorizes \`skill-lab.publish\` through trusted \`Applies To:\` + \`Decision:\` lines or a full thread-teaching record
           EOF
 
       - name: Publish draft PR

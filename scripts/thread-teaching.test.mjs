@@ -70,6 +70,39 @@ test("parseThreadTeachingRecordBody accepts the work issue form block", () => {
   assert.deepEqual(parsed?.applies_to, ["issue-triage.plan"]);
 });
 
+test("parseThreadTeachingRecordBody accepts a plain field block without the marker", () => {
+  const parsed = parseThreadTeachingRecordBody([
+    "Kind: lesson",
+    "Summary: Keep the work issue as the living ledger.",
+    "Recorded By: kam",
+    "Target Repo: nilstate/runx",
+  ].join("\n"));
+
+  assert.equal(parsed?.kind, "lesson");
+  assert.equal(parsed?.summary, "Keep the work issue as the living ledger.");
+  assert.equal(parsed?.recorded_by, "kam");
+  assert.equal(parsed?.target_repo, "nilstate/runx");
+});
+
+test("parseThreadTeachingRecordBody infers a gate approval from Applies To and Decision lines", () => {
+  const parsed = parseThreadTeachingRecordBody([
+    "Applies To: skill-lab.publish",
+    "",
+    "Decision: skill-lab.publish = allow | the decision-brief proposal is approved to refresh one draft PR from this same work ledger",
+  ].join("\n"));
+
+  assert.equal(parsed?.kind, "publish_authorization");
+  assert.equal(parsed?.summary, "Trusted thread reply authorized skill-lab.publish=allow.");
+  assert.deepEqual(parsed?.applies_to, ["skill-lab.publish"]);
+  assert.deepEqual(parsed?.decisions, [
+    {
+      gate_id: "skill-lab.publish",
+      decision: "allow",
+      reason: "the decision-brief proposal is approved to refresh one draft PR from this same work ledger",
+    },
+  ]);
+});
+
 test("deriveThreadTeachingContext keeps the newest trusted matching records", () => {
   const context = deriveThreadTeachingContext([
     {
@@ -119,6 +152,32 @@ test("deriveThreadTeachingContext keeps the newest trusted matching records", ()
   assert.equal(context?.records[1]?.kind, "approval");
   assert.equal(threadTeachingContextAllowsGate(context, { id: "issue-triage.plan" }), true);
   assert.equal(threadTeachingContextAllowsGate(context, { id: "docs-pr.publish" }), false);
+});
+
+test("deriveThreadTeachingContext allows a markerless trusted publish approval comment", () => {
+  const context = deriveThreadTeachingContext([
+    {
+      source_type: "issue_comment",
+      author: "auscaster",
+      author_association: "MEMBER",
+      body: [
+        "Applies To: skill-lab.publish",
+        "",
+        "Decision: skill-lab.publish = allow | refresh one draft PR from this same work ledger",
+      ].join("\n"),
+      url: "https://example.com/4",
+      created_at: "2026-04-22T15:36:27Z",
+    },
+  ], {
+    repo: "nilstate/aster",
+    threadKind: "issue",
+    threadNumber: "115",
+    appliesTo: ["skill-lab.publish"],
+    now: "2026-04-22T15:40:00Z",
+  });
+
+  assert.equal(threadTeachingContextAllowsGate(context, { id: "skill-lab.publish" }), true);
+  assert.equal(context?.records[0]?.kind, "publish_authorization");
 });
 
 test("threadTeachingRecordMatchesCriteria rejects expired or mismatched records", () => {

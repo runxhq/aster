@@ -1,7 +1,13 @@
 import { execFileSync } from "node:child_process";
 
 export const THREAD_TEACHING_MARKER = "<!-- aster:thread-teaching-record -->";
-export const THREAD_TEACHING_SEARCH_QUERY = "aster:thread-teaching-record";
+export const THREAD_TEACHING_MARKER_QUERY = "aster:thread-teaching-record";
+export const THREAD_TEACHING_SEARCH_QUERIES = [
+  THREAD_TEACHING_MARKER_QUERY,
+  "Kind Summary",
+  "Applies To",
+  "Decision",
+];
 export const TRUSTED_ASSOCIATIONS = new Set(["OWNER", "MEMBER", "COLLABORATOR"]);
 export const THREAD_TEACHING_KINDS = new Set([
   "approval",
@@ -18,12 +24,11 @@ export function parseThreadTeachingRecordBody(body) {
   if (typeof body !== "string") {
     return null;
   }
-  const markerIndex = body.indexOf(THREAD_TEACHING_MARKER);
-  if (markerIndex === -1) {
+  const rawContent = extractThreadTeachingRecordContent(body);
+  if (!rawContent) {
     return null;
   }
 
-  const rawContent = body.slice(markerIndex + THREAD_TEACHING_MARKER.length);
   const lines = rawContent.split(/\r?\n/);
   let recordId = null;
   let kind = null;
@@ -43,8 +48,8 @@ export function parseThreadTeachingRecordBody(body) {
   const summaryBuffer = [];
 
   for (const rawLine of lines) {
-    const line = rawLine.trim();
-    if (!line || /^#{1,6}\s+/.test(line)) {
+    const line = normalizeThreadTeachingLine(rawLine);
+    if (!line || /^#{1,6}\s+/.test(line) || /^```/.test(line)) {
       continue;
     }
 
@@ -210,21 +215,35 @@ export function parseThreadTeachingRecordBody(body) {
     summaryBuffer.push(line);
   }
 
-  const normalizedSummary = summary ?? normalizeString(summaryBuffer.join(" "));
-  if (!kind || !normalizedSummary) {
+  const normalizedAppliesTo = uniqueStrings([
+    ...appliesTo,
+    ...decisions.map((decision) => decision.gate_id),
+  ]);
+  const normalizedKind = kind ?? inferImplicitThreadTeachingKind({
+    appliesTo: normalizedAppliesTo,
+    decisions,
+  });
+  const normalizedSummary = summary
+    ?? normalizeString(summaryBuffer.join(" "))
+    ?? inferImplicitThreadTeachingSummary({
+      kind: normalizedKind,
+      appliesTo: normalizedAppliesTo,
+      decisions,
+    });
+  if (!normalizedKind || !normalizedSummary) {
     return null;
   }
 
   return {
     record_id: recordId,
-    kind,
+    kind: normalizedKind,
     summary: normalizedSummary,
     recorded_by: recordedBy,
     target_repo: targetRepo,
     subject_locator: subjectLocator,
     objective_fingerprint: objectiveFingerprint,
     expires_after: expiresAfter,
-    applies_to: uniqueStrings(appliesTo),
+    applies_to: normalizedAppliesTo,
     invariants: uniqueStrings(invariants),
     notes: uniqueStrings(notes),
     labels: uniqueStrings(labels),
@@ -697,6 +716,33 @@ function buildThreadTeachingRecordId(record, metadata) {
   return [repo, threadKind, threadNumber, kind, createdAt].filter(Boolean).join("-");
 }
 
+function extractThreadTeachingRecordContent(body) {
+  const markerIndex = body.indexOf(THREAD_TEACHING_MARKER);
+  if (markerIndex !== -1) {
+    return body.slice(markerIndex + THREAD_TEACHING_MARKER.length);
+  }
+  if (!looksLikeImplicitThreadTeachingRecord(body)) {
+    return null;
+  }
+  return body;
+}
+
+function looksLikeImplicitThreadTeachingRecord(body) {
+  return String(body ?? "").split(/\r?\n/).some((rawLine) => {
+    const line = normalizeThreadTeachingLine(rawLine);
+    return Boolean(
+      line
+      && /^(kind|summary|recorded by|target repo|subject locator|objective fingerprint|expires after|supersedes|applies(?:\s|-)?to|label|labels|note|notes|invariant|invariants|decision|decisions):/i.test(line),
+    );
+  });
+}
+
+function normalizeThreadTeachingLine(rawLine) {
+  return String(rawLine ?? "")
+    .replace(/^\s*>\s?/, "")
+    .trim();
+}
+
 function parseDecisionEntry(value) {
   const match = String(value ?? "").trim().match(/^([^:=]+?)\s*(?:=|:)\s*(allow|deny)(?:\s*(?:\||-)\s*(.+))?$/i);
   if (!match) {
@@ -712,6 +758,40 @@ function parseDecisionEntry(value) {
 function normalizeThreadTeachingKind(value) {
   const normalized = normalizeString(value)?.toLowerCase() ?? null;
   return THREAD_TEACHING_KINDS.has(normalized) ? normalized : null;
+}
+
+function inferImplicitThreadTeachingKind({ appliesTo = [], decisions = [] } = {}) {
+  const selectors = uniqueStrings([
+    ...appliesTo,
+    ...decisions.map((decision) => decision.gate_id),
+  ]);
+  if (selectors.length === 0) {
+    return null;
+  }
+  return selectors.some((selector) => /\bpublish\b/i.test(selector))
+    ? "publish_authorization"
+    : "approval";
+}
+
+function inferImplicitThreadTeachingSummary({ kind, appliesTo = [], decisions = [] } = {}) {
+  const selectors = uniqueStrings([
+    ...appliesTo,
+    ...decisions.map((decision) => decision.gate_id),
+  ]);
+  if (decisions.length > 0) {
+    const fragments = decisions.map((decision) => `${decision.gate_id}=${decision.decision}`).join(", ");
+    if (kind === "publish_authorization") {
+      return `Trusted thread reply authorized ${fragments}.`;
+    }
+    return `Trusted thread reply recorded ${fragments}.`;
+  }
+  if (selectors.length > 0) {
+    if (kind === "publish_authorization") {
+      return `Trusted thread reply scoped publish authorization to ${selectors.join(", ")}.`;
+    }
+    return `Trusted thread reply scoped approval to ${selectors.join(", ")}.`;
+  }
+  return null;
 }
 
 function normalizeDecision(value) {

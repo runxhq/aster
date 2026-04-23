@@ -126,7 +126,7 @@ Thread teaching is the canonical human-teaching layer:
 When a maintainer wants to teach or authorize future work without hiding that
 guidance in prompt sprawl, the instruction should live in the issue or PR
 thread itself. For ordinary unit-of-work flow, that means replying on the same
-work issue. The live gate reads the canonical block directly from that thread:
+work issue. The richest form is the canonical block:
 
 ```md
 <!-- aster:thread-teaching-record -->
@@ -140,6 +140,20 @@ Applies To: docs-pr.publish
 Invariant: Keep the change docs-only.
 Note: Reuse this only for the same repo-scoped objective.
 Decision: docs-pr.publish = allow | draft publication is approved
+```
+
+Trusted maintainers do not need the full marker block for routine gate updates.
+These shorter forms are accepted too:
+
+```md
+Applies To: skill-lab.publish
+Decision: skill-lab.publish = allow | refresh one draft PR from this same work ledger
+```
+
+```md
+Kind: lesson
+Summary: Keep the work issue as the living ledger.
+Target Repo: nilstate/runx
 ```
 
 Supported `Kind` values:

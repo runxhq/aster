@@ -145,6 +145,34 @@ test("buildIssueLedgerPacket excludes machine status comments from trusted amend
   assert.doesNotMatch(packet.ledger_body, /Opened draft PR for this run/);
 });
 
+test("buildIssueLedgerPacket treats a minimal trusted approval comment as structured teaching", () => {
+  const packet = buildIssueLedgerPacket({
+    repo: "nilstate/aster",
+    issue: {
+      number: 115,
+      title: "[skill] Propose decision-brief for one living work issue ledger",
+      body: "Objective: Propose a decision packet skill.",
+    },
+    comments: [
+      {
+        id: 1,
+        body: [
+          "Applies To: skill-lab.publish",
+          "",
+          "Decision: skill-lab.publish = allow | refresh one draft PR from this same work ledger",
+        ].join("\n"),
+        created_at: "2026-04-22T15:36:27Z",
+        user: { login: "auscaster", type: "User" },
+        author_association: "MEMBER",
+      },
+    ],
+  });
+
+  assert.equal(packet.amendments[0]?.thread_teaching_record?.kind, "publish_authorization");
+  assert.match(packet.ledger_body, /Structured teaching record captured separately/);
+  assert.match(packet.ledger_body, /skill-lab\.publish=allow/);
+});
+
 test("isMachineStatusComment detects machine-authored issue status surfaces", () => {
   assert.equal(
     isMachineStatusComment({

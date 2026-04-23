@@ -44,6 +44,39 @@ test("buildThreadTeachingEntries normalizes thread records into derived rows", (
   assert.equal(report.teaching_rows[0]?.record_kind, "publish_authorization");
 });
 
+test("buildThreadTeachingEntries accepts markerless gate comments", () => {
+  const report = buildThreadTeachingEntries({
+    repo: "nilstate/runx",
+    threads: [
+      {
+        kind: "issue",
+        number: 43,
+        title: "Bounded docs publish",
+        url: "https://github.com/nilstate/runx/issues/43",
+        state: "open",
+      },
+    ],
+    loadIssueEntries: () => [
+      {
+        source_type: "issue_comment",
+        author: "kam",
+        author_association: "OWNER",
+        body: [
+          "Applies To: docs-pr.publish",
+          "Decision: docs-pr.publish = allow | bounded draft publication is approved",
+        ].join("\n"),
+        url: "https://github.com/nilstate/runx/issues/43#issuecomment-1",
+        created_at: "2026-04-20T01:00:00Z",
+      },
+    ],
+    now: "2026-04-20T03:00:00Z",
+  });
+
+  assert.equal(report.records.length, 1);
+  assert.equal(report.records[0].thread_teaching_record?.kind, "publish_authorization");
+  assert.equal(report.teaching_rows[0]?.decisions[0]?.gate_id, "docs-pr.publish");
+});
+
 test("deriveThreadTeaching emits rebuildable state and teaching rows", async () => {
   const report = await deriveThreadTeaching({
     repos: ["nilstate/runx"],
@@ -81,4 +114,10 @@ test("deriveThreadTeaching emits rebuildable state and teaching rows", async () 
   assert.equal(report.records.length, 1);
   assert.equal(report.teaching_rows.length, 1);
   assert.equal(report.records[0].thread_teaching_record?.summary, "Prefer draft PRs over direct mutation.");
+  assert.deepEqual(report.source.queries, [
+    "aster:thread-teaching-record",
+    "Kind Summary",
+    "Applies To",
+    "Decision",
+  ]);
 });

@@ -277,7 +277,7 @@ function buildRefreshSummary({ publish, proposal, quality, workflowStatus }) {
   if (quality?.status === "needs_review") {
     lines.push("- Draft PR publication stays blocked until the proposal quality gaps are resolved, even if `skill-lab.publish` is authorized.");
   } else if (!publish || publish.status === "missing" || publish.status === "not_requested") {
-    lines.push("- Publication remains gated until `skill-lab.publish` is explicitly authorized on the same work issue.");
+    lines.push("- Publication remains gated until a trusted reply on this work issue authorizes `skill-lab.publish` with `Applies To:` + `Decision:` lines or a full thread-teaching record.");
   }
   return lines;
 }

@@ -74,7 +74,8 @@ The governing philosophy is:
   `design-skill`, materializes a proposal in `docs/skill-proposals/`,
   keeps one rolling machine comment attached to the same issue ledger, and
   refreshes one draft PR only after the same work issue authorizes
-  `skill-lab.publish`
+  `skill-lab.publish`. A trusted maintainer reply can use either the full
+  thread-teaching record form or plain `Applies To:` + `Decision:` lines
 - `skill-upstream`: prepares and validates a portable upstream `SKILL.md`
   contribution packet, reruns from trusted replies on `[upstream]` work
   issues, keeps the proposal state on one work issue ledger, and can open a

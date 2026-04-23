@@ -176,7 +176,7 @@ jobs:
           else
             echo "allowed=false" >> "$GITHUB_OUTPUT"
             echo "Docs proposal refreshed without draft PR publication." >> "$GITHUB_STEP_SUMMARY"
-            echo "Reply in the same work issue with a thread-teaching record that authorizes \`docs-pr.publish\` to refresh the draft PR." >> "$GITHUB_STEP_SUMMARY"
+            echo "Reply in the same work issue with trusted \`Applies To:\` + \`Decision:\` lines, or a full thread-teaching record, that authorizes \`docs-pr.publish\` to refresh the draft PR." >> "$GITHUB_STEP_SUMMARY"
           fi
 
       - name: Run docs-pr lane

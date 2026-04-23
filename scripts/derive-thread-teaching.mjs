@@ -5,7 +5,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import {
-  THREAD_TEACHING_SEARCH_QUERY,
+  THREAD_TEACHING_SEARCH_QUERIES,
   buildThreadTeachingRow,
   extractTrustedThreadTeachingRecords,
   threadTeachingRecordStatus,
@@ -48,6 +48,7 @@ export async function deriveThreadTeaching(
   const searchThreads = helpers.searchThreads ?? defaultSearchThreads;
   const loadIssueEntries = helpers.loadIssueEntries ?? loadIssueThreadEntries;
   const loadPullRequestEntries = helpers.loadPullRequestEntries ?? loadPullRequestThreadEntries;
+  const searchQueries = helpers.searchQueries ?? THREAD_TEACHING_SEARCH_QUERIES;
   const generatedAt = now ?? new Date().toISOString();
 
   const records = [];
@@ -57,8 +58,10 @@ export async function deriveThreadTeaching(
   for (const repo of trackedRepos) {
     try {
       const threadHits = mergeThreadTeachingThreadHits(
-        searchThreads(repo, { match: "body", limit: searchLimit }),
-        searchThreads(repo, { match: "comments", limit: searchLimit }),
+        ...searchQueries.flatMap((query) => [
+          searchThreads(repo, { query, match: "body", limit: searchLimit }),
+          searchThreads(repo, { query, match: "comments", limit: searchLimit }),
+        ]),
       );
       const repoEntries = buildThreadTeachingEntries({
         repo,
@@ -84,7 +87,7 @@ export async function deriveThreadTeaching(
     generated_at: generatedAt,
     source: {
       type: "github_search",
-      marker: THREAD_TEACHING_SEARCH_QUERY,
+      queries: searchQueries,
       repos: trackedRepos,
       search_limit: searchLimit,
     },
@@ -201,11 +204,11 @@ async function loadTrackedRepos(repoRoot) {
   return uniqueStrings(repos);
 }
 
-function defaultSearchThreads(repo, { match, limit }) {
+function defaultSearchThreads(repo, { query, match, limit }) {
   const args = [
     "search",
     "issues",
-    THREAD_TEACHING_SEARCH_QUERY,
+    query,
     "--repo",
     repo,
     "--match",

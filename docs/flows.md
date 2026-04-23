@@ -92,7 +92,9 @@ issue comment back onto the same work issue. Trusted maintainer replies on that
 issue become maintainer amendments and retrigger skill-lab from the refreshed
 work ledger so the proposal evolves inside one work thread. Once that same
 thread authorizes `skill-lab.publish`, the lane also opens or refreshes one
-rolling draft PR for the proposal.
+rolling draft PR for the proposal. That authorization can be a full
+thread-teaching record or a shorter trusted reply with `Applies To:` and
+`Decision:` lines.
 
 ## `skill-upstream`
 
