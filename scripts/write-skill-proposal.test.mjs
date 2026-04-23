@@ -6,7 +6,7 @@ import {
   extractSkillProposalPayload,
 } from "./write-skill-proposal.mjs";
 
-test("buildSkillProposalMarkdown preserves issue rationale and evidence", () => {
+test("buildSkillProposalMarkdown renders a reader-facing proposal without transcript residue", () => {
   const markdown = buildSkillProposalMarkdown({
     title: "Add an issue-ledger recap skill",
     issueUrl: "https://github.com/nilstate/aster/issues/42",
@@ -137,22 +137,18 @@ test("buildSkillProposalMarkdown preserves issue rationale and evidence", () => 
   });
 
   assert.match(markdown, /^title: "issue-ledger-recap"$/m);
-  assert.match(markdown, /## Work Ledger/);
-  assert.match(markdown, /Work issue: `nilstate\/aster#42`/);
-  assert.match(markdown, /Ledger revision: `deadbeefcafebabe`/);
-  assert.match(markdown, /skill-lab\.publish/);
-  assert.match(markdown, /## Maintainer Amendments/);
-  assert.match(markdown, /Later maintainer amendments on the living ledger take precedence/);
-  assert.match(markdown, /Hard-cut the contract to subject_locator/);
-  assert.match(markdown, /Refresh the single rolling draft PR from the same work ledger/);
-  assert.match(markdown, /## Why It Matters/);
+  assert.doesNotMatch(markdown, /## Work Ledger/);
+  assert.doesNotMatch(markdown, /## Maintainer Amendments/);
+  assert.doesNotMatch(markdown, /## Original Request/);
+  assert.doesNotMatch(markdown, /## Raw Packet/);
+  assert.doesNotMatch(markdown, /Later maintainer amendments on the living ledger take precedence/);
+  assert.doesNotMatch(markdown, /Hard-cut the contract to subject_locator/);
+  assert.doesNotMatch(markdown, /Refresh the single rolling draft PR from the same work ledger/);
+  assert.match(markdown, /## Thesis/);
+  assert.match(markdown, /## Job To Be Done/);
+  assert.match(markdown, /## Why This Matters/);
   assert.match(markdown, /Issue review should train the operator\./);
-  assert.match(markdown, /## Evidence/);
-  assert.match(markdown, /state\/thread-teaching\.json/);
-  assert.match(markdown, /## Original Request/);
-  assert.match(markdown, /Add an issue-ledger recap skill that turns issue discussion into a bounded approval summary\./);
-  assert.match(markdown, /## Objective/);
-  assert.match(markdown, /Distill a bounded collaboration subject into a rebuildable approval packet\./);
+  assert.match(markdown, /## Contract/);
   assert.match(markdown, /## Governance/);
   assert.match(markdown, /mutating: false/);
   assert.match(markdown, /## Findings/);
@@ -161,14 +157,21 @@ test("buildSkillProposalMarkdown preserves issue rationale and evidence", () => 
   assert.match(markdown, /Maintainers lose the thread of review decisions/);
   assert.match(markdown, /## Catalog Fit/);
   assert.match(markdown, /issue-triage, skill-lab/);
-  assert.match(markdown, /## Maintainer Decisions/);
+  assert.match(markdown, /## Open Decisions/);
   assert.match(markdown, /Should the first version stop at a review packet\?/);
-  assert.match(markdown, /## Recommended Flow/);
+  assert.match(markdown, /## Implementation Shape/);
   assert.match(markdown, /Read the living ledger\./);
-  assert.match(markdown, /## Risks/);
+  assert.match(markdown, /## Boundaries/);
+  assert.match(markdown, /proposal only/);
   assert.match(markdown, /Provider lock-in/);
   assert.match(markdown, /## Acceptance Checks/);
   assert.match(markdown, /`ac-fixture-passes`: fixture passes/);
+  assert.match(markdown, /## Provenance/);
+  assert.match(markdown, /Work issue: `nilstate\/aster#42`/);
+  assert.match(markdown, /Ledger revision: `deadbeefcafebabe`/);
+  assert.match(markdown, /Trusted maintainer amendments considered: 2/);
+  assert.match(markdown, /Evidence note: - state\/thread-teaching\.json/);
+  assert.match(markdown, /Machine-readable packet: \[issue-ledger-recap\.json\]/);
   assert.doesNotMatch(markdown, /\[object Object\]/);
   assert.match(markdown, /description: "Summarize approval issue threads into a reusable packet\."/);
 });

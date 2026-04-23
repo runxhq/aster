@@ -24,6 +24,36 @@ const residuePatterns = [
     pattern: /\bcurrent issue-ledger adapter surface\b/i,
     message: "Keep adapter discussion out of the core proposal unless it is genuinely contract-shaping.",
   },
+  {
+    id: "work_ledger_heading",
+    pattern: /^##\s+Work Ledger\b/im,
+    message: "Do not render the issue ledger as the public proposal; keep it as provenance.",
+  },
+  {
+    id: "maintainer_amendments_heading",
+    pattern: /^##\s+Maintainer Amendments\b/im,
+    message: "Do not paste maintainer amendment transcripts into the public proposal.",
+  },
+  {
+    id: "original_request_heading",
+    pattern: /^##\s+Original Request\b/im,
+    message: "Rewrite the request into a proposal instead of replaying the raw issue text.",
+  },
+  {
+    id: "raw_packet_heading",
+    pattern: /^##\s+Raw Packet\b/im,
+    message: "Do not make the machine packet a reader-facing proposal section.",
+  },
+  {
+    id: "thread_teaching_leak",
+    pattern: /\b(thread_teaching_record|structured_teaching|publish_authorization)\b/i,
+    message: "Keep approval mechanics in provenance and receipts, not in the catalog proposal.",
+  },
+  {
+    id: "generic_generated_summary",
+    pattern: /\bGenerated skill proposal\b/i,
+    message: "Replace generated-placeholder language with a concrete human-authored thesis.",
+  },
 ];
 
 async function main(argv = process.argv.slice(2)) {
@@ -51,6 +81,12 @@ export function evaluateSkillProposalQuality({ report, issuePacket = null, catal
   const painPoints = normalizeList(payload?.pain_points);
   const maintainerDecisions = normalizeList(payload?.maintainer_decisions);
   const catalogFitText = collectText(payload?.catalog_fit).join("\n").trim();
+  const findingText = collectText(payload?.findings).join("\n").trim();
+  const sourceText = collectText(payload?.sources).join("\n").trim();
+  const harnessFixtures = Array.isArray(payload?.harness_fixture) ? payload.harness_fixture : [];
+  const inputFields = Array.isArray(skillSpec.inputs) ? skillSpec.inputs : [];
+  const outputFields = Array.isArray(skillSpec.outputs) ? skillSpec.outputs : [];
+  const summaryText = firstNonEmptyString(skillSpec.summary, skillSpec.description, skillSpec.objective);
   const openQuestions = Array.isArray(payload?.execution_plan?.open_questions_left_out_of_scope)
     ? payload.execution_plan.open_questions_left_out_of_scope.filter(Boolean)
     : [];
@@ -61,11 +97,31 @@ export function evaluateSkillProposalQuality({ report, issuePacket = null, catal
     ...collectText(payload?.maintainer_decisions),
     ...collectText(payload?.execution_plan),
     ...collectText(payload?.harness_fixture),
+    ...collectText(payload?.findings),
+    ...collectText(payload?.sources),
   ].join("\n");
   const residueHits = residuePatterns
     .filter(({ pattern }) => pattern.test(proposalText))
     .map(({ id, message }) => ({ id, message }));
   const placeholderFree = !/\bUNRESOLVED_[A-Z0-9_]+\b|\bTBD\b|placeholder target|placeholder_value/i.test(proposalText);
+  const humanGradeSurface = residueHits.length === 0
+    && placeholderFree
+    && countWords(summaryText) >= 8
+    && !/\b(?:automatically generated|as an ai|llm|machine-generated)\b/i.test(proposalText);
+  const catalogBoundaryExplicit = hasCatalogBoundary(payload?.catalog_fit);
+  const implementationReady = acceptanceChecks.length >= 3
+    && harnessFixtures.length > 0
+    && (
+      inputFields.length > 0
+      || outputFields.length > 0
+      || collectText(payload?.execution_plan).join("\n").trim().length > 0
+    );
+  const evidenceAnchored = Boolean(
+    firstNonEmptyString(issuePacket?.source_issue?.url)
+    || issuePacket?.source_issue?.number
+    || findingText
+    || sourceText
+  );
   const catalogMentions = new Set(
     catalogEntries.filter((name) => new RegExp(`\\b${escapeRegExp(name)}\\b`, "i").test(catalogFitText)),
   );
@@ -80,12 +136,28 @@ export function evaluateSkillProposalQuality({ report, issuePacket = null, catal
     catalog_overlap_explained: catalogEntries.length === 0
       ? catalogFitText.length > 0
       : catalogMentions.size > 0,
+    catalog_worthiness: painPoints.length > 0 && catalogFitText.length > 0 && catalogBoundaryExplicit,
+    implementation_ready: implementationReady,
+    human_grade_surface: humanGradeSurface,
+    reader_facing_provenance: evidenceAnchored,
     maintainer_decisions_explicit: maintainerDecisions.length > 0 || openQuestions.length === 0,
     builder_residue_free: residueHits.length === 0,
     placeholder_free: placeholderFree,
   };
   const findings = [];
 
+  if (!checks.proposal_named) {
+    findings.push({
+      id: "proposal_name_missing",
+      summary: "Name the proposed skill with a stable first-party skill id.",
+    });
+  }
+  if (!checks.first_party_shape) {
+    findings.push({
+      id: "first_party_shape_missing",
+      summary: "Provide a crisp summary or objective and at least three acceptance checks.",
+    });
+  }
   if (!checks.pain_points_explicit) {
     findings.push({
       id: "pain_points_missing",
@@ -101,6 +173,30 @@ export function evaluateSkillProposalQuality({ report, issuePacket = null, catal
     findings.push({
       id: "catalog_overlap_unexplained",
       summary: "Name the adjacent current runx skills or chains and explain the boundary clearly.",
+    });
+  }
+  if (!checks.catalog_worthiness) {
+    findings.push({
+      id: "catalog_worthiness_missing",
+      summary: "Explain why this should be a first-party catalog skill rather than an amendment to an existing skill, chain, or Sourcey/content behavior.",
+    });
+  }
+  if (!checks.implementation_ready) {
+    findings.push({
+      id: "implementation_not_ready",
+      summary: "Surface an implementation-ready contract with acceptance checks, a harness fixture, and concrete inputs or outputs.",
+    });
+  }
+  if (!checks.human_grade_surface) {
+    findings.push({
+      id: "human_grade_surface_missing",
+      summary: "Rewrite machine-shaped or transcript-shaped content into concise human-facing proposal prose.",
+    });
+  }
+  if (!checks.reader_facing_provenance) {
+    findings.push({
+      id: "provenance_missing",
+      summary: "Carry reader-facing provenance without pasting raw issue comments or approval mechanics into the proposal.",
     });
   }
   if (!checks.maintainer_decisions_explicit) {
@@ -132,6 +228,9 @@ export function evaluateSkillProposalQuality({ report, issuePacket = null, catal
       acceptance_check_count: acceptanceChecks.length,
       pain_point_count: painPoints.length,
       maintainer_decision_count: maintainerDecisions.length,
+      harness_fixture_count: harnessFixtures.length,
+      input_field_count: inputFields.length,
+      output_field_count: outputFields.length,
       catalog_mentions: [...catalogMentions],
       residue_hit_count: residueHits.length,
       request_objective: firstNonEmptyString(issuePacket?.sections?.objective, issuePacket?.objective),
@@ -230,6 +329,42 @@ function collectText(value) {
 
 function escapeRegExp(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function hasCatalogBoundary(value) {
+  if (typeof value === "string") {
+    return /\b(adjacent|existing|catalog|boundary|different|narrower|broader|instead|rather than|not just|does not|doesn't|complements?)\b/i.test(value);
+  }
+  if (Array.isArray(value)) {
+    return value.some((entry) => hasCatalogBoundary(entry));
+  }
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  const adjacent = [
+    value.adjacent_skills,
+    value.adjacent_chains,
+    value.adjacent_catalog_entries,
+    value.overlap,
+  ].some((entry) => Array.isArray(entry) ? entry.length > 0 : Boolean(firstNonEmptyString(entry)));
+  const boundary = firstNonEmptyString(
+    value.why_new,
+    value.why_not_existing,
+    value.boundary,
+    value.boundaries,
+    value.differentiator,
+    value.rationale,
+    value.positioning,
+  );
+  return adjacent && Boolean(boundary);
+}
+
+function countWords(value) {
+  if (typeof value !== "string") {
+    return 0;
+  }
+  return value.trim().split(/\s+/).filter(Boolean).length;
 }
 
 function isRecord(value) {

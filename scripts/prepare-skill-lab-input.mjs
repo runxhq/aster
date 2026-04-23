@@ -61,8 +61,11 @@ export function prepareSkillLabInput(issue = {}, options = {}) {
     "Proposal Quality Bar",
     formatBulletList([
       "The deliverable should read like a crisp first-party runx skill proposal, not a builder transcript.",
+      "The public proposal must look like a maintainer did the work: compact thesis, concrete user pain, clear catalog boundary, and implementation-ready contract.",
+      "Evidence, amendments, and approval comments inform the proposal; do not paste the issue thread, ledger, or machine packet into the reader-facing content.",
       "Name the concrete operator or maintainer pain the skill resolves.",
       "Explain fit against the current runx catalog and why this is not just duplication of an adjacent skill or chain.",
+      "If the idea is better handled by Sourcey, draft-content, an existing skill, or a chain amendment, say that instead of forcing a new skill.",
       "Turn unresolved ambiguity into explicit maintainer decisions rather than placeholder targets or internal residue.",
     ]),
     catalogEntries.length > 0

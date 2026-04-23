@@ -44,11 +44,11 @@ export function buildSkillProposalMarkdown({ payload, title, issueUrl, issuePack
   const proposalDescription =
     payload.skill_spec?.description
     ?? payload.skill_spec?.summary
-    ?? "Generated skill proposal.";
+    ?? "First-party runx skill proposal.";
   const acceptanceChecks = formatAcceptanceChecks(payload.acceptance_checks);
   const effectiveObjective =
     firstNonEmptyString(payload.skill_spec?.objective, payload.skill_spec?.summary, title)
-    ?? "Generated skill proposal objective not supplied.";
+    ?? "Define the bounded job this skill should perform.";
 
   const sourceSections = issuePacket?.sections ?? {};
   const maintainerAmendments = Array.isArray(issuePacket?.amendments) ? issuePacket.amendments : [];
@@ -56,6 +56,10 @@ export function buildSkillProposalMarkdown({ payload, title, issueUrl, issuePack
   const recommendedFlow = Array.isArray(payload.recommended_flow) ? payload.recommended_flow : [];
   const sources = Array.isArray(payload.sources) ? payload.sources : [];
   const risks = Array.isArray(payload.risks) ? payload.risks : [];
+  const harnessFixture = Array.isArray(payload.harness_fixture) ? payload.harness_fixture : [];
+  const openQuestions = Array.isArray(payload.execution_plan?.open_questions_left_out_of_scope)
+    ? payload.execution_plan.open_questions_left_out_of_scope.filter(Boolean)
+    : [];
   const workIssueRepo = firstNonEmptyString(issuePacket?.source_issue?.repo);
   const workIssueNumber = normalizeWorkIssueNumber(issuePacket?.source_issue?.number);
   const workIssueRef = workIssueRepo && workIssueNumber
@@ -70,63 +74,29 @@ export function buildSkillProposalMarkdown({ payload, title, issueUrl, issuePack
     "",
     `# ${proposalTitle}`,
     "",
-    "## Work Ledger",
+    "## Thesis",
     "",
-    workIssueRef ? `- Work issue: \`${workIssueRef}\`` : null,
-    `- Work issue URL: ${issueUrl ?? "n/a"}`,
-    ledgerRevision ? `- Ledger revision: \`${ledgerRevision}\`` : null,
-    "- Maintainer amendments stay on the same work issue thread.",
-    "- Draft PR refresh requires `skill-lab.publish` authorization on the same work issue.",
+    proposalDescription,
     "",
-  ];
-
-  if (maintainerAmendments.length > 0) {
-    lines.push(
-      "## Maintainer Amendments",
-      "",
-      "Later maintainer amendments on the living ledger take precedence over stale original wording when they conflict.",
-      "",
-      ...formatMaintainerAmendments(maintainerAmendments),
-      "",
-    );
-  }
-
-  lines.push(
-    "## Objective",
+    "## Job To Be Done",
     "",
     effectiveObjective,
     "",
-  );
-
-  if (
-    sourceSections.objective &&
-    normalizeComparableText(sourceSections.objective) !== normalizeComparableText(effectiveObjective)
-  ) {
-    lines.push("## Original Request", "", sourceSections.objective, "");
-  }
+  ];
 
   if (sourceSections.why_it_matters) {
-    lines.push("## Why It Matters", "", sourceSections.why_it_matters, "");
-  }
-  if (sourceSections.constraints) {
-    lines.push("## Constraints", "", sourceSections.constraints, "");
-  }
-  if (sourceSections.evidence) {
-    lines.push("## Evidence", "", sourceSections.evidence, "");
-  }
-  if (sourceSections.additional_notes) {
-    lines.push("## Additional Notes", "", sourceSections.additional_notes, "");
+    lines.push("## Why This Matters", "", sourceSections.why_it_matters, "");
   }
 
   lines.push(
-    "## Skill Contract",
+    ...formatFlexibleSection("Pain Points", payload.pain_points),
+    ...formatCatalogFitSection(payload.catalog_fit),
+    "## Contract",
     "",
     `- name: \`${firstNonEmptyString(payload.skill_spec?.name, payload.skill_spec?.skill_name) ?? "unknown"}\``,
     payload.skill_spec?.kind ? `- kind: \`${payload.skill_spec.kind}\`` : null,
     payload.skill_spec?.status ? `- status: \`${payload.skill_spec.status}\`` : null,
     `- description: ${payload.skill_spec?.description ?? payload.skill_spec?.summary ?? "n/a"}`,
-    payload.skill_spec?.summary ? `- summary: ${payload.skill_spec.summary}` : null,
-    payload.skill_spec?.objective ? `- objective: ${payload.skill_spec.objective}` : null,
     Array.isArray(payload.skill_spec?.composes_with) && payload.skill_spec.composes_with.length > 0
       ? `- composes_with: ${payload.skill_spec.composes_with.map((value) => `\`${value}\``).join(", ")}`
       : null,
@@ -135,36 +105,31 @@ export function buildSkillProposalMarkdown({ payload, title, issueUrl, issuePack
     ...formatBulletSection("Invariants", payload.skill_spec?.invariants),
     ...formatFieldSchemaSection("Inputs", payload.skill_spec?.inputs),
     ...formatFieldSchemaSection("Outputs", payload.skill_spec?.outputs),
-    ...formatFlexibleSection("Pain Points", payload.pain_points),
-    ...formatFlexibleSection("Catalog Fit", payload.catalog_fit),
-    ...formatFlexibleSection("Maintainer Decisions", payload.maintainer_decisions),
+    ...formatBoundarySection({ constraints: sourceSections.constraints, risks }),
     ...formatFindingsSection(findings),
     ...formatRecommendedFlowSection(recommendedFlow),
-    ...formatSourcesSection(sources),
-    ...formatRisksSection(risks),
-    "## Execution Plan",
-    "",
-    "```json",
-    JSON.stringify(payload.execution_plan ?? {}, null, 2),
-    "```",
-    "",
-    "## Harness Fixtures",
-    "",
-    "```json",
-    JSON.stringify(payload.harness_fixture ?? [], null, 2),
-    "```",
-    "",
+    ...formatExecutionShapeSection(payload.execution_plan),
+    ...formatHarnessSection(harnessFixture),
     "## Acceptance Checks",
     "",
     ...acceptanceChecks,
     "",
-    "## Raw Packet",
+    ...formatOpenDecisionSection({ maintainerDecisions: payload.maintainer_decisions, openQuestions }),
+    "## Provenance",
     "",
-    `See [${path.basename(jsonPath)}](./${path.basename(jsonPath)}).`,
+    workIssueRef ? `- Work issue: \`${workIssueRef}\`` : null,
+    issueUrl ? `- Source thread: ${issueUrl}` : null,
+    ledgerRevision ? `- Ledger revision: \`${ledgerRevision}\`` : null,
+    maintainerAmendments.length > 0
+      ? `- Trusted maintainer amendments considered: ${maintainerAmendments.length}. Details remain on the source thread.`
+      : null,
+    sourceSections.evidence ? `- Evidence note: ${collapseWhitespace(sourceSections.evidence)}` : null,
+    ...formatSourcesList(sources),
+    `- Machine-readable packet: [${path.basename(jsonPath)}](./${path.basename(jsonPath)}).`,
     "",
   );
 
-  return lines.join("\n");
+  return lines.filter((line) => line !== null && line !== undefined).join("\n");
 }
 
 export function extractSkillProposalPayload(report) {
@@ -368,6 +333,34 @@ function formatFlexibleSection(title, value) {
   return [`## ${title}`, "", String(value), ""];
 }
 
+function formatCatalogFitSection(value) {
+  const lines = formatFlexibleSection("Catalog Fit", value);
+  if (lines.length > 0) {
+    return lines;
+  }
+  return [
+    "## Catalog Fit",
+    "",
+    "- This proposal still needs a clear boundary against the current runx catalog before it should publish.",
+    "",
+  ];
+}
+
+function formatBoundarySection({ constraints, risks }) {
+  const lines = ["## Boundaries", ""];
+  let wrote = false;
+  if (constraints) {
+    lines.push(collapseWhitespace(constraints), "");
+    wrote = true;
+  }
+  const riskLines = formatRisksSection(risks);
+  if (riskLines.length > 0) {
+    lines.push(...riskLines);
+    wrote = true;
+  }
+  return wrote ? lines : [];
+}
+
 function formatFindingsSection(findings) {
   if (findings.length === 0) {
     return [];
@@ -403,7 +396,7 @@ function formatRecommendedFlowSection(flow) {
     return [];
   }
 
-  const lines = ["## Recommended Flow", ""];
+  const lines = ["## Implementation Shape", ""];
   for (const item of flow) {
     if (!item || typeof item !== "object") {
       lines.push(`- ${String(item)}`);
@@ -420,12 +413,85 @@ function formatRecommendedFlowSection(flow) {
   return lines;
 }
 
-function formatSourcesSection(sources) {
+function formatExecutionShapeSection(plan) {
+  if (!plan || typeof plan !== "object" || Array.isArray(plan)) {
+    return [];
+  }
+
+  const lines = [];
+  const runner = firstNonEmptyString(plan.runner, plan.type);
+  if (runner) {
+    lines.push(`- runner: \`${runner}\``);
+  }
+  const stages = Array.isArray(plan.stages) ? plan.stages : Array.isArray(plan.steps) ? plan.steps : [];
+  for (const stage of stages) {
+    if (typeof stage === "string") {
+      lines.push(`- ${stage}`);
+      continue;
+    }
+    if (stage && typeof stage === "object") {
+      const label = firstNonEmptyString(stage.name, stage.id, stage.step, stage.summary);
+      const details = firstNonEmptyString(stage.description, stage.details, stage.reason);
+      if (label && details) {
+        lines.push(`- ${label}: ${details}`);
+      } else if (label) {
+        lines.push(`- ${label}`);
+      }
+    }
+  }
+
+  if (lines.length === 0) {
+    return [];
+  }
+
+  return ["## Execution Notes", "", ...lines, ""];
+}
+
+function formatHarnessSection(fixtures) {
+  if (!Array.isArray(fixtures) || fixtures.length === 0) {
+    return [];
+  }
+
+  const lines = ["## Harness", ""];
+  for (const fixture of fixtures) {
+    if (typeof fixture === "string") {
+      lines.push(`- ${fixture}`);
+      continue;
+    }
+    if (!fixture || typeof fixture !== "object") {
+      lines.push(`- ${String(fixture)}`);
+      continue;
+    }
+    const name = firstNonEmptyString(fixture.name, fixture.id, fixture.case, fixture.title) ?? "fixture";
+    const summary = firstNonEmptyString(fixture.summary, fixture.description, fixture.expected, fixture.expect);
+    lines.push(summary ? `- ${name}: ${summary}` : `- ${name}`);
+  }
+  lines.push("");
+  return lines;
+}
+
+function formatOpenDecisionSection({ maintainerDecisions, openQuestions }) {
+  const decisionLines = formatFlexibleSection("Open Decisions", maintainerDecisions);
+  if (decisionLines.length > 0) {
+    return decisionLines;
+  }
+  if (openQuestions.length === 0) {
+    return [];
+  }
+  return [
+    "## Open Decisions",
+    "",
+    ...openQuestions.map((question) => `- ${formatInlineValue(question)}`),
+    "",
+  ];
+}
+
+function formatSourcesList(sources) {
   if (sources.length === 0) {
     return [];
   }
 
-  const lines = ["## Sources", ""];
+  const lines = [];
   for (const source of sources) {
     if (!source || typeof source !== "object") {
       lines.push(`- ${String(source)}`);
@@ -443,7 +509,6 @@ function formatSourcesSection(sources) {
       lines.push(`  ${details}`);
     }
   }
-  lines.push("");
   return lines;
 }
 
@@ -476,50 +541,6 @@ function formatRisksSection(risks) {
   return lines;
 }
 
-function formatMaintainerAmendments(amendments) {
-  return [...amendments]
-    .reverse()
-    .flatMap((amendment, index) => {
-      const header = [
-        `### Amendment ${index + 1}`,
-        "",
-        amendment.recorded_at ? `- recorded_at: ${amendment.recorded_at}` : null,
-        amendment.author ? `- author: ${amendment.author}` : null,
-        amendment.url ? `- url: ${amendment.url}` : null,
-        amendment.thread_teaching_record
-          ? `- structured_teaching: ${amendment.thread_teaching_record.kind} — ${amendment.thread_teaching_record.summary}`
-          : null,
-        "",
-      ].filter(Boolean);
-      const body = amendment.thread_teaching_record
-        ? formatThreadTeachingRecord(amendment.thread_teaching_record)
-        : firstNonEmptyString(amendment.body);
-      return body ? [...header, body, ""] : header;
-    });
-}
-
-function formatThreadTeachingRecord(record) {
-  const lines = [];
-  const appliesTo = Array.isArray(record?.applies_to) ? record.applies_to.filter(Boolean) : [];
-  const decisions = Array.isArray(record?.decisions) ? record.decisions : [];
-  if (appliesTo.length > 0) {
-    lines.push(`Applies to: ${appliesTo.join(", ")}`);
-  }
-  if (decisions.length > 0) {
-    lines.push("Decisions:");
-    for (const decision of decisions) {
-      if (!decision || typeof decision !== "object") {
-        continue;
-      }
-      const gateId = firstNonEmptyString(decision.gate_id) ?? "unknown";
-      const outcome = firstNonEmptyString(decision.decision) ?? "unknown";
-      const reason = firstNonEmptyString(decision.reason);
-      lines.push(`- ${gateId} = ${outcome}${reason ? ` | ${reason}` : ""}`);
-    }
-  }
-  return lines.join("\n");
-}
-
 function firstNonEmptyString(...values) {
   for (const value of values) {
     if (typeof value === "string" && value.trim().length > 0) {
@@ -529,9 +550,8 @@ function firstNonEmptyString(...values) {
   return null;
 }
 
-function normalizeComparableText(value) {
+function collapseWhitespace(value) {
   return String(value ?? "")
-    .toLowerCase()
     .replace(/\s+/g, " ")
     .trim();
 }

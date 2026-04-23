@@ -10,7 +10,9 @@ test("evaluateSkillProposalQuality passes a crisp first-party proposal", () => {
         stdout: JSON.stringify({
           skill_spec: {
             skill_name: "decision-brief",
-            summary: "Read one living work ledger and return one bounded maintainer decision packet.",
+            summary: "Read one bounded issue thread and return one concise maintainer decision brief.",
+            inputs: [{ name: "subject_memory", type: "object" }],
+            outputs: [{ name: "decision_brief", type: "object" }],
           },
           pain_points: [
             "Maintainers need a compact next-step packet instead of re-reading the whole work thread.",
@@ -24,10 +26,16 @@ test("evaluateSkillProposalQuality passes a crisp first-party proposal", () => {
               question: "Should the first version stop at review?",
             },
           ],
+          findings: [
+            {
+              claim: "The source issue asked for reusable decision support instead of another broad planning agent.",
+            },
+          ],
           acceptance_checks: [{ id: "ac-1" }, { id: "ac-2" }, { id: "ac-3" }],
           harness_fixture: [
             {
               target: "../decision-brief",
+              expected: "Returns one decision packet with recommendation, rationale, and next action.",
             },
           ],
         }),
@@ -50,7 +58,9 @@ test("evaluateSkillProposalQuality ignores natural-language placeholder mentions
         stdout: JSON.stringify({
           skill_spec: {
             skill_name: "decision-brief",
-            summary: "Return one decision packet from one living ledger.",
+            summary: "Return one concise decision packet from one bounded work issue thread.",
+            inputs: [{ name: "subject_memory", type: "object" }],
+            outputs: [{ name: "decision_packet", type: "object" }],
           },
           pain_points: ["Maintainers need one next-step packet."],
           catalog_fit: {
@@ -58,6 +68,7 @@ test("evaluateSkillProposalQuality ignores natural-language placeholder mentions
             why_new: "This is narrower than issue triage.",
           },
           maintainer_decisions: [{ question: "Accept the skill?" }],
+          findings: [{ claim: "The source issue requested a compact decision artifact." }],
           acceptance_checks: [{ id: "ac-1" }, { id: "ac-2" }, { id: "ac-3" }],
           harness_fixture: [
             {
@@ -83,6 +94,49 @@ test("evaluateSkillProposalQuality ignores natural-language placeholder mentions
 
   assert.equal(evaluation.checks.placeholder_free, true);
   assert.equal(evaluation.status, "pass");
+});
+
+test("evaluateSkillProposalQuality rejects transcript-shaped public proposals", () => {
+  const evaluation = evaluateSkillProposalQuality({
+    report: {
+      execution: {
+        stdout: JSON.stringify({
+          skill_spec: {
+            skill_name: "decision-brief",
+            summary: "Generated skill proposal.",
+            inputs: [{ name: "subject_memory", type: "object" }],
+            outputs: [{ name: "decision_packet", type: "object" }],
+          },
+          pain_points: ["Maintainers need one next-step packet."],
+          catalog_fit: {
+            adjacent_skills: ["issue-triage"],
+            why_new: "This is narrower than issue triage.",
+          },
+          maintainer_decisions: [{ question: "Accept the skill?" }],
+          acceptance_checks: [{ id: "ac-1" }, { id: "ac-2" }, { id: "ac-3" }],
+          harness_fixture: [{ name: "success" }],
+          findings: [
+            {
+              claim: "## Work Ledger\n## Maintainer Amendments\nstructured_teaching: publish_authorization",
+            },
+          ],
+        }),
+      },
+    },
+    issuePacket: {
+      source_issue: {
+        number: 115,
+        url: "https://github.com/nilstate/aster/issues/115",
+      },
+    },
+    catalogEntries: ["issue-triage"],
+  });
+
+  assert.equal(evaluation.status, "needs_review");
+  assert.equal(evaluation.checks.human_grade_surface, false);
+  assert.equal(evaluation.checks.builder_residue_free, false);
+  assert.match(evaluation.findings.map((item) => item.id).join("\n"), /work_ledger_heading/);
+  assert.match(evaluation.findings.map((item) => item.id).join("\n"), /maintainer_amendments_heading/);
 });
 
 test("evaluateSkillProposalQuality flags builder residue and missing catalog fit", () => {

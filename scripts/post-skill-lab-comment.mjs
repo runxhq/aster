@@ -262,7 +262,7 @@ function buildRefreshSummary({ publish, proposal, quality, workflowStatus }) {
     lines.push(`- Acceptance checks surfaced: \`${proposal.acceptanceCheckCount}\`.`);
   }
   if (quality?.status === "pass") {
-    lines.push("- Proposal quality passed the current first-party, pain-point, and catalog-fit checks.");
+    lines.push("- Proposal quality passed the human-grade first-party, catalog-worthiness, implementation, and provenance checks.");
   }
   if (quality?.status === "needs_review") {
     lines.push("- Proposal quality still needs review before this reads like a first-party runx skill proposal.");
