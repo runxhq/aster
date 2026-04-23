@@ -219,6 +219,39 @@ test("evaluateSkillProposalQuality allows approval mechanics inside harness-only
   assert.equal(evaluation.checks.human_grade_surface, true);
 });
 
+test("evaluateSkillProposalQuality accepts catalog fit with adjacent entries and boundary language", () => {
+  const evaluation = evaluateSkillProposalQuality({
+    report: {
+      execution: {
+        stdout: JSON.stringify({
+          skill_spec: {
+            skill_name: "decision-brief",
+            summary: "Read one bounded work issue thread and return one concise maintainer decision packet.",
+            inputs: [{ name: "subject_memory", type: "object" }],
+            outputs: [{ name: "decision_packet", type: "object" }],
+          },
+          pain_points: ["Maintainers need one next-step packet instead of replaying a whole issue thread."],
+          catalog_fit: {
+            adjacent_catalog_entries: [
+              { name: "issue-triage", why_not_enough: "It routes work but does not emit one decision packet." },
+              { name: "skill-lab", why_not_enough: "It designs skills but does not run as this runtime handoff." },
+            ],
+            new_capability_justification: "This fills a narrow gap between issue routing and proposal review.",
+          },
+          maintainer_decisions: [{ question: "Approve this as a net-new skill?" }],
+          findings: [{ claim: "The source issue requests one bounded decision packet." }],
+          acceptance_checks: [{ id: "ac-1" }, { id: "ac-2" }, { id: "ac-3" }],
+          harness_fixture: [{ name: "success", expected: "Returns one decision packet." }],
+        }),
+      },
+    },
+    catalogEntries: ["issue-triage", "skill-lab"],
+  });
+
+  assert.equal(evaluation.status, "pass");
+  assert.equal(evaluation.checks.catalog_worthiness, true);
+});
+
 test("evaluateSkillProposalQuality flags builder residue and missing catalog fit", () => {
   const evaluation = evaluateSkillProposalQuality({
     report: {

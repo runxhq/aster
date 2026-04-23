@@ -368,6 +368,7 @@ function hasCatalogBoundary(value) {
     value.fit_summary,
     value.why_new,
     value.why_new_first_party_capability,
+    value.new_capability_justification,
     value.why_not_existing,
     value.boundary,
     value.boundaries,
@@ -377,7 +378,11 @@ function hasCatalogBoundary(value) {
     value.conclusion,
     value.catalog_risk,
   );
-  return adjacent && Boolean(boundary);
+  const text = collectText(value).join("\n");
+  return adjacent && (
+    Boolean(boundary)
+    || /\b(gap|fills|distinct|separate|new capability|not enough|not duplicate|not a duplicate|not general|not a fit|not the runtime|rather than|instead of)\b/i.test(text)
+  );
 }
 
 function countWords(value) {
