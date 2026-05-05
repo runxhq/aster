@@ -9,11 +9,14 @@
   },
   "scripts": {
     "check": "node scripts/check.mjs",
-    "docs:build": "cd docs && npx -y sourcey build --config sourcey.config.ts -o ../.sourcey/runx-docs",
+    "docs:build": "cd docs && sourcey build --config sourcey.config.ts -o ../.sourcey/runx-docs",
     "docs:ci": "npm run check && npm run docs:build",
     "shakeout:local": "node scripts/operator-shakeout.mjs",
     "site:check": "npm --prefix site run check",
     "site:build": "npm --prefix site run build",
     "site:ci": "npm run check && npm run site:check && npm run site:build"
+  },
+  "devDependencies": {
+    "sourcey": "^3.5.4"
   }
 }
