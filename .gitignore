@@ -12,3 +12,16 @@ site/.astro/
 .ai/reviews/
 .ai/scafld/
 .ai/prompts/harden.md
+
+# scafld runtime state
+# Keep project-owned specs/config/prompts/core in git; ignore local runtime state.
+!.scafld/
+!.scafld/config.yaml
+!.scafld/core/
+!.scafld/core/**
+!.scafld/prompts/
+!.scafld/prompts/**
+!.scafld/specs/
+!.scafld/specs/**
+.scafld/config.local.yaml
+.scafld/runs/

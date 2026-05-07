@@ -1,13 +1,68 @@
+# scafld Agent Contract
+
+## Contract
+
+- `spec` is the living contract.
+- `session` is the durable evidence ledger.
+- `handoff` is transport, not source of truth.
+- `review` is the adversarial completion gate.
+
+You execute autonomously inside the contract. You do not close the task unchallenged.
+
+## Commands
+
+```bash
+scafld init
+scafld plan <task-id> --title "Title" --size small --risk low
+scafld harden <task-id>
+scafld harden <task-id> --mark-passed
+scafld validate <task-id>
+scafld approve <task-id>
+scafld build <task-id>
+scafld review <task-id>
+scafld complete <task-id>
+scafld status <task-id>
+scafld list
+scafld report
+scafld handoff <task-id>
+scafld update
+```
+
+For real review: `scafld review <task-id> --provider {codex|claude|command}`.
+`--provider local` is smoke-test only and cannot satisfy `complete`.
+
+## Lifecycle
+
+```text
+plan -> harden -> approve -> build -> review -> complete
+```
+
+Hardening attacks the draft. Review attacks the result.
+
+## Do Not
+
+- Edit outside declared scope, objectives, or invariants.
+- Reconstruct lifecycle state by scraping Markdown. Use `status --json`.
+- Use legacy `.ai/` scafld files. `.scafld/` is the only active protocol home.
+- Mutate `.scafld/core/` by hand. Use `scafld update`.
+- Run `--provider local` for real review.
+- Cite files, commands, or review findings you have not verified.
+
+## Prompts
+
+`.scafld/prompts/*` overrides `.scafld/core/prompts/*` overrides built-ins.
+
+
 # aster - Agent Guide
 
 Canonical reference for AI coding agents working with this codebase.
 
 **Key files:**
 
-- `.ai/config.yaml` - Validation rules, rubric weights, safety controls, profiles
-- `.ai/prompts/plan.md` - Planning mode prompt
-- `.ai/prompts/exec.md` - Execution mode prompt
-- `.ai/schemas/spec.json` - Spec validation schema
+- `.scafld/config.yaml` - Validation rules, rubric weights, safety controls, profiles
+- `.scafld/prompts/plan.md` - Planning mode prompt
+- `.scafld/prompts/exec.md` - Execution mode prompt
+- `.scafld/core/schemas/spec.json` - Spec validation schema
 - `CONVENTIONS.md` - Coding standards and patterns
 - `docs/run-catalog.md` - the hosted `runx` lanes that act on this repo
 - `docs/sourcey.config.ts` - Sourcey docs config for the public docs site
@@ -16,16 +71,16 @@ Canonical reference for AI coding agents working with this codebase.
 
 ## How scafld Works
 
-Spec-driven development: every non-trivial task becomes a machine-readable YAML specification before any code changes happen.
+Spec-driven development: every non-trivial task becomes a Markdown living spec before any code changes happen.
 
-1. **Plan** - Analyze task, explore codebase, generate spec in `.ai/specs/drafts/`
+1. **Plan** - Analyze task, explore codebase, generate spec in `.scafld/specs/drafts/`
 2. **Review** - Human reviews and approves the spec
 3. **Execute** - Agent executes approved spec phase-by-phase with validation
-4. **Archive** - Completed specs move to `.ai/specs/archive/YYYY-MM/`
+4. **Archive** - Completed specs move to `.scafld/specs/archive/YYYY-MM/`
 
 The spec is the contract. Operate autonomously within its bounds; pause for approval on deviations.
 
-For detailed planning instructions, read `.ai/prompts/plan.md`. For execution, read `.ai/prompts/exec.md`.
+For detailed planning instructions, read `.scafld/prompts/plan.md`. For execution, read `.scafld/prompts/exec.md`.
 
 ---
 
@@ -67,7 +122,7 @@ reviewable in git.
 ### scafld Owns Issue-To-PR Governance
 
 Any issue-to-PR lane must stay inside the scafld lifecycle: spec, validate,
-approve, execute, audit, review, archive. Do not bypass `.ai/specs/`.
+approve, execute, audit, review, archive. Do not bypass `.scafld/specs/`.
 
 ### Hosted Actions Stay Idempotent
 
@@ -92,16 +147,16 @@ tokens, provider keys, or copied credential material.
 ### Planning Mode
 
 - **When:** Starting a new task, exploring requirements
-- **Actions:** Search, read, analyze (NO code changes outside `.ai/specs/`)
-- **Output:** YAML spec in `.ai/specs/drafts/` with status `draft`
-- **Prompt:** Read `.ai/prompts/plan.md` before entering this mode
+- **Actions:** Search, read, analyze (NO code changes outside `.scafld/specs/`)
+- **Output:** Markdown spec in `.scafld/specs/drafts/` with status `draft`
+- **Prompt:** Read `.scafld/prompts/plan.md` before entering this mode
 
 ### Execution Mode
 
 - **When:** Spec has status `approved`
-- **Actions:** Apply changes phase-by-phase, run acceptance criteria, log to `.ai/logs/`
+- **Actions:** Apply changes phase-by-phase, run acceptance criteria, log evidence to `.scafld/runs/`
 - **Output:** Code changes, validation results, updated spec
-- **Prompt:** Read `.ai/prompts/exec.md` before entering this mode
+- **Prompt:** Read `.scafld/prompts/exec.md` before entering this mode
 - **Autonomy:** Execute all phases without pausing unless blocked, deviating from spec, or hitting a destructive action not covered by spec
 
 For trivial changes (typos, copy edits), skip the spec workflow and work
@@ -110,9 +165,9 @@ directly.
 ### Review Mode
 
 - **When:** All phases complete, before `scafld complete`
-- **Actions:** Run `scafld review`, then adversarial code review (ideally in a fresh session) and update the latest Review Artifact v3 round with reviewer provenance, `round_status`, and per-pass `pass_results`
-- **Output:** Findings written to `.ai/reviews/{task-id}.md`, verdict recorded in spec
-- **Prompt:** Read `.ai/prompts/review.md` before entering this mode
+- **Actions:** Run `scafld review` with an external adversarial provider. Do not write a separate self-review in place of the gate.
+- **Output:** Structured ReviewPacket findings recorded in the scafld session and surfaced through `scafld review`, `scafld status`, and `scafld handoff`
+- **Prompt:** Read `.scafld/prompts/review.md` before entering this mode
 - **Mandate:** Find problems, not confirm success. A review that finds zero issues is suspicious. The configured built-in passes are `spec_compliance`, `scope_drift`, `regression_hunt`, `convention_check`, and `dark_patterns`. `scafld complete` only bypasses a blocked gate through the audited `--human-reviewed --reason` path. Local CLI checks improve workflow integrity, but stronger guarantees still need CI or merge gate enforcement, review artifacts bound to the reviewed diff or commit, and out-of-band approval or an external reviewer.
 
 ---
@@ -189,14 +244,13 @@ counts, next action. Keep it concise.
 
 | Path | Purpose |
 | ---- | ------- |
-| `.ai/config.yaml` | Validation, rubric, safety, profiles |
-| `.ai/prompts/plan.md` | Planning mode instructions |
-| `.ai/prompts/exec.md` | Execution mode instructions |
-| `.ai/prompts/review.md` | Adversarial review mode instructions |
-| `.ai/schemas/spec.json` | Spec JSON schema |
-| `.ai/specs/` | Task specs by status (drafts/approved/active/archive) |
-| `.ai/reviews/` | Review findings per spec (gitignored, accumulates rounds) |
-| `.ai/logs/` | Execution logs (ReAct traces) |
+| `.scafld/config.yaml` | Validation, rubric, safety, profiles |
+| `.scafld/prompts/plan.md` | Planning mode instructions |
+| `.scafld/prompts/exec.md` | Execution mode instructions |
+| `.scafld/prompts/review.md` | Adversarial review mode instructions |
+| `.scafld/core/schemas/spec.json` | Spec JSON schema |
+| `.scafld/specs/` | Task specs by lifecycle status |
+| `.scafld/runs/` | Session ledger, diagnostics, and handoffs |
 | `CONVENTIONS.md` | Coding standards |
 | `docs/` | Sourcey docs sources and generated proposal content |
 
