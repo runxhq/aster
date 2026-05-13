@@ -179,7 +179,7 @@ jobs:
         run: |
           TARGET_REPO="${{ steps.issue.outputs.target_repo }}"
           TARGET_SLUG="$(printf '%s' "${{ steps.issue.outputs.target_repo }}" | tr '[:upper:]/' '[:lower:]-')"
-          if ! printf '%s' "$TARGET_REPO" | grep -Eq '^nilstate/[A-Za-z0-9._-]+$'; then
+          if ! printf '%s' "$TARGET_REPO" | grep -Eq '^runxhq/[A-Za-z0-9._-]+$'; then
             echo "allowed=false" >> "$GITHUB_OUTPUT"
             echo "reason=target_outside_prerelease_v1_scope" >> "$GITHUB_OUTPUT"
             echo "Target repo '$TARGET_REPO' is outside prerelease v1 scope; skipping issue-triage." >> "$GITHUB_STEP_SUMMARY"
@@ -498,7 +498,7 @@ jobs:
         run: |
           TARGET_REPO="${{ github.event.inputs.target_repo || github.repository }}"
           TARGET_SLUG="$(printf '%s' "$TARGET_REPO" | tr '[:upper:]/' '[:lower:]-')"
-          if ! printf '%s' "$TARGET_REPO" | grep -Eq '^nilstate/[A-Za-z0-9._-]+$'; then
+          if ! printf '%s' "$TARGET_REPO" | grep -Eq '^runxhq/[A-Za-z0-9._-]+$'; then
             echo "allowed=false" >> "$GITHUB_OUTPUT"
             echo "reason=target_outside_prerelease_v1_scope" >> "$GITHUB_OUTPUT"
             echo "Target repo '$TARGET_REPO' is outside prerelease v1 scope; skipping issue-triage." >> "$GITHUB_STEP_SUMMARY"
