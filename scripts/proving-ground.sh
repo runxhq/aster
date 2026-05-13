@@ -34,16 +34,17 @@ run_json() {
 
   local receipt_dir="$ARTIFACT_DIR/${name}-receipts"
   local output_path="$ARTIFACT_DIR/${name}.json"
-  local -a answers_args=()
+  local -a run_args
+  run_args=("$@")
 
   mkdir -p "$receipt_dir"
 
   if [[ -n "$RUNX_ANSWERS_DIR" && -f "$RUNX_ANSWERS_DIR/${name}.json" ]]; then
-    answers_args=(--answers "$RUNX_ANSWERS_DIR/${name}.json")
+    run_args+=(--answers "$RUNX_ANSWERS_DIR/${name}.json")
   fi
 
   set +e
-  node "$CLI_BIN" "$@" "${answers_args[@]}" --non-interactive --json --receipt-dir "$receipt_dir" >"$output_path"
+  node "$CLI_BIN" "${run_args[@]}" --non-interactive --json --receipt-dir "$receipt_dir" >"$output_path"
   local exit_code=$?
   set -e
 
@@ -55,7 +56,8 @@ run_json() {
 }
 
 run_json evolve-introspect \
-  evolve \
+  skill "$SKILLS_ROOT/evolve" \
+  --runner introspect \
   --repo_root "$ASTER_ROOT"
 
 run_json sourcey \
