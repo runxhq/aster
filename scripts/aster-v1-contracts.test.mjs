@@ -42,6 +42,7 @@ test("normalizeIssueToPrRequest applies the repo default verification profile", 
   );
 
   assert.equal(request.target_repo, "runxhq/aster");
+  assert.equal(request.size, "small");
   assert.equal(request.verification_profile, "aster.site-ci");
 });
 

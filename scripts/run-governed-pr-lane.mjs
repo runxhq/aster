@@ -21,6 +21,7 @@ import {
   runRunxBridgeWithRetry,
   sanitizeIssueBody,
 } from "./run-issue-triage-workers.mjs";
+import { renderRunxReviewerPacket } from "./runx-thread-story.mjs";
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(scriptDir, "..");
@@ -99,6 +100,13 @@ export async function runGovernedPrLane(options) {
     const inlineRepoSnapshot = buildInlineRepoSnapshot(repoSnapshot);
     const taskId = normalizeTaskId(`${options.lane}-${requestTitle}`);
     const executionLane = options.lane;
+    const threadLocator = buildThreadLocator({
+      sourceUrl: laneRequest.source_url,
+      source: laneRequest.source,
+      sourceId: laneRequest.source_id,
+      repo: workIssueRepo || targetRepo,
+      issueNumber: workIssueNumber,
+    });
     await writeFile(repoSnapshotPath, `${JSON.stringify(repoSnapshot, null, 2)}\n`);
 
     const coreArgs = [
@@ -144,16 +152,12 @@ export async function runGovernedPrLane(options) {
       workDir,
       "--task_id",
       taskId,
-      "--issue_title",
+      "--thread_title",
       laneRequest.issue_title,
-      "--issue_body",
+      "--thread_body",
       laneRequest.issue_body,
-      "--source",
-      laneRequest.source,
-      "--source_id",
-      laneRequest.source_id,
-      "--source_url",
-      laneRequest.source_url ?? "",
+      "--thread_locator",
+      threadLocator,
       "--target_repo",
       targetRepo,
       "--repo_snapshot",
@@ -166,8 +170,6 @@ export async function runGovernedPrLane(options) {
       laneRequest.size,
       "--risk",
       laneRequest.risk,
-      "--phase",
-      laneRequest.phase,
       "--scafld_bin",
       options.scafldBin,
     ];
@@ -213,7 +215,7 @@ export async function runGovernedPrLane(options) {
       targetRepo,
     });
     const prBodyPath = path.join(artifactRoot, "pr-body.md");
-    const prBody = buildLanePrBody({
+    const prBody = await buildLanePrBody({
       lane: options.lane,
       requestTitle,
       requestBody,
@@ -223,10 +225,12 @@ export async function runGovernedPrLane(options) {
       workIssueUrl,
       ledgerRevision,
       targetRepo,
+      branch: publishPlan.branch,
       taskId,
       verificationProfile: verificationPlan.profile_id,
       bootstrapCommands: verificationPlan.bootstrap_commands,
       validationCommands: verificationPlan.commands,
+      runxRoot: options.runxRoot,
     });
     await writeFile(prBodyPath, prBody);
 
@@ -333,7 +337,15 @@ export function buildPublishPlan({ lane, requestTitle, sourceId, targetRepo }) {
   };
 }
 
-export function buildLanePrBody({
+export async function buildLanePrBody(options) {
+  return renderRunxReviewerPacket({
+    runxRoot: options.runxRoot,
+    threadStoryRenderer: options.threadStoryRenderer,
+    packet: buildLaneReviewerPacketInput(options),
+  });
+}
+
+export function buildLaneReviewerPacketInput({
   lane,
   requestTitle,
   requestBody,
@@ -343,55 +355,69 @@ export function buildLanePrBody({
   workIssueUrl,
   ledgerRevision,
   targetRepo,
+  branch,
   taskId,
   verificationProfile,
   bootstrapCommands,
   validationCommands,
 }) {
-  const bootstrapSection = bootstrapCommands.length > 0
-    ? bootstrapCommands.map((command) => `- \`${command}\``).join("\n")
-    : "- no bootstrap command was declared";
-  const validationSection = validationCommands.map((command) => `- \`${command}\``).join("\n");
+  const bootstrap = Array.isArray(bootstrapCommands) ? bootstrapCommands : [];
+  const proof = Array.isArray(validationCommands) ? validationCommands : [];
   const intent = lane === "docs-pr"
-    ? "This draft PR was opened by the `aster` docs-pr lane to make one bounded explanation/docs improvement."
-    : "This draft PR was opened by the `aster` fix-pr lane to make one bounded bugfix in one repo surface.";
-  const lines = [
-    "## Summary",
-    "",
-    intent,
-    "",
-    `- Request: ${requestTitle}`,
-    `- Target repo: \`${targetRepo}\``,
-    `- Lane: \`${lane}\``,
-    `- Task id: \`${taskId}\``,
-    `- Source id: \`${sourceId}\``,
-    workIssueNumber ? `- Work issue: \`${workIssueRepo ?? targetRepo}#${workIssueNumber}\`` : null,
-    ledgerRevision ? `- Ledger revision: \`${ledgerRevision}\`` : null,
+    ? "Aster opened this draft PR through the `docs-pr` lane to make one bounded explanation or docs improvement."
+    : "Aster opened this draft PR through the `fix-pr` lane to make one bounded bugfix in one repo surface.";
+  const sourceContext = [
+    `Request: ${requestTitle}`,
+    `Lane: ${lane}`,
+    `Task id: ${taskId}`,
+    `Source id: ${sourceId}`,
+    `Target repo: ${targetRepo}`,
+    workIssueNumber ? `Work issue: ${workIssueRepo ?? targetRepo}#${workIssueNumber}` : null,
+    ledgerRevision ? `Ledger revision: ${ledgerRevision}` : null,
+    requestBody?.trim() ? `Request context:\n${requestBody.trim()}` : null,
+  ].filter(Boolean);
+  const validation = [
+    `Verification profile: ${verificationProfile}`,
+    ...(bootstrap.length > 0
+      ? bootstrap.map((command) => `Bootstrap: ${command}`)
+      : ["Bootstrap: no bootstrap command was declared"]),
+    ...proof.map((command) => `Proof: ${command}`),
   ];
-  if (workIssueUrl) {
-    lines.push(`- Work issue URL: ${workIssueUrl}`);
-  }
-  if (requestBody?.trim()) {
-    lines.push("", "## Request Context", "", requestBody.trim());
-  }
-  lines.push(
-    "",
-    "## Validation",
-    "",
-    `- verification profile: \`${verificationProfile}\``,
-    "### Bootstrap",
-    bootstrapSection,
-    "### Proof",
-    validationSection,
-    "- scafld review completed before PR publication",
-    "- receipts uploaded with this workflow run",
-    "",
-    "## Lane Guardrails",
-    "",
-    ...laneConstraints(lane).map((line) => `- ${line}`),
-    "",
-  );
-  return `${lines.join("\n")}\n`;
+  const reviewContext = [
+    "The source issue is the living ledger; trusted maintainer amendments on that issue are authoritative for reruns.",
+    "scafld review completed before PR publication.",
+    "Receipts uploaded with this workflow run.",
+    "Generated PR policy keeps this PR draft-only until a human reviewer merges it.",
+  ];
+  return {
+    title: `[runx] ${lane}: ${requestTitle}`,
+    summary: intent,
+    sourceContext,
+    source: workIssueUrl ? {
+      label: "Source thread",
+      uri: workIssueUrl,
+    } : undefined,
+    issue: workIssueUrl ? {
+      label: workIssueNumber ? `${workIssueRepo ?? targetRepo}#${workIssueNumber}` : "Work issue",
+      uri: workIssueUrl,
+    } : undefined,
+    targetRepo,
+    branch,
+    status: "draft",
+    scope: laneConstraints(lane),
+    checks: [
+      "Change surface policy is evaluated during publication.",
+      "Generated PR evaluation runs after publication.",
+      "The PR is a review surface only; merge remains a human gate.",
+    ],
+    validation,
+    reviewContext,
+    risks: laneConstraints(lane),
+    rollback: "Close or revert this runx/* branch and rerun the same work issue after amending the source ledger.",
+    handoffReference: taskId,
+    nextAction: "Human reviewer: inspect the source issue ledger, validation evidence, and diff; merge only if the bounded change is correct.",
+    maxChars: 900,
+  };
 }
 
 function laneConstraints(lane) {
@@ -409,12 +435,34 @@ function laneConstraints(lane) {
   ];
 }
 
-function defaultSize(lane) {
-  return lane === "docs-pr" ? "micro" : "small";
+function defaultSize() {
+  return "small";
 }
 
 function buildBranchName(lane, requestTitle) {
   return `runx/${lane}-${normalizeTaskId(requestTitle)}`;
+}
+
+function buildThreadLocator({ sourceUrl, source, sourceId, repo, issueNumber }) {
+  const urlLocator = gitHubIssueLocatorFromUrl(sourceUrl);
+  if (urlLocator) {
+    return urlLocator;
+  }
+  const normalizedRepo = normalizeString(repo);
+  const normalizedIssue = normalizeString(issueNumber);
+  if (normalizedRepo && normalizedIssue) {
+    return `github://${normalizedRepo}/issues/${normalizedIssue}`;
+  }
+  return [normalizeString(source) ?? "thread", normalizeString(sourceId) ?? "unknown"].join(":");
+}
+
+function gitHubIssueLocatorFromUrl(value) {
+  const normalized = normalizeString(value);
+  if (!normalized) {
+    return null;
+  }
+  const match = normalized.match(/^https:\/\/github\.com\/([A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+)\/issues\/(\d+)\/?$/i);
+  return match ? `github://${match[1]}/issues/${match[2]}` : null;
 }
 
 function parseArgs(argv) {

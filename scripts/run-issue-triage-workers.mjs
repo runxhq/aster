@@ -11,6 +11,7 @@ import {
 } from "./aster-v1-contracts.mjs";
 import { assertMatchesRunxControlSchema } from "./runx-control-schemas.mjs";
 import { evaluateGeneratedPr } from "./evaluate-generated-pr.mjs";
+import { renderRunxReviewerPacket } from "./runx-thread-story.mjs";
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(scriptDir, "..");
@@ -152,6 +153,13 @@ async function runWorker({ options, workerRequest, index, verificationCatalog })
     const repoSnapshotPath = path.join(artifactDir, "repo-snapshot.json");
     await writeFile(repoSnapshotPath, `${JSON.stringify(repoSnapshot, null, 2)}\n`);
     const inlineRepoSnapshot = buildInlineRepoSnapshot(repoSnapshot);
+    const threadLocator = buildThreadLocator({
+      sourceUrl: firstString(issueToPrRequest.source_url) ?? options.issueUrl,
+      source: firstString(issueToPrRequest.source) ?? "github_issue",
+      sourceId: firstString(issueToPrRequest.source_id) ?? options.issueNumber,
+      repo: targetRepo,
+      issueNumber: options.issueNumber,
+    });
     const coreArgs = [
       path.join(repoRoot, "scripts", "aster-core.mjs"),
       "--lane",
@@ -192,16 +200,12 @@ async function runWorker({ options, workerRequest, index, verificationCatalog })
       workDir,
       "--task_id",
       taskId,
-      "--issue_title",
+      "--thread_title",
       issueTitle,
-      "--issue_body",
+      "--thread_body",
       issueBody,
-      "--source",
-      firstString(issueToPrRequest.source) ?? "github_issue",
-      "--source_id",
-      firstString(issueToPrRequest.source_id) ?? options.issueNumber,
-      "--source_url",
-      firstString(issueToPrRequest.source_url) ?? options.issueUrl,
+      "--thread_locator",
+      threadLocator,
       "--target_repo",
       targetRepo,
       "--repo_snapshot",
@@ -211,11 +215,9 @@ async function runWorker({ options, workerRequest, index, verificationCatalog })
       "--repo_context",
       buildRepoContextSummary(repoSnapshot),
       "--size",
-      firstString(issueToPrRequest.size) ?? "micro",
+      firstString(issueToPrRequest.size) ?? "small",
       "--risk",
       firstString(issueToPrRequest.risk) ?? "low",
-      "--phase",
-      firstString(issueToPrRequest.phase) ?? "phase1",
       "--scafld_bin",
       options.scafldBin,
     ];
@@ -259,12 +261,13 @@ async function runWorker({ options, workerRequest, index, verificationCatalog })
     const prBodyPath = path.join(artifactDir, "pr-body.md");
     await writeFile(
       prBodyPath,
-      buildPrBody({
+      await buildPrBody({
         issueNumber: options.issueNumber,
         issueUrl: options.issueUrl,
         targetRepo,
         taskId,
         workerNumber,
+        runxRoot: options.runxRoot,
         bootstrapCommands: bootstrapCommandList,
         validationCommands,
         verificationProfile: verificationPlan.profile_id,
@@ -546,43 +549,95 @@ export function buildRepoContextSummary(snapshot) {
   return parts.join(" ; ");
 }
 
-function buildPrBody({
+async function buildPrBody({
   issueNumber,
   issueUrl,
   targetRepo,
   taskId,
   workerNumber,
+  runxRoot,
   bootstrapCommands,
   validationCommands,
   verificationProfile,
 }) {
-  const bootstrapSection = bootstrapCommands.length > 0
-    ? bootstrapCommands.map((command) => `- \`${command}\``).join("\n")
-    : "- no bootstrap command was declared";
-  const validationSection = validationCommands.length > 0
-    ? validationCommands.map((command) => `- \`${command}\``).join("\n")
-    : "- no repo-specific validation command was declared";
-  return `## Summary
+  const bootstrap = Array.isArray(bootstrapCommands) ? bootstrapCommands : [];
+  const proof = Array.isArray(validationCommands) ? validationCommands : [];
+  return renderRunxReviewerPacket({
+    runxRoot,
+    packet: {
+      title: `[runx] issue-triage worker for issue #${issueNumber} (${workerNumber})`,
+      summary: "Aster opened this draft PR from the issue intake lane after intake approved one governed issue-to-pr worker.",
+      sourceContext: [
+        `Work issue: #${issueNumber}`,
+        `Worker: ${workerNumber}`,
+        `Lane: intake -> issue-to-pr worker`,
+        `scafld task: ${taskId}`,
+      ],
+      source: issueUrl ? {
+        label: "Source thread",
+        uri: issueUrl,
+      } : undefined,
+      issue: issueUrl ? {
+        label: `Issue #${issueNumber}`,
+        uri: issueUrl,
+      } : undefined,
+      targetRepo,
+      status: "draft",
+      scope: [
+        "Keep the change to one bounded repo-scoped remediation request approved by intake.",
+        "Do not widen into unrelated cleanup, feature work, or broad refactors.",
+      ],
+      checks: [
+        "Change surface policy is evaluated during publication.",
+        "Generated PR evaluation runs after publication.",
+        "The PR is a review surface only; merge remains a human gate.",
+      ],
+      validation: [
+        `Verification profile: ${verificationProfile}`,
+        ...(bootstrap.length > 0
+          ? bootstrap.map((command) => `Bootstrap: ${command}`)
+          : ["Bootstrap: no bootstrap command was declared"]),
+        ...(proof.length > 0
+          ? proof.map((command) => `Proof: ${command}`)
+          : ["Proof: no repo-specific validation command was declared"]),
+      ],
+      reviewContext: [
+        "The source issue is the living ledger; trusted maintainer amendments on that issue are authoritative for reruns.",
+        "scafld review completed before PR publication.",
+        "Receipts uploaded with this workflow run.",
+      ],
+      risks: [
+        "The generated change should stay bounded to the approved issue-to-pr worker request.",
+        "A human reviewer must reject or amend the source thread if the diff exceeds the intake decision.",
+      ],
+      rollback: "Close or revert this runx/* branch and rerun the same issue after amending the source ledger.",
+      handoffReference: taskId,
+      nextAction: "Human reviewer: inspect the source issue ledger, validation evidence, and diff; merge only if the bounded remediation is correct.",
+      maxChars: 900,
+    },
+  });
+}
 
-This draft PR was opened by the \`aster\` issue triage lane.
+function buildThreadLocator({ sourceUrl, source, sourceId, repo, issueNumber }) {
+  const urlLocator = gitHubIssueLocatorFromUrl(sourceUrl);
+  if (urlLocator) {
+    return urlLocator;
+  }
+  const normalizedRepo = firstString(repo);
+  const normalizedIssue = firstString(issueNumber);
+  if (normalizedRepo && normalizedIssue) {
+    return `github://${normalizedRepo}/issues/${normalizedIssue}`;
+  }
+  return [firstString(source) ?? "thread", firstString(sourceId) ?? "unknown"].join(":");
+}
 
-- Work issue: #${issueNumber}
-- Work issue URL: ${issueUrl}
-- Target repo: \`${targetRepo}\`
-- Worker: \`${workerNumber}\`
-- Lane: \`request-triage -> issue-triage -> issue-to-pr worker\`
-- scafld task: \`${taskId}\`
-
-## Validation
-
-- verification profile: \`${verificationProfile}\`
-### Bootstrap
-${bootstrapSection}
-### Proof
-${validationSection}
-- scafld review completed before PR publication
-- receipts uploaded with this workflow run
-`;
+function gitHubIssueLocatorFromUrl(value) {
+  const normalized = firstString(value);
+  if (!normalized) {
+    return null;
+  }
+  const match = normalized.match(/^https:\/\/github\.com\/([A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+)\/issues\/(\d+)\/?$/i);
+  return match ? `github://${match[1]}/issues/${match[2]}` : null;
 }
 
 async function writeOutput(outputPath, payload) {

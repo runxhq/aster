@@ -44,7 +44,7 @@ listed here rotate through cycles. "Last cycle" records the cycle id
 | content-pipeline | dogfooded | dogfood-round-2-coverage-pass | oss + needs-objective negative case | Round 2 added negative-case fixture. |
 | draft-content | surveyed (cycle 6) | — | 2 harness cases | Cycle 6 audit only. |
 | bug-to-pr | removed | — | — | Empty directory; not implemented. Removed from catalog. |
-| issue-to-pr | dogfooded | dogfood-cycle-9-issue-to-pr-full-chain | issue-to-pr 0.1.2 + three harness cases including full-chain success | Cycle 9 exercises every agent-step hand-off through scafld-complete. |
+| issue-to-pr | dogfooded | dogfood-cycle-9-issue-to-pr-full-chain | issue-to-pr 0.1.2 + three harness cases including full-chain success | Cycle 9 exercises every agent-task hand-off through scafld-complete. |
 | issue-triage | surveyed (cycle 6) | — | 2 harness cases | Cycle 6 audit only. |
 | skill-lab | dogfooded | dogfood-round-2-coverage-pass | oss + minimal-inputs boundary case | Round 2 added boundary fixture. |
 | ecosystem-vuln-scan | dogfooded | dogfood-round-2-coverage-pass | oss + needs-target negative case | Round 2 added negative-case fixture. |
@@ -236,7 +236,7 @@ the cycle-10 v2 acceptance check, which walks every
 issue-to-pr is the first composite skill with a full-chain
 harness case that executes all 15 governed steps through
 scafld-complete. Its fixture pattern (canned caller.answers per
-agent-step hand-off) is the template other composite chains can
+agent-task hand-off) is the template other composite chains can
 adopt when they need equivalent depth.
 
 Round 3 scope (queued, not started): convert one more composite

@@ -48,7 +48,6 @@
     "size": {
       "type": "string",
       "enum": [
-        "micro",
         "small",
         "medium",
         "large"

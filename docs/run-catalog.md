@@ -15,7 +15,7 @@ lanes against real repo work.
   `[upstream]` work issues, trusted maintainer issue comments on those work
   issues, plus PR `opened`, `reopened`, `ready_for_review`, and `synchronize`
 - runx skills and chains:
-  1. `request-triage`
+  1. `intake`
   2. `issue-triage`
   3. optional `work-plan`
   4. optional `issue-to-pr` worker fanout

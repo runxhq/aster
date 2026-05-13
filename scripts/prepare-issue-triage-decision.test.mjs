@@ -29,7 +29,7 @@ test("prepareIssueTriageDecision starts an issue-to-pr worker only after triage 
             source: "github_issue",
             source_id: "101",
             source_url: "https://github.com/example/repo/issues/101",
-            size: "micro",
+            size: "small",
             risk: "low",
           },
         },
@@ -84,6 +84,49 @@ test("prepareIssueTriageDecision derives a single worker request when triage omi
   assert.equal(decision.issue_to_pr_request.source_id, "101");
   assert.equal(decision.issue_to_pr_request.target_repo, "runxhq/aster");
   assert.equal(decision.issue_to_pr_request.verification_profile, "aster.site-ci");
+});
+
+test("prepareIssueTriageDecision accepts current intake thread_change_request output", () => {
+  const decision = prepareIssueTriageDecision({
+    execution: {
+      stdout: JSON.stringify({
+        triage_report: {
+          category: "bug",
+          severity: "medium",
+          summary: "README command drift",
+          suggested_reply: "This is bounded enough for one draft PR.",
+          recommended_lane: "issue-to-pr",
+          rationale: "One repo, one low-risk change.",
+          needs_human: false,
+          commence_decision: "approve",
+          action_decision: "proceed_to_build",
+          review_target: "none",
+          operator_notes: [],
+          thread_change_request: {
+            task_id: "issue-101",
+            thread_title: "README still references bug-to-pr",
+            thread_body: "Use issue-to-pr instead.",
+            thread_locator: "github://runxhq/aster/issues/101",
+            size: "small",
+            risk: "low",
+          },
+        },
+        change_set: {
+          change_set_id: "change-set-101",
+          thread_locator: "github://runxhq/aster/issues/101",
+          summary: "README still references bug-to-pr",
+        },
+      }),
+    },
+  }, { defaultRepo: "runxhq/aster", repoRoot });
+
+  assert.equal(decision.mode, "issue-to-pr");
+  assert.equal(decision.triage_decision.should_start_worker, true);
+  assert.equal(decision.issue_to_pr_request.issue_title, "README still references bug-to-pr");
+  assert.equal(decision.issue_to_pr_request.issue_body, "Use issue-to-pr instead.");
+  assert.equal(decision.issue_to_pr_request.source_id, "101");
+  assert.equal(decision.issue_to_pr_request.source_url, "https://github.com/runxhq/aster/issues/101");
+  assert.equal(decision.issue_to_pr_request.size, "small");
 });
 
 test("prepareIssueTriageDecision holds at a review comment when mutation should not start yet", () => {
@@ -245,7 +288,7 @@ test("prepareIssueTriageDecision blocks out-of-scope worker fanout during prerel
           source: "github_issue",
           source_id: "202",
           source_url: "https://github.com/example/repo/issues/202",
-          size: "micro",
+          size: "small",
           risk: "low",
         },
         {
@@ -256,7 +299,7 @@ test("prepareIssueTriageDecision blocks out-of-scope worker fanout during prerel
           source: "github_issue",
           source_id: "202",
           source_url: "https://github.com/example/repo/issues/202",
-          size: "micro",
+          size: "small",
           risk: "low",
         },
       ],

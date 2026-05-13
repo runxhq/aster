@@ -90,15 +90,10 @@ jobs:
         with:
           node-version: 24
 
-      - name: Enable corepack
-        if: ${{ steps.preflight.outputs.enabled == 'true' }}
-        run: corepack enable
-
       - name: Install and build runx
+        id: runx
         if: ${{ steps.preflight.outputs.enabled == 'true' }}
-        run: |
-          pnpm --dir .runx/runx install --no-frozen-lockfile
-          pnpm --dir .runx/runx build
+        run: bash scripts/install-runx-workspace.sh .runx/runx
 
       - name: Install scafld
         if: ${{ steps.preflight.outputs.enabled == 'true' }}

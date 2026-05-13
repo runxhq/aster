@@ -31,17 +31,13 @@ jobs:
         with:
           node-version: 24
 
-      - name: Enable corepack
-        run: corepack enable
-
       - name: Install and build runx
-        run: |
-          pnpm --dir runx install --no-frozen-lockfile
-          pnpm --dir runx build
+        id: runx
+        run: bash scripts/install-runx-workspace.sh runx
 
       - name: Run proving-ground catalog
         env:
-          RUNX_ROOT: ${{ github.workspace }}/runx
+          RUNX_ROOT: ${{ steps.runx.outputs.repo_root }}
           ARTIFACT_DIR: ${{ github.workspace }}/aster-artifacts
           ASTER_ROOT: ${{ github.workspace }}
           PROVING_GROUND_PROFILE: minimal

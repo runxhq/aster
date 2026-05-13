@@ -56,7 +56,7 @@ The governing philosophy is:
 `aster` now has seven concrete live lanes:
 
 - `issue-triage`: covers both issue intake and PR review. Issues run through
-  `request-triage`, can open `work-plan` when planning is approved,
+  `intake`, can open `work-plan` when planning is approved,
   and only then start one or more repo-scoped `issue-to-pr` workers when build
   is approved. The work issue is the living ledger: trusted maintainer replies
   retrigger the lane, the rolling triage comment updates in place, and PR
@@ -98,7 +98,7 @@ Support workflows stay valuable even when the external caller is offline:
 
 `aster` needs only a small hosted secret surface:
 
-- `OPENAI_API_KEY`: external caller for `runx` `agent-step` boundaries
+- `OPENAI_API_KEY`: external caller for `runx` `agent-task` boundaries
 - `RUNX_CALLER_MODEL` (optional): pinned model override for the hosted bridge
 - `RUNX_REF` (repo variable): optional `runx` branch or tag for hosted
   checkouts; defaults to `main`
@@ -169,9 +169,9 @@ the draft-first observability lanes continue to run.
   rebuilds repo-owned memory projections from uploaded workflow artifacts and
   keeps them on one rolling draft PR
 - [scripts/runx-agent-bridge.mjs](./scripts/runx-agent-bridge.mjs): external
-  caller that answers `runx` `agent-step` requests without internal shortcuts
+  caller that answers `runx` `agent-task` requests without internal shortcuts
 - [scripts/prepare-issue-triage-decision.mjs](./scripts/prepare-issue-triage-decision.mjs):
-  converts a `request-triage` result into one explicit triage decision plus
+  converts an `intake` result into one explicit triage decision plus
   optional planning and worker requests
 - [scripts/run-issue-triage-plan.mjs](./scripts/run-issue-triage-plan.mjs):
   runs `work-plan` when the triage approves planning and appends a
@@ -220,12 +220,10 @@ node scripts/runx-agent-bridge.mjs \
   --runx-root /home/kam/dev/runx \
   --receipt-dir .artifacts/issue-triage/manual \
   -- \
-  skill /home/kam/dev/runx/oss/skills/request-triage \
-  --title "Example bounded issue" \
-  --body "Describe the concrete repo problem here." \
-  --source github_issue \
-  --source_id 1 \
-  --source_url https://github.com/runxhq/aster/issues/1
+  skill /home/kam/dev/runx/oss/skills/intake \
+  --thread_title "Example bounded issue" \
+  --thread_body "Describe the concrete repo problem here." \
+  --thread_locator github://runxhq/aster/issues/1
 ```
 
 If you have prerecorded caller answers for a given proving-ground run, place

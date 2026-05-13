@@ -24,7 +24,7 @@ is under-specified, and where governance needs to be sharper.
 
 1. a real issue, PR, or schedule trigger enters the repo
 2. a hosted workflow packages that trigger into a bounded `runx` invocation
-3. `runx` pauses at each `agent-step`
+3. `runx` pauses at each `agent-task`
 4. an external caller bridge answers those steps without privileged shortcuts
 5. the workflow resumes the run, records receipts, and applies the resulting
    bounded output

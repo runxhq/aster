@@ -76,7 +76,7 @@ Every proposal must fit in a receipt and be reviewable by a human.
 
 That proposal layer now has explicit runx capability front doors:
 
-- `request-triage` for issues
+- `intake` for issues
 - `issue-triage` for PRs
 - `design-skill` for new capability proposals
 
