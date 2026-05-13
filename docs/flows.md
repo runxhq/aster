@@ -16,7 +16,7 @@ This lane has two entry modes:
 
 1. issue mode listens for every normal issue except dedicated `[skill]`,
    `[fix]`, `[docs]`, and `[upstream]` work issues, runs
-   `request-triage`, prepares one explicit triage decision, optionally runs
+   `intake`, prepares one explicit triage decision, optionally runs
    `work-plan`, posts or updates one rolling triage comment back to
    the same issue, and starts isolated `issue-to-pr` workers only when thread
    teaching authorizes bounded build work. Dedicated `[fix]`, `[docs]`, and

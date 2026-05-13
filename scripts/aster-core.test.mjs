@@ -14,7 +14,7 @@ test("buildBridgeArgs forwards context and approvals to the shared bridge", () =
     threadTeachingContextPath: "/artifacts/thread-teaching-context.json",
     gateDecisionsPath: "/artifacts/receipts/gate-decisions.json",
     approve: ["gate.alpha"],
-    runxArgs: ["skill", "/runx/skills/request-triage"],
+    runxArgs: ["skill", "/runx/skills/intake"],
   });
 
   assert.deepEqual(args.slice(0, 15), [
@@ -36,5 +36,5 @@ test("buildBridgeArgs forwards context and approvals to the shared bridge", () =
   ]);
   assert.ok(args.includes("--approve"));
   assert.ok(args.includes("gate.alpha"));
-  assert.deepEqual(args.slice(-3), ["--", "skill", "/runx/skills/request-triage"]);
+  assert.deepEqual(args.slice(-3), ["--", "skill", "/runx/skills/intake"]);
 });

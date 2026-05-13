@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 
 import {
   buildLanePrBody,
+  buildLaneReviewerPacketInput,
   buildLaneRequestBody,
   buildPublishPlan,
   buildSkippedPublish,
@@ -44,8 +45,8 @@ test("buildPublishPlan derives lane-specific titles and branches", () => {
   assert.match(fixPlan.commitMessage, /^fix:/);
 });
 
-test("buildLanePrBody includes lane guardrails and validation", () => {
-  const body = buildLanePrBody({
+test("buildLaneReviewerPacketInput preserves source context, guardrails, and validation", () => {
+  const packet = buildLaneReviewerPacketInput({
     lane: "docs-pr",
     requestTitle: "Clarify deploy docs",
     requestBody: "Tighten the Pages deployment explanation.",
@@ -55,19 +56,66 @@ test("buildLanePrBody includes lane guardrails and validation", () => {
     workIssueUrl: "https://github.com/runxhq/aster/issues/222",
     ledgerRevision: "deadbeefcafebabe",
     targetRepo: "runxhq/aster",
+    branch: "runx/docs-pr-docs-pr-101",
     taskId: "docs-pr-clarify-deploy-docs",
     verificationProfile: "aster.site-ci",
     bootstrapCommands: ["npm --prefix site ci"],
     validationCommands: ["npm run site:ci"],
   });
 
-  assert.match(body, /This draft PR was opened by the `aster` docs-pr lane/);
-  assert.match(body, /verification profile: `aster\.site-ci`/);
-  assert.match(body, /`npm --prefix site ci`/);
-  assert.match(body, /`npm run site:ci`/);
-  assert.match(body, /Work issue: `runxhq\/aster#222`/);
-  assert.match(body, /Ledger revision: `deadbeefcafebabe`/);
-  assert.match(body, /Lane Guardrails/);
+  assert.equal(packet.source.label, "Source thread");
+  assert.equal(packet.source.uri, "https://github.com/runxhq/aster/issues/222");
+  assert.equal(packet.issue.label, "runxhq/aster#222");
+  assert.equal(packet.targetRepo, "runxhq/aster");
+  assert.equal(packet.branch, "runx/docs-pr-docs-pr-101");
+  assert.match(packet.summary, /docs-pr/);
+  assert.match(packet.sourceContext.join("\n"), /Request context:/);
+  assert.match(packet.sourceContext.join("\n"), /Ledger revision: deadbeefcafebabe/);
+  assert.match(packet.validation.join("\n"), /Verification profile: aster\.site-ci/);
+  assert.match(packet.validation.join("\n"), /Bootstrap: npm --prefix site ci/);
+  assert.match(packet.validation.join("\n"), /Proof: npm run site:ci/);
+  assert.match(packet.reviewContext.join("\n"), /source issue is the living ledger/i);
+  assert.match(packet.nextAction, /Human reviewer/);
+  assert.match(packet.rollback, /same work issue/);
+  assert.deepEqual(packet.scope, packet.risks);
+});
+
+test("buildLanePrBody delegates reviewer packet rendering to runx core helper", async () => {
+  let capturedPacket = null;
+  const body = await buildLanePrBody({
+    lane: "fix-pr",
+    requestTitle: "Fix activity ordering",
+    requestBody: "Newest activity should appear first.",
+    sourceId: "fix-pr-202",
+    workIssueRepo: "runxhq/aster",
+    workIssueNumber: "333",
+    workIssueUrl: "https://github.com/runxhq/aster/issues/333",
+    ledgerRevision: "abc123",
+    targetRepo: "runxhq/aster",
+    branch: "runx/fix-pr-fix-pr-202",
+    taskId: "fix-pr-fix-activity-ordering",
+    verificationProfile: "aster.check",
+    bootstrapCommands: [],
+    validationCommands: ["npm run check"],
+    threadStoryRenderer: {
+      buildThreadPullRequestReviewerPacketMarkdown(packet) {
+        capturedPacket = packet;
+        return [
+          "## Source Context",
+          `Source: [${packet.source.label}](${packet.source.uri})`,
+          "",
+          "## Human Merge Gate",
+          packet.nextAction,
+        ].join("\n");
+      },
+    },
+  });
+
+  assert.match(body, /Source: \[Source thread\]\(https:\/\/github\.com\/runxhq\/aster\/issues\/333\)/);
+  assert.match(body, /Human Merge Gate/);
+  assert.equal(body.endsWith("\n"), true);
+  assert.equal(capturedPacket.targetRepo, "runxhq/aster");
+  assert.match(capturedPacket.scope.join("\n"), /bounded bugfix/);
 });
 
 test("buildSkippedPublish records a proposal-only governed lane run", () => {

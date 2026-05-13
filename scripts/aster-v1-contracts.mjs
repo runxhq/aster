@@ -228,7 +228,7 @@ export function normalizeIssueToPrRequest(value, options = {}) {
       value.branch,
       "issue_to_pr_request.branch",
     ) ?? null,
-    size: normalizeOptionalEnum(value.size, ["micro", "small", "medium", "large"]) ?? "micro",
+    size: normalizeOptionalEnum(value.size, ["small", "medium", "large"]) ?? "small",
     risk: normalizeOptionalEnum(value.risk, ["low", "medium", "high"]) ?? "low",
     phase: firstString(value.phase) ?? "phase1",
   };

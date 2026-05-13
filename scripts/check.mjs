@@ -93,6 +93,7 @@ const required = [
   "scripts/promote-aster-state.mjs",
   "scripts/promote-aster-state.test.mjs",
   "scripts/proving-ground.sh",
+  "scripts/install-runx-workspace.sh",
   "scripts/runx-agent-bridge.mjs",
   "scripts/runx-agent-bridge.test.mjs",
   "scripts/issue-ledger.mjs",

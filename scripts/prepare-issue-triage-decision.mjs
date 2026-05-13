@@ -37,8 +37,8 @@ export function prepareIssueTriageDecision(report, options = {}) {
   );
   const reviewTarget = normalizeEnum(
     triage.review_target,
-    actionDecision === "request_review" ? "issue" : "none",
-    ["issue", "draft_pr", "none"],
+    actionDecision === "request_review" ? "thread" : "none",
+    ["thread", "outbox_entry", "issue", "draft_pr", "none"],
   );
   const boundaryNotes = [];
   const rawWorkspaceChangePlanRequest = collectWorkspaceChangePlanRequest(triage, changeSet);
@@ -135,7 +135,7 @@ export function buildTriageComment({
   }
   if (commentTarget !== "none" && commentTarget !== reviewTarget) {
     lines.push(`- Comment surface: \`${commentTarget}\``);
-    lines.push("- Draft PR review was requested, but no draft PR exists yet, so the triage comment is posted on the issue first.");
+    lines.push("- No draft PR exists yet, and no publishable outbox entry exists, so the triage comment is posted on the issue first.");
   }
   if (workerCount > 0) {
     lines.push(`- Worker fanout: \`${workerCount}\``);
@@ -236,10 +236,10 @@ function defaultActionDecision({ commenceDecision, recommendedLane }) {
 }
 
 function resolveCommentTarget(reviewTarget) {
-  if (reviewTarget === "issue") {
+  if (reviewTarget === "thread" || reviewTarget === "issue") {
     return "issue";
   }
-  if (reviewTarget === "draft_pr") {
+  if (reviewTarget === "outbox_entry" || reviewTarget === "draft_pr") {
     return "issue";
   }
   return "none";
@@ -272,6 +272,16 @@ function collectProposedWorkerRequests(triage, changeSet) {
       {
         worker: "issue-to-pr",
         issue_to_pr_request: singleRequest,
+      },
+    ];
+  }
+
+  const threadChangeRequest = asRecord(triage.thread_change_request);
+  if (threadChangeRequest) {
+    return [
+      {
+        worker: "issue-to-pr",
+        issue_to_pr_request: coerceThreadChangeRequest(threadChangeRequest, changeSet),
       },
     ];
   }
@@ -309,6 +319,45 @@ function buildFallbackIssueToPrRequest(triage, changeSet) {
     source_id: sourceId,
     source_url: firstString(source?.url),
   };
+}
+
+function coerceThreadChangeRequest(request, changeSet) {
+  const source = asRecord(changeSet?.source);
+  const threadLocator = firstString(request.thread_locator) ?? firstString(changeSet?.thread_locator);
+  const sourceId = firstString(source?.id)
+    ?? issueNumberFromThreadLocator(threadLocator)
+    ?? firstString(request.task_id)
+    ?? firstString(changeSet?.change_set_id)
+    ?? "thread";
+  return pruneUndefined({
+    task_id: firstString(request.task_id) ?? `issue-${sourceId}`,
+    issue_title: firstString(request.thread_title) ?? firstString(changeSet?.summary) ?? "Thread change request",
+    issue_body: firstString(request.thread_body) ?? "",
+    source: firstString(source?.type) ?? "github_issue",
+    source_id: sourceId,
+    source_url: firstString(source?.url) ?? githubIssueUrlFromThreadLocator(threadLocator),
+    target_repo: firstString(request.target_repo),
+    size: firstString(request.size),
+    risk: firstString(request.risk),
+  });
+}
+
+function issueNumberFromThreadLocator(value) {
+  const locator = firstString(value);
+  if (!locator) {
+    return undefined;
+  }
+  const githubMatch = locator.match(/^github:\/\/[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+\/issues\/(\d+)$/i);
+  return githubMatch ? githubMatch[1] : undefined;
+}
+
+function githubIssueUrlFromThreadLocator(value) {
+  const locator = firstString(value);
+  if (!locator) {
+    return undefined;
+  }
+  const githubMatch = locator.match(/^github:\/\/([A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+)\/issues\/(\d+)$/i);
+  return githubMatch ? `https://github.com/${githubMatch[1]}/issues/${githubMatch[2]}` : undefined;
 }
 
 function collectWorkspaceChangePlanRequest(triage, changeSet) {
@@ -386,6 +435,10 @@ function normalizeWorkerRequest(value) {
 function normalizeEnum(value, fallback, allowed) {
   const candidate = firstString(value);
   return candidate && allowed.includes(candidate) ? candidate : fallback;
+}
+
+function pruneUndefined(record) {
+  return Object.fromEntries(Object.entries(record).filter(([, value]) => value !== undefined));
 }
 
 function parseArgs(argv) {

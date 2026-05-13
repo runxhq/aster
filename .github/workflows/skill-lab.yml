@@ -90,15 +90,10 @@ jobs:
         with:
           node-version: 24
 
-      - name: Enable corepack
-        if: ${{ steps.preflight.outputs.enabled == 'true' }}
-        run: corepack enable
-
       - name: Install and build runx
+        id: runx
         if: ${{ steps.preflight.outputs.enabled == 'true' }}
-        run: |
-          pnpm --dir .runx/runx install --no-frozen-lockfile
-          pnpm --dir .runx/runx build
+        run: bash scripts/install-runx-workspace.sh .runx/runx
 
       - name: Configure git author
         if: ${{ steps.preflight.outputs.enabled == 'true' }}
@@ -149,7 +144,7 @@ jobs:
         run: |
           node scripts/prepare-skill-lab-input.mjs \
             --input ".artifacts/skill-lab/issue-ledger.json" \
-            --catalog-file "$GITHUB_WORKSPACE/.runx/runx/packages/cli/src/official-skills.lock.json" \
+            --catalog-file "${{ steps.runx.outputs.catalog_file }}" \
             --output ".artifacts/skill-lab/request.json"
           jq -r '.objective // ""' .artifacts/skill-lab/request.json > .artifacts/skill-lab/objective.txt
           jq -r '.project_context // ""' .artifacts/skill-lab/request.json > .artifacts/skill-lab/project-context.txt
@@ -165,6 +160,11 @@ jobs:
         run: |
           ISSUE_OBJECTIVE="$(cat .artifacts/skill-lab/objective.txt)"
           ISSUE_CONTEXT="$(cat .artifacts/skill-lab/project-context.txt)"
+          RUNX_SKILL_ROOT="${{ steps.runx.outputs.skills_root }}"
+          if [ ! -d "$RUNX_SKILL_ROOT/design-skill" ]; then
+            echo "runx design-skill skill not found in checked-out runx ref." >&2
+            exit 1
+          fi
           node scripts/aster-core.mjs \
             --lane skill-lab \
             --runx-root "$GITHUB_WORKSPACE/.runx/runx" \
@@ -183,7 +183,7 @@ jobs:
             --max-artifacts 2 \
             --output "$GITHUB_WORKSPACE/.artifacts/skill-lab/result.json" \
             -- \
-            skill "$GITHUB_WORKSPACE/.runx/runx/skills/design-skill" \
+            skill "$RUNX_SKILL_ROOT/design-skill" \
             --objective "$ISSUE_OBJECTIVE" \
             --project_context "$ISSUE_CONTEXT"
 
@@ -204,7 +204,7 @@ jobs:
           node scripts/evaluate-skill-proposal-quality.mjs \
             --result-json ".artifacts/skill-lab/result.json" \
             --issue-packet ".artifacts/skill-lab/request.json" \
-            --catalog-file "$GITHUB_WORKSPACE/.runx/runx/packages/cli/src/official-skills.lock.json" \
+            --catalog-file "${{ steps.runx.outputs.catalog_file }}" \
             --output ".artifacts/skill-lab/proposal-quality.json"
           echo "status=$(jq -r '.status' .artifacts/skill-lab/proposal-quality.json)" >> "$GITHUB_OUTPUT"
           echo "score=$(jq -r '.score' .artifacts/skill-lab/proposal-quality.json)" >> "$GITHUB_OUTPUT"

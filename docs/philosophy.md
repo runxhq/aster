@@ -110,7 +110,7 @@ The philosophy is only real if it changes repo behavior.
 That is why the live lanes must remain subordinate to the doctrine, even
 though the operational lane catalog now lives outside `doctrine/`:
 
-- `request-triage` makes issue routing public before mutation
+- `intake` makes issue routing public before mutation
 - `issue-triage` decides whether planning or a worker may start at all
 - `issue-to-pr` converts bounded approved work into reviewable draft PRs
 - `issue-triage` makes PR review guidance visible and attributable
