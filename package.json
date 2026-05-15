@@ -17,6 +17,6 @@
     "site:ci": "npm run check && npm run site:check && npm run site:build"
   },
   "devDependencies": {
-    "sourcey": "^3.5.7"
+    "sourcey": "^3.6.0"
   }
 }
