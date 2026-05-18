@@ -29,6 +29,10 @@ lanes against real repo work.
   specs, promotion packet drafts inside uploaded artifacts, receipts, draft PRs,
   issue backlink comments, posted PR comments, comment evals, generated-PR
   evals, active thread-teaching context, and the bounded issue-ledger packet
+- PR review shape: PR events run as review-only projections over the existing
+  work item. Aster may ask runx for a concise review or fix-up recommendation,
+  and it may refresh a draft PR when a bounded review finding is in scope, but
+  merge readiness remains a human gate
 - boundary: generated derived-state PRs such as evidence-projection refreshes
   are blocked from PR-mode `issue-triage`; they remain review surfaces only
 
@@ -148,6 +152,28 @@ lanes against real repo work.
 - output: policy-enforcement artifact plus any corrective PR body/comment update
 - note: publication now also carries a change-surface policy describing which
   repo surfaces the generated branch touched
+
+### `pr-review-fix-up` (planned)
+
+- trigger: review comments, failed checks, or maintainer replies on an existing
+  generated PR
+- runx lane shape: `pr-review` followed by optional `pr-fix-up` over the same
+  source work item and PR outbox entry
+- purpose: keep generated PRs moving without forcing maintainers to restate the
+  source issue; the bot summarizes the review, applies bounded requested fixes
+  when policy allows, and reposts the merge-gate summary
+- gate: no autonomous merge. A human reviewer remains responsible for approving
+  and merging or closing the PR
+
+### `merge-assist` (planned)
+
+- trigger: generated PR merged or closed, or manual outcome observation
+- runx lane shape: observe provider state, deployment, verification, and
+  rollback signals, then update the source work issue
+- purpose: finish the story after human action: merged, deployed and verified,
+  verification failed, closed without merge, or superseded
+- output: one source-thread outcome comment plus any state projection artifact
+- gate: read-only observation; it cannot merge or rewrite the original decision
 
 ### `rollback`
 

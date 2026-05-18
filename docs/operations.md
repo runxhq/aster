@@ -103,6 +103,12 @@ Thread teaching is the canonical human-teaching layer:
   portable `SKILL.md` unless a maintainer explicitly authorizes more
 - generated PR policy enforcement keeps `runx/*` PRs draft-only and explicitly
   human-reviewed
+- PR review and fix-up work stays attached to the original work issue and
+  generated PR outbox entry. The bot may summarize review state, apply bounded
+  requested fixes, and refresh the merge-gate comment, but it must not create a
+  duplicate PR or merge the existing PR
+- merge-assist is observation only: after a human merge or close, it records
+  deployment and verification state back to the work issue
 - `evidence-projection-derive` is now the only repo-owned evidence projection surface:
   it rebuilds `state/evidence-projections.json` from uploaded workflow
   artifacts, suppresses repeated retries onto one latest projection per bounded
@@ -228,6 +234,8 @@ These are no longer undefined gaps. They are explicit execution requirements.
 - generated PRs are draft by default unless an explicit lane policy says
   otherwise
 - merge remains human-reviewed until a separate policy says otherwise
+- review/fix-up lanes may reduce reviewer toil but do not alter merge authority;
+  their outputs are comments, receipts, and bounded PR updates
 - rollback happens through the dedicated `rollback` workflow, which posts a new
   corrective PR comment or closes a generated PR, never by pretending the
   original mutation did not occur

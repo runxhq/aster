@@ -31,7 +31,10 @@ This lane has two entry modes:
    posts a maintainer comment back to the PR. Public-value and replay gates
    block low-signal or duplicate comments for the same head SHA. Generated
    derived-state refresh PRs are blocked before model work because they
-   are review surfaces, not new triage subjects
+   are review surfaces, not new triage subjects. Review/fix-up work stays
+   attached to the original work item and PR outbox entry: the lane may prepare
+   a review packet or bounded fix-up recommendation, but the final merge
+   decision remains human
 
 ## `evidence-projection-derive`
 
@@ -124,6 +127,20 @@ governance, and evidence-quality drift.
 
 Runs on generated `runx/*` pull requests and enforces the draft-only,
 human-reviewed merge policy in the PR body and draft state.
+
+## Planned PR Review, Fix-Up, And Merge Assist
+
+The next Aster shape maps cleanly to runx core work-item states:
+
+- PR review consumes the source issue, evidence bundle, PR diff, checks, and
+  human review comments, then posts one high-signal PR or source-thread comment
+- fix-up applies bounded review-requested changes to the existing draft PR only
+  when the finding is inside the original scope
+- merge assist observes the human outcome, deployment, and verification
+  contract, then posts the terminal issue-thread update
+
+None of these flows auto-merge. They prepare the reviewer state, keep the
+source thread current, and stop at the human merge gate.
 
 ## `rollback`
 

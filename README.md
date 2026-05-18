@@ -94,6 +94,11 @@ Support workflows stay valuable even when the external caller is offline:
 - `rollback`: posts corrective comments or closes generated PRs when a public
   output needs to be superseded
 
+The next PR loop is review/fix-up/merge-assist over the same work item, not a
+new autonomous merge lane. Aster can ask runx to summarize review state, apply a
+bounded requested fix to an existing draft PR, and observe the human outcome;
+the merge decision remains with the human reviewer.
+
 ## Required Secrets
 
 `aster` needs only a small hosted secret surface:
