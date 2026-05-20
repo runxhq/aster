@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  buildRunxSkillRetryArgs,
   buildVerificationProof,
   buildInlineRepoSnapshot,
   findExistingGeneratedIssuePr,
@@ -48,6 +49,24 @@ test("isRetryableBridgeFailure ignores non-transport failures", () => {
   assert.equal(
     isRetryableBridgeFailure(new Error("spec validation failed")),
     false,
+  );
+});
+
+test("buildRunxSkillRetryArgs restarts the bridge with the original skill invocation", () => {
+  assert.deepEqual(
+    buildRunxSkillRetryArgs(
+      ["skill", "/runx/skills/issue-to-pr", "--fixture", "/tmp/work"],
+    ),
+    ["skill", "/runx/skills/issue-to-pr", "--fixture", "/tmp/work"],
+  );
+});
+
+test("buildRunxSkillRetryArgs strips stale continuation flags before bridge retry", () => {
+  assert.deepEqual(
+    buildRunxSkillRetryArgs(
+      ["skill", "/runx/skills/issue-to-pr", "--run-id", "old", "--answers=/tmp/old.json"],
+    ),
+    ["skill", "/runx/skills/issue-to-pr"],
   );
 });
 

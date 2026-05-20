@@ -4,9 +4,11 @@ import assert from "node:assert/strict";
 import {
   armWallClockTimeout,
   assertRustNativeRunxCommand,
+  buildSkillResumeRunArgs,
   buildLiveTraceState,
   gateSelectorMatches,
   inferTraceHeartbeatIntervalMs,
+  isRunxAgentPauseStatus,
   resolveRunxBinary,
   threadTeachingAllowsGate,
 } from "./runx-agent-bridge.mjs";
@@ -99,16 +101,87 @@ test("buildLiveTraceState renders a stable live trace snapshot", () => {
   assert.equal(snapshot.note, "still waiting");
 });
 
-test("assertRustNativeRunxCommand rejects launcher delegation-only commands", () => {
+test("assertRustNativeRunxCommand rejects non-native bridge commands", () => {
   assert.doesNotThrow(() => assertRustNativeRunxCommand(["harness", "/tmp/fixture.yaml"]));
   assert.doesNotThrow(() => assertRustNativeRunxCommand(["history", "--json"]));
+  assert.doesNotThrow(() => assertRustNativeRunxCommand(["skill", "/runx/skills/intake"]));
+  assert.doesNotThrow(() =>
+    assertRustNativeRunxCommand(["skill", "/runx/skills/issue-triage", "--runner", "respond"]),
+  );
+  assert.throws(() => assertRustNativeRunxCommand(["skill"]), /not accepted by the Rust-native Aster bridge/);
   assert.throws(
-    () => assertRustNativeRunxCommand(["skill", "/runx/skills/intake"]),
-    /refusing JS\/npm delegation/,
+    () => assertRustNativeRunxCommand(["skill", "run", "/runx/skills/intake"]),
+    /Deprecated skill subcommands are not accepted/,
+  );
+  assert.throws(
+    () => assertRustNativeRunxCommand(["skill", "search", "docs"]),
+    /not accepted by the Rust-native Aster bridge/,
+  );
+  assert.throws(
+    () => assertRustNativeRunxCommand(["skill", "sourcey"]),
+    /not accepted by the Rust-native Aster bridge/,
   );
   assert.throws(
     () => assertRustNativeRunxCommand(["resume", "run-1", "--answers", "/tmp/a.json"]),
-    /refusing JS\/npm delegation/,
+    /not accepted by the Rust-native Aster bridge/,
+  );
+  assert.throws(
+    () => assertRustNativeRunxCommand(["skill", "/runx/skills/intake", "--receipt", "rx_1"]),
+    /Deprecated receipt flags are not accepted/,
+  );
+});
+
+test("isRunxAgentPauseStatus accepts canonical needs_agent pauses only", () => {
+  assert.equal(isRunxAgentPauseStatus("needs_agent"), true);
+  assert.equal(isRunxAgentPauseStatus(["needs", "resolution"].join("_")), false);
+  assert.equal(isRunxAgentPauseStatus("success"), false);
+});
+
+test("buildSkillResumeRunArgs reruns the same skill command with run id and answers", () => {
+  assert.deepEqual(
+    buildSkillResumeRunArgs(
+      ["skill", "/runx/skills/issue-triage", "--runner", "respond"],
+      "run-1",
+      "/tmp/a.json",
+    ),
+    [
+      "skill",
+      "/runx/skills/issue-triage",
+      "--runner",
+      "respond",
+      "--run-id",
+      "run-1",
+      "--answers",
+      "/tmp/a.json",
+    ],
+  );
+});
+
+test("buildSkillResumeRunArgs removes stale resume flags before appending fresh answers", () => {
+  assert.deepEqual(
+    buildSkillResumeRunArgs(
+      [
+        "skill",
+        "/runx/skills/issue-triage",
+        "--runner",
+        "respond",
+        "--run-id",
+        "old-run",
+        "--answers=/tmp/old.json",
+      ],
+      "run-2",
+      "/tmp/new.json",
+    ),
+    [
+      "skill",
+      "/runx/skills/issue-triage",
+      "--runner",
+      "respond",
+      "--run-id",
+      "run-2",
+      "--answers",
+      "/tmp/new.json",
+    ],
   );
 });
 

@@ -13,6 +13,8 @@ import {
 } from "./thread-teaching.mjs";
 
 const execFileAsync = promisify(execFile);
+const RUNX_AGENT_PAUSE_STATUS = "needs_agent";
+const SKILL_ADMIN_ACTIONS = new Set(["add", "inspect", "publish", "search"]);
 export { gateSelectorMatches } from "./thread-teaching.mjs";
 
 async function main() {
@@ -42,7 +44,8 @@ async function main() {
   await mkdir(receiptDir, { recursive: true });
   await mkdir(traceDir, { recursive: true });
 
-  let runArgs = [...options.runxArgs];
+  const baseRunArgs = [...options.runxArgs];
+  let runArgs = [...baseRunArgs];
   let latestExitCode = 0;
 
   for (let turn = 0; turn < maxTurns; turn += 1) {
@@ -64,7 +67,7 @@ async function main() {
       await writeFile(path.resolve(options.outputPath), JSON.stringify(report, null, 2));
     }
 
-    if (report.status !== "needs_resolution") {
+    if (!isRunxAgentPauseStatus(report.status)) {
       process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
       process.exit(latestExitCode);
     }
@@ -115,7 +118,7 @@ async function main() {
       answersPath,
       `${JSON.stringify(compactAnswersPayload(answers, approvals), null, 2)}\n`,
     );
-    runArgs = ["resume", String(report.run_id), "--answers", answersPath];
+    runArgs = buildSkillResumeRunArgs(baseRunArgs, requireRunId(report), answersPath);
     assertRustNativeRunxCommand(runArgs);
   }
 
@@ -227,6 +230,7 @@ export function resolveRunxBinary(runxRoot) {
 }
 
 export function assertRustNativeRunxCommand(runArgs) {
+  assertNoDeprecatedRunxShape(runArgs);
   const command = firstNonFlagToken(runArgs);
   const nativeCommands = new Set([
     "connect",
@@ -246,19 +250,113 @@ export function assertRustNativeRunxCommand(runArgs) {
   if (command && nativeCommands.has(command)) {
     return;
   }
+  if (command === "skill" && isRustNativeSkillRunCommand(runArgs)) {
+    return;
+  }
   throw new Error(
-    `runx command '${command ?? "(none)"}' is not a Rust-native Aster command yet; refusing JS/npm delegation.`,
+    `runx command '${command ?? "(none)"}' is not accepted by the Rust-native Aster bridge.`,
   );
 }
 
-function firstNonFlagToken(runArgs) {
+export function buildSkillResumeRunArgs(runArgs, runId, answersPath) {
+  const baseRunArgs = stripSkillResumeFlags(runArgs);
+  assertRustNativeRunxCommand(baseRunArgs);
+  if (firstNonFlagToken(baseRunArgs) !== "skill") {
+    throw new Error("runx needs_agent pause can only be resumed by rerunning a runx skill <path> command.");
+  }
+  return [
+    ...baseRunArgs,
+    "--run-id",
+    requireNonEmptyString(runId, "run_id"),
+    "--answers",
+    requireNonEmptyString(answersPath, "answersPath"),
+  ];
+}
+
+export function isRunxAgentPauseStatus(status) {
+  return status === RUNX_AGENT_PAUSE_STATUS;
+}
+
+function assertNoDeprecatedRunxShape(runArgs) {
+  const commandIndex = firstNonFlagTokenIndex(runArgs);
+  const command = commandIndex < 0 ? null : String(runArgs[commandIndex]);
+  if (command === "skill" && runArgs[commandIndex + 1] === "run") {
+    throw new Error("Deprecated skill subcommands are not accepted by the Rust-native Aster bridge.");
+  }
   for (const token of runArgs) {
     const value = String(token);
-    if (!value.startsWith("-")) {
-      return value;
+    if (value === "--receipt" || value.startsWith("--receipt=")) {
+      throw new Error("Deprecated receipt flags are not accepted by the Rust-native Aster bridge.");
     }
   }
-  return null;
+}
+
+function isRustNativeSkillRunCommand(runArgs) {
+  const commandIndex = firstNonFlagTokenIndex(runArgs);
+  if (commandIndex < 0) {
+    return false;
+  }
+  const skillRef = runArgs[commandIndex + 1];
+  if (typeof skillRef !== "string" || !skillRef || skillRef.startsWith("-")) {
+    return false;
+  }
+  return !SKILL_ADMIN_ACTIONS.has(skillRef) && isPathLikeSkillRef(skillRef);
+}
+
+function isPathLikeSkillRef(skillRef) {
+  return (
+    skillRef === "." ||
+    skillRef === ".." ||
+    skillRef.startsWith("./") ||
+    skillRef.startsWith("../") ||
+    path.isAbsolute(skillRef) ||
+    skillRef.includes("/") ||
+    skillRef.toLowerCase().endsWith(".md")
+  );
+}
+
+function stripSkillResumeFlags(runArgs) {
+  const stripped = [];
+  for (let index = 0; index < runArgs.length; index += 1) {
+    const token = String(runArgs[index]);
+    if (token === "--run-id" || token === "--answers") {
+      index += 1;
+      continue;
+    }
+    if (token.startsWith("--run-id=") || token.startsWith("--answers=")) {
+      continue;
+    }
+    stripped.push(runArgs[index]);
+  }
+  return stripped;
+}
+
+function firstNonFlagToken(runArgs) {
+  const index = firstNonFlagTokenIndex(runArgs);
+  return index < 0 ? null : String(runArgs[index]);
+}
+
+function firstNonFlagTokenIndex(runArgs) {
+  for (let index = 0; index < runArgs.length; index += 1) {
+    const token = runArgs[index];
+    const value = String(token);
+    if (!value.startsWith("-")) {
+      return index;
+    }
+  }
+  return -1;
+}
+
+function requireRunId(report) {
+  return requireNonEmptyString(report?.run_id, "run_id");
+}
+
+function requireNonEmptyString(value, label) {
+  const normalized = String(value ?? "").trim();
+  if (!normalized) {
+    throw new Error(`runx needs_agent resume is missing ${label}.`);
+  }
+  return normalized;
 }
 
 async function runRunx({ runxBinary, receiptDir, runArgs, workdir }) {

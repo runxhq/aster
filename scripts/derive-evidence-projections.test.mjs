@@ -108,7 +108,7 @@ test("deriveEvidenceProjections rebuilds projection state from artifacts and sup
               created_at: "2026-04-19T00:00:00Z",
               lane: "issue-triage",
               status: "success",
-              receipt_id: "rcpt_100",
+              harness_receipt_refs: [{ type: "harness_receipt", uri: "runx:harness_receipt:rcpt_100" }],
               summary: "older proof record",
               objective_fingerprint: "pr:runxhq-runx-10",
               subject: {
@@ -120,7 +120,10 @@ test("deriveEvidenceProjections rebuilds projection state from artifacts and sup
               created_at: artifact.id === 101 ? "2026-04-20T01:00:00Z" : "2026-04-20T02:00:00Z",
               lane: "issue-triage",
               status: "success",
-              receipt_id: artifact.id === 101 ? "rcpt_101" : "rcpt_102",
+              harness_receipt_refs: [{
+                type: "harness_receipt",
+                uri: `runx:harness_receipt:${artifact.id === 101 ? "rcpt_101" : "rcpt_102"}`,
+              }],
               summary: artifact.id === 101 ? "clarified issue routing (first pass)" : "clarified issue routing (final pass)",
               objective_fingerprint: "issue:runxhq-runx-11",
               subject: {
@@ -185,6 +188,10 @@ test("deriveEvidenceProjections rebuilds projection state from artifacts and sup
   assert.equal(report.state.artifacts[1].summaries[0].objective_fingerprint, "issue:runxhq-runx-11");
   assert.match(report.state.artifacts[1].summaries[0].projection_key, /issue:runxhq-runx-11/);
   assert.equal(report.state.artifacts[1].summaries[0].promotion_scope, "public");
+  assert.deepEqual(report.state.artifacts[1].summaries[0].harness_receipt_refs, [{
+    type: "harness_receipt",
+    uri: "runx:harness_receipt:rcpt_101",
+  }]);
   assert.equal(report.latest_batch.workflow_run_id, "24704064892");
   assert.deepEqual(report.latest_batch.touched_targets, ["runxhq/runx"]);
   assert.equal(report.latest_batch.skipped_reasons.no_core_summary, 1);
@@ -237,8 +244,8 @@ test("deriveEvidenceProjections keeps generic low-signal summaries in state only
               created_at: "2026-04-21T00:00:00Z",
               lane: "issue-triage",
               status: "success",
-              receipt_id: "rcpt_201",
-              summary: "lane finished with needs_resolution",
+              harness_receipt_refs: [{ type: "harness_receipt", uri: "runx:harness_receipt:rcpt_201" }],
+              summary: "lane finished with needs_agent",
               subject: {
                 locator: "runxhq/aster#pr/88",
                 target_repo: "runxhq/aster",

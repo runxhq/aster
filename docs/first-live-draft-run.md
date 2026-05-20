@@ -8,7 +8,7 @@ This repo has already been exercised as a real `runx` target in draft mode.
 - runner host: local workspace
 - source repo: `/home/kam/dev/runx`
 - target repo: `aster`
-- result: 6 live runs, 6 clean `needs_resolution` boundaries, 0 unexpected failures
+- result: 6 live runs, 6 clean `needs_agent` boundaries, 0 unexpected failures
 
 ## Runs
 

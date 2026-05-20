@@ -174,8 +174,8 @@ the draft-first observability lanes continue to run.
   rebuilds repo-owned memory projections from uploaded workflow artifacts and
   keeps them on one rolling draft PR
 - [scripts/runx-agent-bridge.mjs](./scripts/runx-agent-bridge.mjs): external
-  caller wrapper for Rust-native `runx` commands; it refuses launcher
-  delegation-only commands until the Rust binary owns them
+  caller wrapper for Rust-native `runx` commands; it accepts only the current
+  Rust bridge contract
 - [scripts/prepare-issue-triage-decision.mjs](./scripts/prepare-issue-triage-decision.mjs):
   converts an `intake` result into one explicit triage decision plus
   optional planning and worker requests
@@ -227,8 +227,10 @@ node scripts/runx-agent-bridge.mjs \
   history --receipt-dir .artifacts/proving-ground --json
 ```
 
-The old `runx skill ...` and `runx resume ...` bridge path is intentionally
-blocked here until those commands are Rust-native in runx.
+`runx skill <path>` is allowed once owned by the Rust binary. When a skill
+returns `status: "needs_agent"`, the bridge resolves requests and reruns that
+same skill command with `--run-id <run_id>` and `--answers <answersPath>`.
+Continuation stays on the `runx skill <path>` command shape.
 
 ```text
 $RUNX_ANSWERS_DIR/
@@ -238,4 +240,4 @@ $RUNX_ANSWERS_DIR/
 ```
 
 The script will pick those up automatically and continue past the normal
-`needs_resolution` boundary for that run.
+`needs_agent` boundary for that run.

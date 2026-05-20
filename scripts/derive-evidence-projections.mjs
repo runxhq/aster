@@ -173,11 +173,11 @@ export async function deriveEvidenceProjections(options = {}, helpers = {}) {
       target_repo: group.target_repo,
       objective_fingerprint: group.objective_fingerprint,
       selected_artifact_id: group.selected_artifact_id,
-      selected_receipt_id: group.selected_receipt_id,
+      selected_harness_receipt_refs: group.selected_harness_receipt_refs,
       selected_summary: group.selected_summary,
       selected_promotion_scope: group.selected_promotion_scope,
       public_selected_artifact_id: group.public_selected_artifact_id,
-      public_selected_receipt_id: group.public_selected_receipt_id,
+      public_selected_harness_receipt_refs: group.public_selected_harness_receipt_refs,
       public_selected_summary: group.public_selected_summary,
       public_selected_promotion_scope: group.public_selected_promotion_scope,
       public_projection_reasons: group.public_projection_reasons,
@@ -243,7 +243,7 @@ async function buildProjectionCandidate({ artifact, repoRoot, summaryPath }) {
     summary_path: path.resolve(summaryPath),
     lane: firstString(packet?.lane),
     status: firstString(packet?.status),
-    receipt_id: firstString(packet?.receipt_id) || null,
+    harness_receipt_refs: normalizeHarnessReceiptRefs(packet?.harness_receipt_refs),
     summary: firstString(packet?.summary),
     packet_created_at: firstString(packet?.created_at),
     subject_locator: subjectLocator,
@@ -286,7 +286,7 @@ export function selectProjectionCandidates(candidates) {
         ...entry,
         suppression_reason: "superseded_by_newer_projection",
         superseded_by_artifact_id: winner.artifact_id,
-        superseded_by_receipt_id: winner.receipt_id,
+        superseded_by_harness_receipt_refs: winner.harness_receipt_refs,
       })),
     );
     groups.push({
@@ -296,11 +296,11 @@ export function selectProjectionCandidates(candidates) {
       target_repo: winner.target_repo,
       objective_fingerprint: winner.objective_fingerprint,
       selected_artifact_id: winner.artifact_id,
-      selected_receipt_id: winner.receipt_id,
+      selected_harness_receipt_refs: winner.harness_receipt_refs,
       selected_summary: winner.summary,
       selected_promotion_scope: winner.promotion_scope,
       public_selected_artifact_id: publicWinner?.artifact_id ?? null,
-      public_selected_receipt_id: publicWinner?.receipt_id ?? null,
+      public_selected_harness_receipt_refs: publicWinner?.harness_receipt_refs ?? [],
       public_selected_summary: publicWinner?.summary ?? null,
       public_selected_promotion_scope: publicWinner?.promotion_scope ?? null,
       public_projection_reasons: Array.isArray(publicWinner?.public_projection_reasons)
@@ -340,7 +340,7 @@ function buildProcessedArtifactRecord(artifact, candidates) {
     summaries: normalizeCollection(candidates).map((entry) => ({
       lane: entry.lane,
       status: entry.status,
-      receipt_id: entry.receipt_id,
+      harness_receipt_refs: entry.harness_receipt_refs,
       summary: entry.summary,
       packet_created_at: entry.packet_created_at,
       subject_locator: entry.subject_locator,
@@ -366,7 +366,7 @@ function buildAppliedSummaryReportRecord(candidate) {
     artifact_created_at: candidate.artifact_created_at,
     lane: candidate.lane,
     status: candidate.status,
-    receipt_id: candidate.receipt_id,
+    harness_receipt_refs: candidate.harness_receipt_refs,
     summary: candidate.summary,
     packet_created_at: candidate.packet_created_at,
     subject_locator: candidate.subject_locator,
@@ -390,7 +390,7 @@ function buildSuppressedSummaryReportRecord(candidate) {
     workflow_run_id: candidate.workflow_run_id,
     lane: candidate.lane,
     status: candidate.status,
-    receipt_id: candidate.receipt_id,
+    harness_receipt_refs: candidate.harness_receipt_refs,
     summary: candidate.summary,
     packet_created_at: candidate.packet_created_at,
     subject_locator: candidate.subject_locator,
@@ -399,7 +399,7 @@ function buildSuppressedSummaryReportRecord(candidate) {
     projection_key: candidate.projection_key,
     suppression_reason: candidate.suppression_reason,
     superseded_by_artifact_id: candidate.superseded_by_artifact_id,
-    superseded_by_receipt_id: candidate.superseded_by_receipt_id,
+    superseded_by_harness_receipt_refs: candidate.superseded_by_harness_receipt_refs,
     promotion_scope: candidate.promotion_scope,
     public_projection_reasons: Array.isArray(candidate.public_projection_reasons)
       ? candidate.public_projection_reasons
@@ -756,6 +756,8 @@ function hasDurableProjectionSummary(value) {
     "lane finished with completed",
     "lane finished with needs resolution",
     "lane finished with needsresolution",
+    "lane finished with needs agent",
+    "lane finished with needsagent",
     "lane finished with failed",
     "lane finished with failure",
     "lane finished with error",
@@ -766,6 +768,28 @@ function hasDurableProjectionSummary(value) {
 
 function isPublicProjectionScope(value) {
   return firstString(value) === "public";
+}
+
+function normalizeHarnessReceiptRefs(value) {
+  return normalizeCollection(value)
+    .map(normalizeHarnessReceiptRef)
+    .filter(Boolean);
+}
+
+function normalizeHarnessReceiptRef(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return null;
+  }
+  const uri = firstString(value.uri);
+  const locator = firstString(value.locator);
+  if (!uri && !locator) {
+    return null;
+  }
+  return {
+    type: firstString(value.type) || firstString(value.kind) || "harness_receipt",
+    ...(uri ? { uri } : {}),
+    ...(locator ? { locator } : {}),
+  };
 }
 
 function matchesArtifactPrefix(name, prefixes) {

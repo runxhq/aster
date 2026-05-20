@@ -225,7 +225,6 @@ async function runWorker({ options, workerRequest, index, verificationCatalog })
     await runRunxBridgeWithRetry({
       bridgeArgs: coreArgs,
       startRunxArgs,
-      resultPath,
       cwd: workDir,
     });
 
@@ -737,7 +736,7 @@ function run(command, args, options = {}) {
   }).trim();
 }
 
-export async function runRunxBridgeWithRetry({ bridgeArgs, startRunxArgs, resultPath, cwd }) {
+export async function runRunxBridgeWithRetry({ bridgeArgs, startRunxArgs, cwd }) {
   const maxAttempts = Number(process.env.RUNX_BRIDGE_MAX_ATTEMPTS ?? "3");
   let runxArgs = [...startRunxArgs];
   let lastError;
@@ -752,12 +751,45 @@ export async function runRunxBridgeWithRetry({ bridgeArgs, startRunxArgs, result
         throw error;
       }
 
-      const resumedRunId = readBridgeRunId(resultPath);
-      runxArgs = resumedRunId ? ["resume", resumedRunId] : [...startRunxArgs];
+      runxArgs = buildRunxSkillRetryArgs(startRunxArgs);
     }
   }
 
   throw lastError;
+}
+
+export function buildRunxSkillRetryArgs(startRunxArgs) {
+  const commandIndex = firstNonFlagTokenIndex(startRunxArgs);
+  if (commandIndex < 0 || String(startRunxArgs[commandIndex]) !== "skill") {
+    throw new Error("runx bridge retry can only restart a runx skill <path> invocation.");
+  }
+  return stripRunxSkillContinuationFlags(startRunxArgs);
+}
+
+function stripRunxSkillContinuationFlags(runxArgs) {
+  const stripped = [];
+  for (let index = 0; index < runxArgs.length; index += 1) {
+    const token = String(runxArgs[index]);
+    if (token === "--run-id" || token === "--answers") {
+      index += 1;
+      continue;
+    }
+    if (token.startsWith("--run-id=") || token.startsWith("--answers=")) {
+      continue;
+    }
+    stripped.push(runxArgs[index]);
+  }
+  return stripped;
+}
+
+function firstNonFlagTokenIndex(runxArgs) {
+  for (let index = 0; index < runxArgs.length; index += 1) {
+    const value = String(runxArgs[index]);
+    if (!value.startsWith("-")) {
+      return index;
+    }
+  }
+  return -1;
 }
 
 function requireValue(argv, index, flag) {
@@ -935,19 +967,6 @@ function serializeCommandError(error) {
 
 function slug(value) {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 48);
-}
-
-function readBridgeRunId(resultPath) {
-  if (!existsSync(resultPath)) {
-    return undefined;
-  }
-
-  try {
-    const parsed = JSON.parse(readFileSync(resultPath, "utf8"));
-    return firstString(parsed?.run_id);
-  } catch {
-    return undefined;
-  }
 }
 
 function serializeError(error) {

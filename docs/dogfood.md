@@ -10,16 +10,16 @@ contract.
 
 ```
 1. pick objective + target skill
-2. runx <target-skill> ...           → produces receipt rx_*
-3. runx review-receipt --receipt rx_*  → produces diagnosis (verdict + proposals)
-4. runx write-harness --diagnosis ...  → produces skill edit + fixture patch
+2. runx skill <path> ...               → produces a sealed harness receipt
+3. runx skill <review-receipt-path>    → produces diagnosis (verdict + proposals)
+4. runx skill <write-harness-path>     → produces skill edit + fixture patch
 5. apply the patch, bump the skill version, re-run the harness
 6. land the change + record the cycle in the catalog below
 ```
 
-Step 3+4 together are the `improve-skill` composite. A cycle can call
-`runx improve-skill --receipt rx_*` to run them as one step, or split
-them when iterating on review-receipt or write-harness themselves.
+Step 3+4 together are the `improve-skill` composite. A cycle can run that
+composite through `runx skill <path>` with the sealed harness receipt reference,
+or split them when iterating on review-receipt or write-harness themselves.
 
 ## Skill catalog
 
@@ -122,7 +122,7 @@ Populated per cycle as each one completes.
 | --- | --- | --- | --- | --- | --- | --- |
 | dogfood-cycle-1-improve-skill | improve-skill | needs_update | oss working tree (no skill-level version field yet) | Added paused-chain pass-case to improve-skill harness | 3274 | [.artifacts/dogfood-cycles/dogfood-cycle-1-improve-skill/](../.artifacts/dogfood-cycles/dogfood-cycle-1-improve-skill/) |
 | dogfood-cycle-2-review-receipt | review-receipt | needs_update | oss working tree; SKILL.md expanded + harness at 2 cases | Added agent-mediated-suspension paragraph and pass-on-paused harness case | 1820 | [.artifacts/dogfood-cycles/dogfood-cycle-2-review-receipt/](../.artifacts/dogfood-cycles/dogfood-cycle-2-review-receipt/) |
-| dogfood-cycle-3-write-harness | write-harness | needs_update | oss working tree; SKILL.md expanded + harness at 3 cases | Added pass-verdict paragraph and write-harness-honors-pass-verdict case; surfaced `runx resume` local-path defect as follow-up | 896 | [.artifacts/dogfood-cycles/dogfood-cycle-3-write-harness/](../.artifacts/dogfood-cycles/dogfood-cycle-3-write-harness/) |
+| dogfood-cycle-3-write-harness | write-harness | needs_update | oss working tree; SKILL.md expanded + harness at 3 cases | Added pass-verdict paragraph and write-harness-honors-pass-verdict case; surfaced the old local-path continuation defect as follow-up | 896 | [.artifacts/dogfood-cycles/dogfood-cycle-3-write-harness/](../.artifacts/dogfood-cycles/dogfood-cycle-3-write-harness/) |
 | dogfood-cycle-4-prior-art | prior-art | needs_update | oss working tree; SKILL.md expanded + harness at 2 cases | Elevated 'recommend reuse' as first-class output; added prior-art-recommends-reuse harness case | 716 | [.artifacts/dogfood-cycles/dogfood-cycle-4-prior-art/](../.artifacts/dogfood-cycles/dogfood-cycle-4-prior-art/) |
 | dogfood-cycle-5-issue-to-pr | issue-to-pr | needs_update | oss working tree; first harness case added | Filled the zero-case harness gap with a smoke-test fixture | 214 | [.artifacts/dogfood-cycles/dogfood-cycle-5-issue-to-pr/](../.artifacts/dogfood-cycles/dogfood-cycle-5-issue-to-pr/) |
 | dogfood-cycle-6-catalog-sweep | (catalog) | audit | docs/dogfood.md | Round-1 close: surveyed 14 skills, identified systemic 1-case pattern, queued round 2 | 0 | [.artifacts/dogfood-cycles/dogfood-cycle-6-catalog-sweep/](../.artifacts/dogfood-cycles/dogfood-cycle-6-catalog-sweep/) |
@@ -199,10 +199,9 @@ pass rather than bespoke cycles per skill.
 
 **Platform follow-ups discovered in round 1:**
 
-- `runx resume` used to reject runs invoked via local path with
-  "no pending skill path recorded". Fixed by the runner-local
-  change committed as `fix(runner-local): write journal on
-  missing-input needs_resolution`.
+- The previous continuation path rejected local-path invocations with
+  "no pending skill path recorded". The Rust bridge now continues by rerunning
+  the same `runx skill <path>` command with `--run-id` and `--answers`.
 - `issue-to-pr`'s first step (`scafld-new`) cannot execute inside
   the runx harness sandbox because the sandbox cwd is not a
   scafld workspace. Logged in cycle 5 for follow-up.
