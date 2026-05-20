@@ -122,7 +122,7 @@ test("assertRustNativeRunxCommand rejects non-native bridge commands", () => {
     /not accepted by the Rust-native Aster bridge/,
   );
   assert.throws(
-    () => assertRustNativeRunxCommand(["resume", "run-1", "--answers", "/tmp/a.json"]),
+    () => assertRustNativeRunxCommand(["evolve"]),
     /not accepted by the Rust-native Aster bridge/,
   );
   assert.throws(
