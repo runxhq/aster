@@ -99,7 +99,7 @@ function extractHarnessReceiptRefs(runResult) {
   }
   const receiptId = firstString(runResult?.id) && runResult?.schema === "runx.harness_receipt.v1"
     ? firstString(runResult.id)
-    : firstString(runResult?.receipt?.id);
+    : firstString(runResult?.receipt_id) ?? firstString(runResult?.receipt?.id);
   return receiptId
     ? [{ type: "harness_receipt", uri: `runx:harness_receipt:${receiptId}` }]
     : [];

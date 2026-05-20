@@ -227,6 +227,8 @@ async function runWorker({ options, workerRequest, index, verificationCatalog })
       startRunxArgs,
       cwd: workDir,
     });
+    const runResult = JSON.parse(await readFile(resultPath, "utf8"));
+    const receiptId = extractHarnessReceiptId(runResult);
 
     const bootstrapCommands = runCommandPhase(verificationPlan.bootstrap_commands, { cwd: workDir });
     const verificationCommands = bootstrapCommands.error
@@ -243,6 +245,7 @@ async function runWorker({ options, workerRequest, index, verificationCatalog })
       status: bootstrapCommands.error ? "fail" : verificationCommands.status,
       bootstrapCommands: bootstrapCommands.commands,
       commands: verificationCommands.commands,
+      receiptId,
     });
     await writeFile(
       path.join(artifactDir, "verification-proof.json"),
@@ -318,6 +321,10 @@ async function runWorker({ options, workerRequest, index, verificationCatalog })
       verification_profile: verificationPlan.profile_id,
       bootstrap_commands: bootstrapCommandList,
       verification_commands: validationCommands,
+      harness_receipt_refs: receiptId ? [{
+        kind: "harness_receipt",
+        locator: `runx:harness_receipt:${receiptId}`,
+      }] : [],
       publish,
     };
   } finally {
@@ -864,12 +871,32 @@ export function buildVerificationProof({
   if (receiptId) {
     proof.harness_receipt_refs = [{
       kind: "harness_receipt",
-      locator: receiptId,
+      locator: receiptLocator(receiptId),
     }];
   }
   return assertMatchesRunxControlSchema("verification_proof", proof, {
     label: "verification_proof",
   });
+}
+
+export function extractHarnessReceiptId(runResult) {
+  if (firstString(runResult?.receipt_id)) {
+    return firstString(runResult.receipt_id);
+  }
+  if (firstString(runResult?.id) && runResult?.schema === "runx.harness_receipt.v1") {
+    return firstString(runResult.id);
+  }
+  return firstString(runResult?.receipt?.id) ?? null;
+}
+
+function receiptLocator(receiptId) {
+  const normalized = firstString(receiptId);
+  if (!normalized) {
+    return "";
+  }
+  return normalized.startsWith("runx:harness_receipt:")
+    ? normalized
+    : `runx:harness_receipt:${normalized}`;
 }
 
 function buildVerificationCheck(phase, command, index) {

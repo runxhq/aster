@@ -4,6 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { isPrereleaseEligibleTargetRepo } from "./aster-v1-contracts.mjs";
+import { extractHarnessReceiptId } from "./run-issue-triage-workers.mjs";
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(scriptDir, "..");
@@ -87,7 +88,7 @@ async function main(argv = process.argv.slice(2)) {
   const objectiveSummary = requireString(firstString(payload?.objective_summary), "objective_summary");
   const output = {
     status: "success",
-    receipt_id: firstString(bridgeResult?.receipt?.id) ?? "",
+    receipt_id: extractHarnessReceiptId(bridgeResult) ?? "",
     change_set: asRecord(payload?.change_set) ?? changeSet,
     objective_summary: objectiveSummary,
     workspace_change_plan: workspaceChangePlan,

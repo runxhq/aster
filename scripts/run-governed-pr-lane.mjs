@@ -14,6 +14,7 @@ import {
   buildRepoContextSummary,
   buildRepoSnapshot,
   buildVerificationProof,
+  extractHarnessReceiptId,
   normalizeTaskId,
   prepareWorkspace,
   resolveRunxSkillPath,
@@ -180,6 +181,8 @@ export async function runGovernedPrLane(options) {
       resultPath,
       cwd: workDir,
     });
+    const runResult = JSON.parse(await readFile(resultPath, "utf8"));
+    const receiptId = extractHarnessReceiptId(runResult);
 
     const bootstrapCommands = runCommandPhase(verificationPlan.bootstrap_commands, { cwd: workDir });
     const verificationCommands = bootstrapCommands.error
@@ -196,6 +199,7 @@ export async function runGovernedPrLane(options) {
       status: bootstrapCommands.error ? "fail" : verificationCommands.status,
       bootstrapCommands: bootstrapCommands.commands,
       commands: verificationCommands.commands,
+      receiptId,
     });
     await writeFile(
       path.join(artifactRoot, "verification-proof.json"),
@@ -291,6 +295,10 @@ export async function runGovernedPrLane(options) {
         ledger_revision: ledgerRevision,
       },
       verification_profile: verificationPlan.profile_id,
+      harness_receipt_refs: receiptId ? [{
+        kind: "harness_receipt",
+        locator: `runx:harness_receipt:${receiptId}`,
+      }] : [],
       publish,
       pr_eval: prEval,
       artifact_root: artifactRoot,

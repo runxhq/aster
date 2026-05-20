@@ -70,10 +70,9 @@ test("buildPromotionDrafts creates reflection and history drafts", () => {
       ],
     },
     runResult: {
-      status: "completed",
-      receipt: {
-        id: "rcpt_123",
-      },
+      schema: "runx.skill_run.v1",
+      status: "sealed",
+      receipt_id: "hrn_rcpt_123",
       execution: {
         stdout: JSON.stringify({
           skill_spec: {
@@ -114,7 +113,7 @@ test("buildPromotionDrafts creates reflection and history drafts", () => {
 
   assert.match(drafts.reflection.filename, /^2026-04-16-issue-triage-/);
   assert.match(drafts.reflection.content, /## What Happened/);
-  assert.match(drafts.reflection.content, /runx:harness_receipt:rcpt_123/);
+  assert.match(drafts.reflection.content, /runx:harness_receipt:hrn_rcpt_123/);
   assert.match(drafts.reflection.content, /## Thread Teaching/);
   assert.match(drafts.reflection.content, /Prefer a draft PR over a direct mutation/);
   assert.match(drafts.reflection.content, /gate\.alpha/);
@@ -128,7 +127,7 @@ test("buildPromotionDrafts creates reflection and history drafts", () => {
   assert.match(drafts.reflection.content, /`ac-one-packet`: emit one packet/);
   assert.match(drafts.reflection.content, /## Risks/);
   assert.match(drafts.reflection.content, /Thin stub output/);
-  assert.match(drafts.history.content, /harness_receipt_ref: runx:harness_receipt:rcpt_123/);
+  assert.match(drafts.history.content, /harness_receipt_ref: runx:harness_receipt:hrn_rcpt_123/);
   assert.match(drafts.history.content, /objective_fingerprint: issue:aster-101/);
   assert.match(drafts.history.content, /README command drift/);
   assert.equal(drafts.packet.proposal?.name, "issue-ledger-followup");
@@ -136,7 +135,7 @@ test("buildPromotionDrafts creates reflection and history drafts", () => {
   assert.equal(drafts.packet.gate_decisions[0]?.gate_id, "gate.alpha");
   assert.deepEqual(drafts.packet.harness_receipt_refs, [{
     type: "harness_receipt",
-    uri: "runx:harness_receipt:rcpt_123",
+    uri: "runx:harness_receipt:hrn_rcpt_123",
   }]);
   assert.equal(drafts.packet.objective_fingerprint, "issue:aster-101");
 });

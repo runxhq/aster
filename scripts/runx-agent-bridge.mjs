@@ -63,6 +63,7 @@ async function main() {
     }
 
     const report = JSON.parse(invocation.stdout);
+    await assertCanonicalBridgeReport(report, { runArgs, receiptDir });
     if (options.outputPath) {
       await writeFile(path.resolve(options.outputPath), JSON.stringify(report, null, 2));
     }
@@ -277,6 +278,98 @@ export function isRunxAgentPauseStatus(status) {
   return status === RUNX_AGENT_PAUSE_STATUS;
 }
 
+export async function assertCanonicalBridgeReport(report, { runArgs = [], receiptDir } = {}) {
+  if (!isPlainObject(report)) {
+    throw new Error("runx bridge report must be a JSON object.");
+  }
+  if (firstNonFlagToken(runArgs) !== "skill") {
+    return report;
+  }
+  assertNoLegacyBridgeFields(report);
+  if (report.schema !== "runx.skill_run.v1") {
+    throw new Error("runx skill bridge report must use schema runx.skill_run.v1.");
+  }
+  if (isRunxAgentPauseStatus(report.status)) {
+    requireNonEmptyString(report.run_id, "run_id");
+    if (!Array.isArray(report.requests) || report.requests.length === 0) {
+      throw new Error("runx needs_agent report must include resolution requests.");
+    }
+    return report;
+  }
+  if (report.status !== "sealed") {
+    throw new Error("runx skill bridge terminal report must have status sealed.");
+  }
+  const receiptId = requireNonEmptyString(report.receipt_id, "receipt_id");
+  requireNonEmptyString(report.run_id, "run_id");
+  if (!isPlainObject(report.closure)) {
+    throw new Error("runx sealed skill report must include a closure object.");
+  }
+  if (isPlainObject(report.receipt)) {
+    assertCanonicalHarnessReceipt(report.receipt, receiptId);
+  }
+  if (receiptDir) {
+    const receipt = await readCanonicalHarnessReceipt(receiptDir, receiptId);
+    if (receipt.id !== receiptId) {
+      throw new Error("runx sealed skill report receipt_id does not match the stored receipt.");
+    }
+  }
+  return report;
+}
+
+function assertCanonicalHarnessReceipt(receipt, expectedReceiptId) {
+  assertNoLegacyBridgeFields(receipt);
+  if (receipt.schema !== "runx.harness_receipt.v1") {
+    throw new Error("runx sealed skill receipt must use schema runx.harness_receipt.v1.");
+  }
+  if (expectedReceiptId && receipt.id !== expectedReceiptId) {
+    throw new Error("runx sealed skill embedded receipt id does not match receipt_id.");
+  }
+  if (receipt.harness?.state !== "sealed") {
+    throw new Error("runx sealed skill receipt harness state must be sealed.");
+  }
+  if (!isPlainObject(receipt.seal)) {
+    throw new Error("runx sealed skill receipt must include a seal object.");
+  }
+}
+
+async function readCanonicalHarnessReceipt(receiptDir, receiptId) {
+  const receiptPath = path.join(path.resolve(receiptDir), `${receiptId}.json`);
+  let parsed;
+  try {
+    parsed = JSON.parse(await readFile(receiptPath, "utf8"));
+  } catch (error) {
+    throw new Error(`runx sealed skill receipt was not readable at ${receiptPath}: ${error.message}`);
+  }
+  assertCanonicalHarnessReceipt(parsed, receiptId);
+  return parsed;
+}
+
+function assertNoLegacyBridgeFields(value, pathLabel = "report") {
+  if (Array.isArray(value)) {
+    value.forEach((entry, index) => assertNoLegacyBridgeFields(entry, `${pathLabel}.${index}`));
+    return;
+  }
+  if (!isPlainObject(value)) {
+    return;
+  }
+  for (const key of Object.keys(value)) {
+    if ([
+      "runId",
+      "receiptId",
+      "outcome",
+      "effect",
+      "issue_to_pr_outcome",
+      "verification_report",
+      "verificationReport",
+      "target_effect",
+      "targetEffect",
+    ].includes(key)) {
+      throw new Error(`runx bridge report contains retired field ${pathLabel}.${key}.`);
+    }
+    assertNoLegacyBridgeFields(value[key], `${pathLabel}.${key}`);
+  }
+}
+
 function assertNoDeprecatedRunxShape(runArgs) {
   const commandIndex = firstNonFlagTokenIndex(runArgs);
   const command = commandIndex < 0 ? null : String(runArgs[commandIndex]);
@@ -286,6 +379,9 @@ function assertNoDeprecatedRunxShape(runArgs) {
   for (const token of runArgs) {
     const value = String(token);
     if (value === "--receipt" || value.startsWith("--receipt=")) {
+      throw new Error("Deprecated receipt flags are not accepted by the Rust-native Aster bridge.");
+    }
+    if (value === "--receiptDir" || value.startsWith("--receiptDir=")) {
       throw new Error("Deprecated receipt flags are not accepted by the Rust-native Aster bridge.");
     }
   }

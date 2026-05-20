@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import {
   buildRunxSkillRetryArgs,
   buildVerificationProof,
+  extractHarnessReceiptId,
   buildInlineRepoSnapshot,
   findExistingGeneratedIssuePr,
   isRetryableBridgeFailure,
@@ -121,6 +122,7 @@ test("buildVerificationProof emits the canonical verification proof shape", () =
       },
     ],
     verifiedAt: "2026-04-17T00:00:00Z",
+    receiptId: "hrn_rcpt_101",
   });
 
   assert.equal(proof.proof_id, "verification-101");
@@ -129,6 +131,28 @@ test("buildVerificationProof emits the canonical verification proof shape", () =
   assert.equal(proof.checks[0].command, "npm --prefix site ci");
   assert.equal(proof.checks[1].phase, "verification");
   assert.equal(proof.checks[1].command, "npm run site:ci");
+  assert.deepEqual(proof.harness_receipt_refs, [{
+    kind: "harness_receipt",
+    locator: "runx:harness_receipt:hrn_rcpt_101",
+  }]);
+});
+
+test("extractHarnessReceiptId prefers the current Rust skill receipt_id field", () => {
+  assert.equal(
+    extractHarnessReceiptId({
+      schema: "runx.skill_run.v1",
+      status: "sealed",
+      receipt_id: "hrn_rcpt_current",
+    }),
+    "hrn_rcpt_current",
+  );
+  assert.equal(
+    extractHarnessReceiptId({
+      schema: "runx.harness_receipt.v1",
+      id: "hrn_rcpt_direct",
+    }),
+    "hrn_rcpt_direct",
+  );
 });
 
 test("findExistingGeneratedIssuePr reuses the most recent open generated PR for the same issue", () => {

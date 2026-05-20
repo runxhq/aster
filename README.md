@@ -230,14 +230,6 @@ node scripts/runx-agent-bridge.mjs \
 `runx skill <path>` is allowed once owned by the Rust binary. When a skill
 returns `status: "needs_agent"`, the bridge resolves requests and reruns that
 same skill command with `--run-id <run_id>` and `--answers <answersPath>`.
-Continuation stays on the `runx skill <path>` command shape.
-
-```text
-$RUNX_ANSWERS_DIR/
-  evolve-introspect.json
-  sourcey.json
-  content-pipeline.json
-```
-
-The script will pick those up automatically and continue past the normal
-`needs_agent` boundary for that run.
+Continuation stays on the `runx skill <path>` command shape. Terminal skill
+reports must be `runx.skill_run.v1` with `status: "sealed"` and a stored
+`runx.harness_receipt.v1` receipt id.

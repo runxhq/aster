@@ -1,8 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { mkdtemp, mkdir, writeFile } from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
 
 import {
   armWallClockTimeout,
+  assertCanonicalBridgeReport,
   assertRustNativeRunxCommand,
   buildSkillResumeRunArgs,
   buildLiveTraceState,
@@ -129,12 +133,69 @@ test("assertRustNativeRunxCommand rejects non-native bridge commands", () => {
     () => assertRustNativeRunxCommand(["skill", "/runx/skills/intake", "--receipt", "rx_1"]),
     /Deprecated receipt flags are not accepted/,
   );
+  assert.throws(
+    () => assertRustNativeRunxCommand(["skill", "/runx/skills/intake", "--receiptDir", "/tmp/old"]),
+    /Deprecated receipt flags are not accepted/,
+  );
 });
 
 test("isRunxAgentPauseStatus accepts canonical needs_agent pauses only", () => {
   assert.equal(isRunxAgentPauseStatus("needs_agent"), true);
   assert.equal(isRunxAgentPauseStatus(["needs", "resolution"].join("_")), false);
   assert.equal(isRunxAgentPauseStatus("success"), false);
+});
+
+test("assertCanonicalBridgeReport accepts sealed Rust skill reports backed by sealed receipts", async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), "aster-bridge-contract-"));
+  const receiptDir = path.join(root, "receipts");
+  await mkdir(receiptDir, { recursive: true });
+  await writeFile(path.join(receiptDir, "hrn_rcpt_run_1.json"), JSON.stringify({
+    id: "hrn_rcpt_run_1",
+    schema: "runx.harness_receipt.v1",
+    harness: {
+      state: "sealed",
+    },
+    seal: {
+      disposition: "completed",
+    },
+  }));
+
+  await assert.doesNotReject(() => assertCanonicalBridgeReport({
+    schema: "runx.skill_run.v1",
+    status: "sealed",
+    run_id: "run-1",
+    receipt_id: "hrn_rcpt_run_1",
+    receipt: {
+      id: "hrn_rcpt_run_1",
+      schema: "runx.harness_receipt.v1",
+      harness: {
+        state: "sealed",
+      },
+      seal: {
+        disposition: "completed",
+      },
+    },
+    closure: {
+      disposition: "completed",
+    },
+  }, {
+    runArgs: ["skill", "/runx/skills/issue-to-pr"],
+    receiptDir,
+  }));
+});
+
+test("assertCanonicalBridgeReport rejects retired terminal bridge fields", async () => {
+  await assert.rejects(() => assertCanonicalBridgeReport({
+    schema: "runx.skill_run.v1",
+    status: "completed",
+    runId: "run-1",
+    receiptId: "rx_1",
+    receipt: {
+      id: "rx_1",
+    },
+  }, {
+    runArgs: ["skill", "/runx/skills/issue-to-pr"],
+  }), /retired field report\.runId/);
 });
 
 test("buildSkillResumeRunArgs reruns the same skill command with run id and answers", () => {
