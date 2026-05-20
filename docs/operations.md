@@ -7,7 +7,7 @@ description: Secrets, thread teaching, artifacts, and what still needs hardening
 
 ## Required secrets
 
-- `OPENAI_API_KEY`: external caller for `runx` `agent-task` requests
+- `OPENAI_API_KEY`: external caller for `runx` `agent_act` requests
 - `ASTER_GH_TOKEN`: preferred GitHub token for public outbound comments and
   PRs when those actions should appear as `@auscaster` / Kam rather than as the
   default workflow token
@@ -194,7 +194,7 @@ Every mutating or public lane uploads:
 
 - the final `runx` JSON result
 - the receipts directory
-- provider traces for each `agent-task`
+- provider traces for each `agent_act`
 - live caller-state files in `provider-trace/latest.json` plus one
   `provider-trace/*-live.json` per active request when hosted cognitive work is
   in flight

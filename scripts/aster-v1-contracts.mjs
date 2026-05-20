@@ -161,8 +161,7 @@ export function normalizeWorkerRequest(value, options = {}) {
     throw new Error(`unsupported worker '${worker}'.`);
   }
 
-  const issueToPrRequest = asRecord(value.issue_to_pr_request)
-    ?? (worker === "issue-to-pr" ? asRecord(value.request) : undefined);
+  const issueToPrRequest = asRecord(value.issue_to_pr_request);
   if (!issueToPrRequest) {
     throw new Error(
       `worker_request.issue_to_pr_request is required (${CONTROL_SCHEMA_REFS.worker_request}).`,
@@ -198,12 +197,6 @@ export function normalizeIssueToPrRequest(value, options = {}) {
   });
 
   const explicitVerificationProfile = firstString(value.verification_profile);
-  const legacyValidationCommands = collectLegacyValidationCommands(value);
-  if (explicitVerificationProfile && legacyValidationCommands.length > 0) {
-    throw new Error(
-      `issue_to_pr_request must use verification_profile or legacy validation commands, not both (${CONTROL_SCHEMA_REFS.issue_to_pr_request}).`,
-    );
-  }
 
   const defaultRepo = firstString(options.defaultRepo);
   const targetRepo = firstString(value.target_repo) ?? defaultRepo;
@@ -235,8 +228,6 @@ export function normalizeIssueToPrRequest(value, options = {}) {
 
   if (explicitVerificationProfile) {
     normalized.verification_profile = explicitVerificationProfile;
-  } else if (!options.catalog && legacyValidationCommands.length > 0) {
-    normalized.validation_commands = legacyValidationCommands;
   }
 
   if (options.catalog) {
@@ -255,32 +246,6 @@ export function normalizeIssueToPrRequest(value, options = {}) {
 
 export function resolveVerificationPlan({ catalog, targetRepo, issueToPrRequest }) {
   const explicitProfileId = firstString(issueToPrRequest.verification_profile);
-  const legacyCommands = collectLegacyValidationCommands(issueToPrRequest);
-
-  if (explicitProfileId && legacyCommands.length > 0) {
-    throw new Error(
-      `issue_to_pr_request must use verification_profile or legacy validation commands, not both (${CONTROL_SCHEMA_REFS.issue_to_pr_request}).`,
-    );
-  }
-
-  if (legacyCommands.length > 0) {
-    const inferred = Object.entries(catalog.profiles).find(([, profile]) => {
-      return profile.repo === targetRepo && stringArraysEqual(profile.commands, legacyCommands);
-    });
-
-    if (!inferred) {
-      throw new Error(
-        `raw validation_command fields are not allowed unless they map exactly to a declared verification profile (${CONTROL_SCHEMA_REFS.verification_profile_catalog}).`,
-      );
-    }
-
-    return {
-      profile_id: inferred[0],
-      bootstrap_commands: inferred[1].bootstrap_commands,
-      commands: inferred[1].commands,
-      compatibility_mode: "legacy_validation_command_mapping",
-    };
-  }
 
   const profileId = explicitProfileId ?? catalog.repo_defaults[targetRepo];
   if (!profileId) {
@@ -303,20 +268,7 @@ export function resolveVerificationPlan({ catalog, targetRepo, issueToPrRequest 
     profile_id: profileId,
     bootstrap_commands: profile.bootstrap_commands,
     commands: profile.commands,
-    compatibility_mode: "canonical",
   };
-}
-
-function collectLegacyValidationCommands(issueToPrRequest) {
-  if (Array.isArray(issueToPrRequest.validation_commands)) {
-    return normalizeStringArray(
-      issueToPrRequest.validation_commands,
-      "issue_to_pr_request.validation_commands",
-    );
-  }
-
-  const single = firstString(issueToPrRequest.validation_command);
-  return single ? [single] : [];
 }
 
 function normalizeTargetSurfaces(value) {
@@ -387,11 +339,4 @@ function asRecord(value) {
 
 function isRecord(value) {
   return Boolean(asRecord(value));
-}
-
-function stringArraysEqual(left, right) {
-  if (left.length !== right.length) {
-    return false;
-  }
-  return left.every((value, index) => value === right[index]);
 }

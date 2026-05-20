@@ -68,17 +68,6 @@
     "verification_profile": {
       "type": "string",
       "minLength": 1
-    },
-    "validation_command": {
-      "type": "string",
-      "minLength": 1
-    },
-    "validation_commands": {
-      "type": "array",
-      "items": {
-        "type": "string",
-        "minLength": 1
-      }
     }
   },
   "required": [

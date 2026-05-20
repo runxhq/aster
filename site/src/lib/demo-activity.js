@@ -8,6 +8,7 @@ export const DEMO_ASTER_FEED = [
     repo: "runxhq/aster",
     workflow: "aster-cycle",
     url: "https://aster.runx.ai/activity/",
+    harness_receipt_refs: [{ type: "harness_receipt", uri: "runx:harness_receipt:hrn_rcpt_seed_aster_cycle" }],
     metadata: {
       public_lane: "aster",
       lane: "aster-cycle",
@@ -28,6 +29,7 @@ export const DEMO_ASTER_FEED = [
     repo: "pnpm/pnpm",
     workflow: "issue-triage",
     url: "https://aster.runx.ai/activity/",
+    harness_receipt_refs: [{ type: "harness_receipt", uri: "runx:harness_receipt:hrn_rcpt_seed_issue_triage" }],
     metadata: {
       public_lane: "aster",
       lane: "issue-triage",
@@ -49,6 +51,7 @@ export const DEMO_ASTER_FEED = [
     repo: "runxhq/aster",
     workflow: "docs-pr",
     url: "https://aster.runx.ai/doctrine/",
+    harness_receipt_refs: [{ type: "harness_receipt", uri: "runx:harness_receipt:hrn_rcpt_seed_docs_pr" }],
     metadata: {
       public_lane: "aster",
       lane: "docs-pr",
@@ -69,6 +72,7 @@ export const DEMO_ASTER_FEED = [
     repo: "runxhq/aster",
     workflow: "site-pages",
     url: "https://aster.runx.ai/",
+    harness_receipt_refs: [{ type: "harness_receipt", uri: "runx:harness_receipt:hrn_rcpt_seed_site_pages" }],
     metadata: {
       public_lane: "aster",
       lane: "site-pages",

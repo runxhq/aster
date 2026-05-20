@@ -12,7 +12,7 @@ task:
     must consume a bounded issue-ledger packet rather than only the original
     issue body, and both issue-triage and skill-lab must post their machine
     updates back into that same issue thread. Cross-cutting collaboration
-    issues remain available only for non-work-item or shared policy records.
+    issues remain available only for non-engagement or shared policy records.
   size: "medium"
   risk_level: "high"
   context:

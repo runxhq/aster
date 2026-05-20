@@ -1,12 +1,10 @@
 # Dogfood
 
-Aster's dogfood campaign. Every cycle runs a runx composite skill via the
-`runx` CLI on a real objective, diagnoses the receipt, and lands a bounded
-improvement to the skill or its specs. The dogfood IS the improvement
-cycle: each pass through the loop must leave the catalog measurably better
-and must produce at least one committed change to a skill, spec, or
-harness fixture. A cycle that produces no improvement is a no-op and is
-re-run.
+Aster's dogfood campaign. The current local proving-ground path runs the
+Rust `runx` binary against native harness fixtures and records sealed
+`runx.harness_receipt.v1` receipts. Historical rounds below describe earlier
+skill-runner dogfood and remain as evidence, not as the current invocation
+contract.
 
 ## Cycle shape
 
@@ -44,7 +42,7 @@ listed here rotate through cycles. "Last cycle" records the cycle id
 | content-pipeline | dogfooded | dogfood-round-2-coverage-pass | oss + needs-objective negative case | Round 2 added negative-case fixture. |
 | draft-content | surveyed (cycle 6) | — | 2 harness cases | Cycle 6 audit only. |
 | bug-to-pr | removed | — | — | Empty directory; not implemented. Removed from catalog. |
-| issue-to-pr | dogfooded | dogfood-cycle-9-issue-to-pr-full-chain | issue-to-pr 0.1.2 + three harness cases including full-chain success | Cycle 9 exercises every agent-task hand-off through scafld-complete. |
+| issue-to-pr | dogfooded | dogfood-cycle-9-issue-to-pr-full-chain | issue-to-pr 0.1.2 + three harness cases including full-chain success | Cycle 9 exercises every agent_act hand-off through scafld-complete. |
 | issue-triage | surveyed (cycle 6) | — | 2 harness cases | Cycle 6 audit only. |
 | skill-lab | dogfooded | dogfood-round-2-coverage-pass | oss + minimal-inputs boundary case | Round 2 added boundary fixture. |
 | ecosystem-vuln-scan | dogfooded | dogfood-round-2-coverage-pass | oss + needs-target negative case | Round 2 added negative-case fixture. |
@@ -236,7 +234,7 @@ the cycle-10 v2 acceptance check, which walks every
 issue-to-pr is the first composite skill with a full-chain
 harness case that executes all 15 governed steps through
 scafld-complete. Its fixture pattern (canned caller.answers per
-agent-task hand-off) is the template other composite chains can
+agent_act hand-off) is the template other composite chains can
 adopt when they need equivalent depth.
 
 Round 3 scope (queued, not started): convert one more composite
@@ -251,7 +249,7 @@ inform the governed-receipts-vs-hosted-memory decision.
 
 Round 3 executed `dogfood-round-3-real-traffic`: four real runx
 skill invocations with honest operator-authored answers to each
-cognitive-work request. Every invocation persisted a receipt to
+agent_act request. Every invocation persisted a receipt to
 `aster/.runx/receipts/`.
 
 - **research** (`rx_17a9f0de…`) — produced a platform-decision
@@ -267,7 +265,7 @@ cognitive-work request. Every invocation persisted a receipt to
   classify-run-context, gate-on-unresolved-requests, ergonomic
   `--allow-pause` opt-out.
 - **review-skill** (`rx_04739717…`) — rated `review-receipt`
-  tier-2. Weaknesses: no CLI fallback, no partial-success
+  tier-2. Weaknesses: no native CLI continuation, no partial-success
   taxonomy class, no runtime output-schema validation.
 
 Pressure signals after round 3: **10 persistent receipts, 12699

@@ -94,7 +94,7 @@ Support workflows stay valuable even when the external caller is offline:
 - `rollback`: posts corrective comments or closes generated PRs when a public
   output needs to be superseded
 
-The next PR loop is review/fix-up/merge-assist over the same work item, not a
+The next PR loop is review/fix-up/merge-assist over the same work ledger, not a
 new autonomous merge lane. Aster can ask runx to summarize review state, apply a
 bounded requested fix to an existing draft PR, and observe the human outcome;
 the merge decision remains with the human reviewer.
@@ -103,10 +103,10 @@ the merge decision remains with the human reviewer.
 
 `aster` needs only a small hosted secret surface:
 
-- `OPENAI_API_KEY`: external caller for `runx` `agent-task` boundaries
+- `OPENAI_API_KEY`: external caller for `runx` `agent_act` boundaries
 - `RUNX_CALLER_MODEL` (optional): pinned model override for the hosted bridge
 - `RUNX_REF` (repo variable): optional `runx` branch or tag for hosted
-  checkouts; defaults to `main`
+  checkouts; defaults to `cb44ad7`
 - `RUNX_REPOSITORY_PAT` (optional): GitHub token for private `runx` checkout
   and other cross-repo automation. The repo-scoped `github.token` is enough
   for same-repo workers; fanout into other repos needs broader access.
@@ -174,7 +174,8 @@ the draft-first observability lanes continue to run.
   rebuilds repo-owned memory projections from uploaded workflow artifacts and
   keeps them on one rolling draft PR
 - [scripts/runx-agent-bridge.mjs](./scripts/runx-agent-bridge.mjs): external
-  caller that answers `runx` `agent-task` requests without internal shortcuts
+  caller wrapper for Rust-native `runx` commands; it refuses launcher
+  delegation-only commands until the Rust binary owns them
 - [scripts/prepare-issue-triage-decision.mjs](./scripts/prepare-issue-triage-decision.mjs):
   converts an `intake` result into one explicit triage decision plus
   optional planning and worker requests
@@ -209,30 +210,25 @@ If you are touching the optional working-docs surface as well:
 npm run docs:build
 ```
 
-Run the live proving-ground lane locally from this repo:
+Run the Rust harness proving-ground lane locally from this repo:
 
 ```bash
-RUNX_ROOT=/home/kam/dev/runx bash scripts/proving-ground.sh
+RUNX_ROOT=/home/kam/dev/runx/oss bash scripts/proving-ground.sh
 node scripts/summarize-proving-ground.mjs .artifacts/proving-ground
 ```
 
-Run a real `runx` lane through the external caller bridge:
+Run a Rust-native `runx` command through the bridge:
 
 ```bash
-OPENAI_API_KEY=... \
-RUNX_ROOT=/home/kam/dev/runx \
 node scripts/runx-agent-bridge.mjs \
-  --runx-root /home/kam/dev/runx \
-  --receipt-dir .artifacts/issue-triage/manual \
+  --runx-root /home/kam/dev/runx/oss \
+  --receipt-dir .artifacts/runx/manual \
   -- \
-  skill /home/kam/dev/runx/oss/skills/intake \
-  --thread_title "Example bounded issue" \
-  --thread_body "Describe the concrete repo problem here." \
-  --thread_locator github://runxhq/aster/issues/1
+  history --receipt-dir .artifacts/proving-ground --json
 ```
 
-If you have prerecorded caller answers for a given proving-ground run, place
-one JSON file per run name in `$RUNX_ANSWERS_DIR`:
+The old `runx skill ...` and `runx resume ...` bridge path is intentionally
+blocked here until those commands are Rust-native in runx.
 
 ```text
 $RUNX_ANSWERS_DIR/

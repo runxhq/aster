@@ -32,7 +32,7 @@ This lane has two entry modes:
    block low-signal or duplicate comments for the same head SHA. Generated
    derived-state refresh PRs are blocked before model work because they
    are review surfaces, not new triage subjects. Review/fix-up work stays
-   attached to the original work item and PR outbox entry: the lane may prepare
+   attached to the original work issue and PR outbox entry: the lane may prepare
    a review packet or bounded fix-up recommendation, but the final merge
    decision remains human
 
@@ -130,9 +130,9 @@ human-reviewed merge policy in the PR body and draft state.
 
 ## Planned PR Review, Fix-Up, And Merge Assist
 
-The next Aster shape maps cleanly to runx core work-item states:
+The next Aster shape maps cleanly to runx harness states:
 
-- PR review consumes the source issue, evidence bundle, PR diff, checks, and
+- PR review consumes the source issue, evidence artifacts, PR diff, checks, and
   human review comments, then posts one high-signal PR or source-thread comment
 - fix-up applies bounded review-requested changes to the existing draft PR only
   when the finding is inside the original scope

@@ -11,24 +11,21 @@ const reports = [];
 for (const entry of entries) {
   const payload = JSON.parse(await readFile(path.join(artifactDir, entry), "utf8"));
   const name = entry.replace(/\.json$/, "");
-  const requests = Array.isArray(payload.requests) ? payload.requests : [];
+  const harness = payload.harness && typeof payload.harness === "object" ? payload.harness : {};
+  const seal = payload.seal && typeof payload.seal === "object" ? payload.seal : {};
   reports.push({
     name,
-    status: payload.status ?? "unknown",
-    requestIds: requests.map((request) => request.id).filter((value) => typeof value === "string"),
-    requestSkills: requests
-      .map((request) =>
-        request?.kind === "cognitive_work" && typeof request.work?.envelope?.skill === "string"
-          ? request.work.envelope.skill
-          : undefined,
-      )
-      .filter((value) => typeof value === "string"),
-    currentContext: requests
-      .flatMap((request) =>
-        request?.kind === "cognitive_work" && Array.isArray(request.work?.envelope?.current_context)
-          ? request.work.envelope.current_context.map((artifact) => artifact.type).filter((value) => typeof value === "string")
-          : [],
-      ),
+    schema: typeof payload.schema === "string" ? payload.schema : "unknown",
+    status: typeof harness.state === "string" ? harness.state : "unknown",
+    disposition: typeof seal.disposition === "string" ? seal.disposition : "unknown",
+    receiptId: typeof payload.id === "string" ? payload.id : null,
+    harnessId: typeof harness.harness_id === "string" ? harness.harness_id : null,
+    acts: Array.isArray(harness.acts)
+      ? harness.acts.map((act) => act?.act_id).filter((value) => typeof value === "string")
+      : [],
+    childReceipts: Array.isArray(harness.child_harness_receipt_refs)
+      ? harness.child_harness_receipt_refs.map((ref) => ref?.uri).filter((value) => typeof value === "string")
+      : [],
   });
 }
 
@@ -50,15 +47,20 @@ const lines = [
 for (const report of reports) {
   lines.push(`## ${report.name}`);
   lines.push("");
+  lines.push(`- schema: \`${report.schema}\``);
   lines.push(`- status: \`${report.status}\``);
-  if (report.requestIds.length > 0) {
-    lines.push(`- requests: ${report.requestIds.map((value) => `\`${value}\``).join(", ")}`);
+  lines.push(`- disposition: \`${report.disposition}\``);
+  if (report.receiptId) {
+    lines.push(`- harness receipt: \`${report.receiptId}\``);
   }
-  if (report.requestSkills.length > 0) {
-    lines.push(`- boundary skills: ${report.requestSkills.map((value) => `\`${value}\``).join(", ")}`);
+  if (report.harnessId) {
+    lines.push(`- harness: \`${report.harnessId}\``);
   }
-  if (report.currentContext.length > 0) {
-    lines.push(`- current context: ${report.currentContext.map((value) => `\`${value}\``).join(", ")}`);
+  if (report.acts.length > 0) {
+    lines.push(`- acts: ${report.acts.map((value) => `\`${value}\``).join(", ")}`);
+  }
+  if (report.childReceipts.length > 0) {
+    lines.push(`- child receipts: ${report.childReceipts.map((value) => `\`${value}\``).join(", ")}`);
   }
   lines.push("");
 }

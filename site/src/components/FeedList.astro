@@ -12,6 +12,7 @@ interface FeedItem {
   timestampIso: string;
   url: string | null;
   reference: string;
+  harnessReceiptRefs: { type: string; uri?: string | null; locator?: string | null }[];
   artifactUrl: string | null;
   commitShort: string | null;
   failureReason: string | null;
@@ -80,6 +81,12 @@ const {
                 <span>channel</span>
                 <strong>{item.channel}</strong>
               </span>
+              {item.harnessReceiptRefs.length > 0 ? (
+                <span class="feed-card__proof">
+                  <span>receipt</span>
+                  <strong>{item.harnessReceiptRefs[0].locator ?? item.harnessReceiptRefs[0].uri}</strong>
+                </span>
+              ) : null}
               {item.isDemo ? (
                 <span class="feed-card__proof">
                   <span>seed</span>

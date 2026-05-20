@@ -67,7 +67,7 @@ export async function buildOperatorShakeoutReport({ repoRoot, publishEvidencePat
       },
     }),
     validation: {
-      commands: ["npm run site:ci"],
+      checks: ["npm run site:ci"],
       verification_profile: "aster.site-ci",
     },
   });

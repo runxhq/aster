@@ -113,8 +113,8 @@ export function evaluateSkillProposalQuality({ report, issuePacket = null, catal
         : [];
   const outputFields = Array.isArray(skillSpec.outputs)
     ? skillSpec.outputs
-    : isRecord(skillSpec.output_contract)
-      ? [skillSpec.output_contract]
+    : isRecord(skillSpec.output)
+      ? [skillSpec.output]
       : [];
   const summaryText = firstNonEmptyString(skillSpec.summary, skillSpec.description, skillSpec.objective, skillSpec.purpose);
   const openQuestions = Array.isArray(payload?.execution_plan?.open_questions_left_out_of_scope)

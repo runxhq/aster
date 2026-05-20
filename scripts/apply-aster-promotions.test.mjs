@@ -61,7 +61,7 @@ test("applyAsterPromotions copies drafts and updates target dossier", async () =
         created_at: "2026-04-16T00:00:00Z",
         lane: "issue-triage",
         status: "completed",
-        receipt_id: "rcpt_123",
+        harness_receipt_refs: [{ type: "harness_receipt", uri: "runx:harness_receipt:rcpt_123" }],
         summary: "README command drift",
         subject: {
           target_repo: "runxhq/aster",
@@ -124,7 +124,7 @@ test("applyAsterPromotions leaves public surfaces untouched for state-only proje
         created_at: "2026-04-16T00:00:00Z",
         lane: "issue-triage",
         status: "success",
-        receipt_id: "rcpt_456",
+        harness_receipt_refs: [{ type: "harness_receipt", uri: "runx:harness_receipt:rcpt_456" }],
         summary: "lane finished with success",
         subject: {
           target_repo: "runxhq/aster",

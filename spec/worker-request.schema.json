@@ -75,17 +75,6 @@
         "verification_profile": {
           "type": "string",
           "minLength": 1
-        },
-        "validation_command": {
-          "type": "string",
-          "minLength": 1
-        },
-        "validation_commands": {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "minLength": 1
-          }
         }
       },
       "required": [
@@ -103,25 +92,11 @@
         },
         "issue_to_pr_request": {
           "$ref": "#/$defs/issueToPrRequest"
-        },
-        "request": {
-          "$ref": "#/$defs/issueToPrRequest"
         }
       },
       "required": [
-        "worker"
-      ],
-      "anyOf": [
-        {
-          "required": [
-            "issue_to_pr_request"
-          ]
-        },
-        {
-          "required": [
-            "request"
-          ]
-        }
+        "worker",
+        "issue_to_pr_request"
       ],
       "additionalProperties": false
     }

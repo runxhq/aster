@@ -8,7 +8,7 @@ body:
         This issue is the living ledger for one improvement thread.
 
         Keep amendments, approvals, and machine updates in this same issue so
-        the whole work item stays legible in one place.
+        the whole work thread stays legible in one place.
   - type: textarea
     id: objective
     attributes:

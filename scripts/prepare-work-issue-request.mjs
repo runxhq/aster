@@ -23,7 +23,7 @@ export function prepareWorkIssueRequest(issue = {}, options = {}) {
     : Array.isArray(issue?.trusted_human_comments)
       ? issue.trusted_human_comments
       : [];
-  const rawTitle = normalizeString(sourceIssue.title) ?? "Untitled work item";
+  const rawTitle = normalizeString(sourceIssue.title) ?? "Untitled work thread";
   const rawBody = normalizeString(sourceIssue.body) ?? "";
   const sections = extractNamedSections(rawBody);
   const sourceRepo = normalizeString(issue?.repo) ?? normalizeString(options.defaultSourceRepo) ?? null;

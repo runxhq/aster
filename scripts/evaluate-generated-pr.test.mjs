@@ -23,7 +23,7 @@ test("evaluateGeneratedPr passes a published PR with policy and validation", () 
     }),
     validation: {
       verification_profile: "docs",
-      commands: ["npm test"],
+      checks: ["npm test"],
     },
   });
 
@@ -70,7 +70,7 @@ test("evaluateGeneratedPr normalizes final published policy from metadata", () =
     },
     body: "## Summary\n\nDraft proposal.\n\n## Validation\n\n- receipts uploaded with this workflow run",
     validation: {
-      commands: ["npm run docs:ci"],
+      checks: ["npm run docs:ci"],
     },
   });
 

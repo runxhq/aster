@@ -39,13 +39,13 @@ export function buildPromotionDrafts({ lane, contextBundle, runResult, now = new
   const subjectSlug = slugify(subjectLabel);
   const summarySlug = slugify(signal.summary).slice(0, 48) || lane;
   const baseName = `${date}-${lane}-${subjectSlug}-${summarySlug}`.replace(/-+/g, "-");
-  const receiptId = firstString(runResult?.receipt?.id);
+  const harnessReceiptRefs = extractHarnessReceiptRefs(runResult);
 
   const packet = {
     created_at: now.toISOString(),
     lane,
     status: runResult?.status ?? "unknown",
-    receipt_id: receiptId || null,
+    harness_receipt_refs: harnessReceiptRefs,
     summary: signal.summary,
     feed_channel: feedChannelForLane(lane, runResult?.status ?? "unknown"),
     main_feed_eligible: isMainFeedEligible(lane, runResult?.status ?? "unknown"),
@@ -91,6 +91,40 @@ export async function writePromotionDrafts({ outputDir, drafts }) {
   };
 }
 
+function extractHarnessReceiptRefs(runResult) {
+  if (Array.isArray(runResult?.harness_receipt_refs)) {
+    return runResult.harness_receipt_refs
+      .map(normalizeHarnessReceiptRef)
+      .filter(Boolean);
+  }
+  const receiptId = firstString(runResult?.id) && runResult?.schema === "runx.harness_receipt.v1"
+    ? firstString(runResult.id)
+    : firstString(runResult?.receipt?.id);
+  return receiptId
+    ? [{ type: "harness_receipt", uri: `runx:harness_receipt:${receiptId}` }]
+    : [];
+}
+
+function normalizeHarnessReceiptRef(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return null;
+  }
+  const uri = firstString(value.uri);
+  const locator = firstString(value.locator);
+  if (!uri && !locator) {
+    return null;
+  }
+  return {
+    type: firstString(value.type) || "harness_receipt",
+    ...(uri ? { uri } : {}),
+    ...(locator ? { locator } : {}),
+  };
+}
+
+function formatHarnessReceiptRef(ref) {
+  return firstString(ref?.uri) || firstString(ref?.locator) || "runx:harness_receipt:unknown";
+}
+
 export function extractRunSignal(runResult) {
   const parsed = extractExecutionPayload(runResult);
   const triage = asRecord(parsed?.triage_report);
@@ -130,8 +164,8 @@ function buildReflectionDraft({ date, lane, contextBundle, packet }) {
     `main_feed_eligible: ${String(packet.main_feed_eligible)}`,
   ];
 
-  if (packet.receipt_id) {
-    lines.push(`receipt_id: ${packet.receipt_id}`);
+  if (packet.harness_receipt_refs.length > 0) {
+    lines.push(`harness_receipt_ref: ${formatHarnessReceiptRef(packet.harness_receipt_refs[0])}`);
   }
   if (packet.objective_fingerprint) {
     lines.push(`objective_fingerprint: ${packet.objective_fingerprint}`);
@@ -156,8 +190,8 @@ function buildReflectionDraft({ date, lane, contextBundle, packet }) {
   lines.push(`- Lane: \`${lane}\``);
   lines.push(`- Subject: \`${contextBundle?.subject?.locator ?? "unknown"}\``);
   lines.push(`- Status: \`${packet.status}\``);
-  if (packet.receipt_id) {
-    lines.push(`- Receipt: \`${packet.receipt_id}\``);
+  if (packet.harness_receipt_refs.length > 0) {
+    lines.push(`- Harness receipt: \`${formatHarnessReceiptRef(packet.harness_receipt_refs[0])}\``);
   }
   if (packet.objective_fingerprint) {
     lines.push(`- Objective Fingerprint: \`${packet.objective_fingerprint}\``);
@@ -228,8 +262,8 @@ function buildHistoryDraft({ date, lane, contextBundle, packet }) {
   if (subject.pr_number) {
     lines.push(`pr_number: ${subject.pr_number}`);
   }
-  if (packet.receipt_id) {
-    lines.push(`receipt_id: ${packet.receipt_id}`);
+  if (packet.harness_receipt_refs.length > 0) {
+    lines.push(`harness_receipt_ref: ${formatHarnessReceiptRef(packet.harness_receipt_refs[0])}`);
   }
   if (packet.objective_fingerprint) {
     lines.push(`objective_fingerprint: ${packet.objective_fingerprint}`);
@@ -243,8 +277,8 @@ function buildHistoryDraft({ date, lane, contextBundle, packet }) {
     "",
     `Summary: ${packet.summary}`,
   );
-  if (packet.receipt_id) {
-    lines.push("", `Receipt reference: \`${packet.receipt_id}\`.`);
+  if (packet.harness_receipt_refs.length > 0) {
+    lines.push("", `Harness receipt reference: \`${formatHarnessReceiptRef(packet.harness_receipt_refs[0])}\`.`);
   }
   if (packet.objective_fingerprint) {
     lines.push("", `Objective fingerprint: \`${packet.objective_fingerprint}\`.`);

@@ -40,8 +40,8 @@ The minimum durable objects are:
 - `ReflectionEntry`
 - `CycleRecord`
 
-`receipts`, `verification-report.json`, `grant` objects, and thread-teaching
-records remain the higher-trust evidence layer. `aster-control.json` is a
+`receipts`, `verification-proof.json`, `grant` objects, and thread-teaching
+records remain the higher-trust proof layer. `aster-control.json` is a
 learned projection over that evidence, not a replacement for it.
 
 The live work-issue ledger is the bounded runtime context for issue-driven

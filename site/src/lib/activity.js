@@ -108,17 +108,18 @@ function normalizeFeedItem(item) {
   const workflow = stringMetadata(metadata, "workflow") ?? item.workflow ?? "aster";
   const channel = feedChannelForItem(item);
   const proofLane = stringMetadata(metadata, "lane") ?? workflow;
-  const repo = normalizeAsterAlias(item.repo ?? stringMetadata(metadata, "target_repo") ?? item.target ?? "");
-  const reference = item.receipt_id
-    ? `/r/${item.receipt_id.slice(-8)}`
+  const repo = normalizeText(item.repo ?? stringMetadata(metadata, "target_repo") ?? item.target ?? "");
+  const harnessReceiptRefs = normalizeHarnessReceiptRefs(item.harness_receipt_refs);
+  const reference = harnessReceiptRefs.length > 0
+    ? shortHarnessReceiptReference(harnessReceiptRefs[0])
     : item.run_id
       ? `run ${item.run_id}`
       : repo || "public event";
 
   return {
     id: item.id ?? `${workflow}:${item.run_id ?? item.timestamp ?? item.title}`,
-    title: normalizeAsterAlias(item.title ?? workflow),
-    summary: normalizeAsterAlias(item.summary ?? `${workflow} finished with ${item.status ?? "unknown"}.`),
+    title: normalizeText(item.title ?? workflow),
+    summary: normalizeText(item.summary ?? `${workflow} finished with ${item.status ?? "unknown"}.`),
     status: feedStatus(item.status),
     workflow,
     channel,
@@ -126,14 +127,15 @@ function normalizeFeedItem(item) {
     repo,
     timestamp: formatTimestamp(item.timestamp),
     timestampIso: item.timestamp,
-    url: normalizeAsterAlias(item.url) ?? null,
+    url: normalizeText(item.url) ?? null,
     reference,
-    artifactUrl: normalizeAsterAlias(stringMetadata(metadata, "artifact_url")),
+    harnessReceiptRefs,
+    artifactUrl: normalizeText(stringMetadata(metadata, "artifact_url")),
     commitShort: stringMetadata(metadata, "commit_short") ?? shortCommit(item.commit),
-    failureReason: normalizeAsterAlias(stringMetadata(metadata, "failure_reason")),
+    failureReason: normalizeText(stringMetadata(metadata, "failure_reason")),
     isDemo: booleanMetadata(metadata, "demo_seed"),
-    demoLabel: normalizeAsterAlias(stringMetadata(metadata, "demo_label")),
-    demoNotice: normalizeAsterAlias(stringMetadata(metadata, "demo_notice")),
+    demoLabel: normalizeText(stringMetadata(metadata, "demo_label")),
+    demoNotice: normalizeText(stringMetadata(metadata, "demo_notice")),
     };
 }
 
@@ -180,7 +182,33 @@ function booleanMetadata(metadata, key) {
   return metadata[key] === true;
 }
 
-function normalizeAsterAlias(value) {
+function normalizeHarnessReceiptRefs(value) {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  const refs = [];
+  for (const entry of value) {
+    if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
+      continue;
+    }
+    const type = typeof entry.type === "string" && entry.type.trim() ? entry.type.trim() : "harness_receipt";
+    const uri = typeof entry.uri === "string" && entry.uri.trim() ? entry.uri.trim() : null;
+    const locator = typeof entry.locator === "string" && entry.locator.trim() ? entry.locator.trim() : null;
+    if (!uri && !locator) {
+      continue;
+    }
+    refs.push({ type, uri, locator });
+  }
+  return refs;
+}
+
+function shortHarnessReceiptReference(ref) {
+  const raw = ref.locator ?? ref.uri ?? "";
+  const label = raw.includes(":") ? raw.split(":").at(-1) : raw;
+  return `receipt ${label.slice(-12)}`;
+}
+
+function normalizeText(value) {
   if (typeof value !== "string" || value.length === 0) {
     return value ?? null;
   }

@@ -23,9 +23,9 @@ export const RUNX_CONTROL_SCHEMA_ARTIFACTS = {
     ref: "urn:aster:schema:worker-request:v1",
     file: "spec/worker-request.schema.json",
   },
-  verification_report: {
-    ref: "https://runx.ai/spec/governance/verification-report.schema.json",
-    file: "spec/verification-report.schema.json",
+  verification_proof: {
+    ref: "https://runx.ai/spec/governance/verification-proof.schema.json",
+    file: "spec/verification-proof.schema.json",
   },
   aster_control: {
     ref: "urn:aster:schema:aster-control:v1",

@@ -3,9 +3,11 @@ import assert from "node:assert/strict";
 
 import {
   armWallClockTimeout,
+  assertRustNativeRunxCommand,
   buildLiveTraceState,
   gateSelectorMatches,
   inferTraceHeartbeatIntervalMs,
+  resolveRunxBinary,
   threadTeachingAllowsGate,
 } from "./runx-agent-bridge.mjs";
 
@@ -95,6 +97,32 @@ test("buildLiveTraceState renders a stable live trace snapshot", () => {
   assert.equal(snapshot.elapsed_ms, 15000);
   assert.deepEqual(snapshot.expected_output_keys, ["comment_body", "should_post"]);
   assert.equal(snapshot.note, "still waiting");
+});
+
+test("assertRustNativeRunxCommand rejects launcher delegation-only commands", () => {
+  assert.doesNotThrow(() => assertRustNativeRunxCommand(["harness", "/tmp/fixture.yaml"]));
+  assert.doesNotThrow(() => assertRustNativeRunxCommand(["history", "--json"]));
+  assert.throws(
+    () => assertRustNativeRunxCommand(["skill", "/runx/skills/intake"]),
+    /refusing JS\/npm delegation/,
+  );
+  assert.throws(
+    () => assertRustNativeRunxCommand(["resume", "run-1", "--answers", "/tmp/a.json"]),
+    /refusing JS\/npm delegation/,
+  );
+});
+
+test("resolveRunxBinary supports nested oss checkouts with Rust build output", async () => {
+  const { mkdtemp, mkdir, writeFile } = await import("node:fs/promises");
+  const os = await import("node:os");
+  const path = await import("node:path");
+  const root = await mkdtemp(path.join(os.tmpdir(), "aster-runx-bin-"));
+  const binDir = path.join(root, "oss", "crates", "target", "debug");
+  await mkdir(binDir, { recursive: true });
+  const bin = path.join(binDir, "runx");
+  await writeFile(bin, "");
+
+  assert.equal(resolveRunxBinary(root), bin);
 });
 
 function sleep(ms) {

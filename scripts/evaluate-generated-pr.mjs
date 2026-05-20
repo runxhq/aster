@@ -11,7 +11,7 @@ export function evaluateGeneratedPr({ publish, body, validation }) {
       })
     : body;
   const policy = parseGeneratedPrPolicy(effectiveBody);
-  const validationCommands = Array.isArray(validation?.commands) ? validation.commands : [];
+  const validationCommands = Array.isArray(validation?.checks) ? validation.checks : [];
   const validationChecksTotal = validationCommands.length || Number(validation?.checks_total ?? 0);
   const validationChecksPassed = validationCommands.filter((entry) => {
     if (typeof entry === "string") {
@@ -29,6 +29,7 @@ export function evaluateGeneratedPr({ publish, body, validation }) {
     verification_recorded: (
       validationCommands.length > 0
       || typeof validation?.verification_profile === "string"
+      || (Array.isArray(validation?.harness_receipt_refs) && validation.harness_receipt_refs.length > 0)
       || validationChecksTotal > 0
       || /receipts uploaded/i.test(effectiveBody)
     ),
@@ -52,7 +53,7 @@ export function evaluateGeneratedPr({ publish, body, validation }) {
       file_count: fileCount,
       additions: Number(publish?.change_summary?.additions ?? 0),
       deletions: Number(publish?.change_summary?.deletions ?? 0),
-      validation_commands: validationCommands.length,
+      verification_checks: validationCommands.length,
       validation_checks_total: validationChecksTotal,
       validation_checks_passed: validationChecksPassed,
     },

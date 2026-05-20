@@ -30,7 +30,7 @@ lanes against real repo work.
   issue backlink comments, posted PR comments, comment evals, generated-PR
   evals, active thread-teaching context, and the bounded issue-ledger packet
 - PR review shape: PR events run as review-only projections over the existing
-  work item. Aster may ask runx for a concise review or fix-up recommendation,
+  work ledger. Aster may ask runx for a concise review or fix-up recommendation,
   and it may refresh a draft PR when a bounded review finding is in scope, but
   merge readiness remains a human gate
 - boundary: generated derived-state PRs such as evidence-projection refreshes
@@ -79,7 +79,7 @@ lanes against real repo work.
   outside issue-triage worker fanout while keeping one rolling machine update
   on the same work issue
 - gate: requires the same work issue thread to authorize `fix-pr.publish`
-- output: normalized request packet, verification report, receipts, rolling
+- output: normalized request packet, verification proof, receipts, rolling
   work-issue status comment, change-surface policy, optional draft PR,
   generated-PR eval when a draft PR is refreshed, and live provider-trace
   heartbeat files while hosted caller work is in flight
@@ -94,7 +94,7 @@ lanes against real repo work.
   `runx/*` PR while constraining the mutation to docs-only scope and keeping
   one rolling machine update on the same work issue
 - gate: requires the same work issue thread to authorize `docs-pr.publish`
-- output: normalized request packet, verification report, receipts, rolling
+- output: normalized request packet, verification proof, receipts, rolling
   work-issue status comment, change-surface policy, optional draft PR,
   generated-PR eval when a draft PR is refreshed, and live provider-trace
   heartbeat files while hosted caller work is in flight
@@ -139,10 +139,10 @@ lanes against real repo work.
 - purpose: keep broader receipt and envelope visibility across the catalog even
   when live mutation lanes are unavailable
 - current runx profile:
-  - `evolve-introspect`
-  - `sourcey`
-  - optional broader research/content lanes when the checked-out `runx` ref
-    includes them
+  - native Rust `runx harness` replay for `echo-skill`
+  - native Rust `runx harness` replay for `sequential-graph`
+  - optional native Rust `runx harness` replay for `payment-approval-graph`
+    outside the minimal profile
 
 ### `generated-pr-policy`
 
@@ -158,7 +158,7 @@ lanes against real repo work.
 - trigger: review comments, failed checks, or maintainer replies on an existing
   generated PR
 - runx lane shape: `pr-review` followed by optional `pr-fix-up` over the same
-  source work item and PR outbox entry
+  source issue and PR outbox entry
 - purpose: keep generated PRs moving without forcing maintainers to restate the
   source issue; the bot summarizes the review, applies bounded requested fixes
   when policy allows, and reposts the merge-gate summary

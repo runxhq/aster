@@ -228,13 +228,30 @@ function buildOutcomeLine(packet) {
   const date = firstString(packet?.created_at).slice(0, 10) || new Date().toISOString().slice(0, 10);
   const lane = firstString(packet?.lane) || "unknown-lane";
   const status = firstString(packet?.status) || "unknown";
-  const receiptId = firstString(packet?.receipt_id);
+  const harnessReceiptRef = firstHarnessReceiptRef(packet?.harness_receipt_refs);
   const summary = firstString(packet?.summary) || "operator run completed";
   const parts = [`- ${date}`, `\`${lane}\``, `\`${status}\``];
-  if (receiptId) {
-    parts.push(`\`${receiptId}\``);
+  if (harnessReceiptRef) {
+    parts.push(`\`${harnessReceiptRef}\``);
   }
   return `${parts.join(" · ")} · ${summary}`;
+}
+
+function firstHarnessReceiptRef(value) {
+  if (!Array.isArray(value)) {
+    return null;
+  }
+  for (const entry of value) {
+    if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
+      continue;
+    }
+    const uri = firstString(entry.uri);
+    const locator = firstString(entry.locator);
+    if (uri || locator) {
+      return uri || locator;
+    }
+  }
+  return null;
 }
 
 function parseArgs(argv) {

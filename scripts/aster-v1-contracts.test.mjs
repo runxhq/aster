@@ -71,7 +71,6 @@ test("normalizeIssueToPrRequest preserves an explicit verification profile when 
   });
 
   assert.equal(request.verification_profile, "aster.site-ci");
-  assert.ok(!Object.hasOwn(request, "validation_commands"));
 });
 
 test("normalizeIssueToPrRequest rejects direct publication branches outside runx/*", () => {
@@ -95,7 +94,24 @@ test("normalizeAutomationBranchName accepts bounded automation branches", () => 
   );
 });
 
-test("resolveVerificationPlan maps legacy validation commands onto a declared profile", () => {
+test("normalizeIssueToPrRequest rejects raw validation command fields", () => {
+  assert.throws(() => {
+    normalizeIssueToPrRequest(
+      {
+        issue_title: "Fix docs drift",
+        source: "github_issue",
+        source_id: "101",
+        validation_commands: ["npm run site:ci"],
+      },
+      {
+        defaultRepo: "runxhq/aster",
+        catalog,
+      },
+    );
+  }, /validation_commands/);
+});
+
+test("resolveVerificationPlan returns the declared verification profile only", () => {
   const resolved = resolveVerificationPlan({
     catalog,
     targetRepo: "runxhq/aster",
@@ -103,12 +119,11 @@ test("resolveVerificationPlan maps legacy validation commands onto a declared pr
       issue_title: "Fix docs drift",
       source: "github_issue",
       source_id: "101",
-      validation_commands: ["npm run site:ci"],
+      verification_profile: "aster.site-ci",
     },
   });
 
   assert.equal(resolved.profile_id, "aster.site-ci");
-  assert.equal(resolved.compatibility_mode, "legacy_validation_command_mapping");
   assert.deepEqual(resolved.bootstrap_commands, ["npm --prefix site ci"]);
   assert.deepEqual(resolved.commands, ["npm run site:ci"]);
 });

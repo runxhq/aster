@@ -1,11 +1,11 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://runx.ai/spec/governance/verification-report.schema.json",
-  "title": "runx Verification Report",
-  "description": "Canonical prerelease v1 schema for structured verification reports emitted before publication.",
+  "$id": "https://runx.ai/spec/governance/verification-proof.schema.json",
+  "title": "runx Verification Proof",
+  "description": "Canonical prerelease v1 schema for verification proof artifacts emitted before publication.",
   "type": "object",
   "properties": {
-    "report_id": {
+    "proof_id": {
       "type": "string",
       "minLength": 1
     },
@@ -26,42 +26,54 @@
         "skipped"
       ]
     },
-    "bootstrap_commands": {
+    "checks": {
       "type": "array",
       "items": {
-        "$ref": "#/$defs/commandResult"
-      }
-    },
-    "commands": {
-      "type": "array",
-      "items": {
-        "$ref": "#/$defs/commandResult"
+        "$ref": "#/$defs/verificationCheck"
       }
     },
     "summary": {
       "type": "string"
     },
-    "executed_at": {
+    "verified_at": {
       "type": "string",
       "format": "date-time"
     },
-    "receipt_id": {
-      "type": "string",
-      "minLength": 1
+    "harness_receipt_refs": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/reference"
+      }
+    },
+    "artifact_refs": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/reference"
+      }
     }
   },
   "required": [
     "target_repo",
     "verification_profile",
     "status",
-    "bootstrap_commands",
-    "commands"
+    "checks"
   ],
   "additionalProperties": false,
   "$defs": {
-    "commandResult": {
+    "verificationCheck": {
       "type": "object",
       "properties": {
+        "check_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "phase": {
+          "type": "string",
+          "enum": [
+            "bootstrap",
+            "verification"
+          ]
+        },
         "command": {
           "type": "string",
           "minLength": 1
@@ -85,8 +97,32 @@
         }
       },
       "required": [
+        "check_id",
+        "phase",
         "command",
         "status"
+      ],
+      "additionalProperties": false
+    },
+    "reference": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "minLength": 1
+        },
+        "locator": {
+          "type": "string",
+          "minLength": 1
+        },
+        "digest": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "kind",
+        "locator"
       ],
       "additionalProperties": false
     }

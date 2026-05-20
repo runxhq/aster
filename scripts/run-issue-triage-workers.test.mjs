@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import {
-  buildVerificationReport,
+  buildVerificationProof,
   buildInlineRepoSnapshot,
   findExistingGeneratedIssuePr,
   isRetryableBridgeFailure,
@@ -79,9 +79,9 @@ test("buildInlineRepoSnapshot keeps the prompt payload compact", () => {
   assert.equal("readme_excerpt" in snapshot, false);
 });
 
-test("buildVerificationReport emits the canonical verification report shape", () => {
-  const report = buildVerificationReport({
-    reportId: "verification-101",
+test("buildVerificationProof emits the canonical verification proof shape", () => {
+  const proof = buildVerificationProof({
+    proofId: "verification-101",
     targetRepo: "runxhq/aster",
     verificationProfile: "aster.site-ci",
     status: "pass",
@@ -101,13 +101,15 @@ test("buildVerificationReport emits the canonical verification report shape", ()
         summary: "command completed successfully",
       },
     ],
-    executedAt: "2026-04-17T00:00:00Z",
+    verifiedAt: "2026-04-17T00:00:00Z",
   });
 
-  assert.equal(report.report_id, "verification-101");
-  assert.equal(report.status, "pass");
-  assert.equal(report.bootstrap_commands[0].command, "npm --prefix site ci");
-  assert.equal(report.commands[0].command, "npm run site:ci");
+  assert.equal(proof.proof_id, "verification-101");
+  assert.equal(proof.status, "pass");
+  assert.equal(proof.checks[0].phase, "bootstrap");
+  assert.equal(proof.checks[0].command, "npm --prefix site ci");
+  assert.equal(proof.checks[1].phase, "verification");
+  assert.equal(proof.checks[1].command, "npm run site:ci");
 });
 
 test("findExistingGeneratedIssuePr reuses the most recent open generated PR for the same issue", () => {

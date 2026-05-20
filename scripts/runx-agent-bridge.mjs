@@ -17,8 +17,7 @@ export { gateSelectorMatches } from "./thread-teaching.mjs";
 
 async function main() {
   const options = parseArgs(process.argv.slice(2));
-  const runxRepoRoot = resolveRunxRepoRoot(options.runxRoot);
-  const cliBin = path.join(runxRepoRoot, "packages", "cli", "dist", "index.js");
+  const runxBinary = resolveRunxBinary(options.runxRoot);
   const receiptDir = path.resolve(options.receiptDir ?? ".artifacts/runx-bridge");
   const traceDir = path.resolve(options.traceDir ?? path.join(receiptDir, "provider-trace"));
   const tempDir = await mkdtemp(path.join(os.tmpdir(), "aster-runx-bridge-"));
@@ -35,12 +34,10 @@ async function main() {
   const threadTeachingContext = await loadThreadTeachingContext(options.threadTeachingContextPath);
   const gateDecisionRecords = [];
 
-  if (!existsSync(cliBin)) {
-    throw new Error(`runx CLI build not found at ${cliBin}`);
-  }
   if (options.runxArgs.length === 0) {
     throw new Error("No runx command was provided. Pass the runx invocation after --.");
   }
+  assertRustNativeRunxCommand(options.runxArgs);
 
   await mkdir(receiptDir, { recursive: true });
   await mkdir(traceDir, { recursive: true });
@@ -50,7 +47,7 @@ async function main() {
 
   for (let turn = 0; turn < maxTurns; turn += 1) {
     const invocation = await runRunx({
-      cliBin,
+      runxBinary,
       receiptDir,
       runArgs,
       workdir: options.workdir,
@@ -97,8 +94,8 @@ async function main() {
         throw new Error(`Unapproved gate '${gateId}' encountered. Add --approve ${gateId} or set RUNX_APPROVED_GATES.`);
       }
 
-      if (request.kind === "cognitive_work") {
-        answers[request.id] = await resolveCognitiveWork({
+      if (request.kind === "agent_act") {
+        answers[request.id] = await resolveAgentAct({
           provider,
           model,
           reasoningEffort,
@@ -119,6 +116,7 @@ async function main() {
       `${JSON.stringify(compactAnswersPayload(answers, approvals), null, 2)}\n`,
     );
     runArgs = ["resume", String(report.run_id), "--answers", answersPath];
+    assertRustNativeRunxCommand(runArgs);
   }
 
   throw new Error(`runx bridge exceeded ${maxTurns} turns without reaching completion.`);
@@ -210,26 +208,65 @@ function requireValue(argv, index, flag) {
   return value;
 }
 
-function resolveRunxRepoRoot(runxRoot) {
+export function resolveRunxBinary(runxRoot) {
   const directRoot = path.resolve(runxRoot);
-  if (existsSync(path.join(directRoot, "packages", "cli", "dist", "index.js"))) {
-    return directRoot;
-  }
-  const nestedRoot = path.join(directRoot, "oss");
-  if (existsSync(path.join(nestedRoot, "packages", "cli", "dist", "index.js"))) {
-    return nestedRoot;
+  const candidates = [
+    path.join(directRoot, "crates", "target", "release", "runx"),
+    path.join(directRoot, "crates", "target", "debug", "runx"),
+    path.join(directRoot, "oss", "crates", "target", "release", "runx"),
+    path.join(directRoot, "oss", "crates", "target", "debug", "runx"),
+  ];
+  for (const candidate of candidates) {
+    if (existsSync(candidate)) {
+      return candidate;
+    }
   }
   throw new Error(
-    `Unable to resolve runx repo root from ${runxRoot}. Expected packages/cli/dist/index.js or oss/packages/cli/dist/index.js.`,
+    `Unable to resolve Rust runx binary from ${runxRoot}. Expected crates/target/{release,debug}/runx or oss/crates/target/{release,debug}/runx.`,
   );
 }
 
-async function runRunx({ cliBin, receiptDir, runArgs, workdir }) {
+export function assertRustNativeRunxCommand(runArgs) {
+  const command = firstNonFlagToken(runArgs);
+  const nativeCommands = new Set([
+    "connect",
+    "config",
+    "doctor",
+    "harness",
+    "history",
+    "init",
+    "kernel",
+    "list",
+    "mcp",
+    "new",
+    "policy",
+    "registry",
+    "tool",
+  ]);
+  if (command && nativeCommands.has(command)) {
+    return;
+  }
+  throw new Error(
+    `runx command '${command ?? "(none)"}' is not a Rust-native Aster command yet; refusing JS/npm delegation.`,
+  );
+}
+
+function firstNonFlagToken(runArgs) {
+  for (const token of runArgs) {
+    const value = String(token);
+    if (!value.startsWith("-")) {
+      return value;
+    }
+  }
+  return null;
+}
+
+async function runRunx({ runxBinary, receiptDir, runArgs, workdir }) {
+  const { RUNX_JS_BIN, RUNX_NPM_PACKAGE, ...baseEnv } = process.env;
   try {
     const { stdout, stderr } = await execFileAsync(
-      process.execPath,
+      runxBinary,
       [
-        cliBin,
         ...runArgs,
         "--non-interactive",
         "--json",
@@ -238,7 +275,11 @@ async function runRunx({ cliBin, receiptDir, runArgs, workdir }) {
       ],
       {
         cwd: workdir ? path.resolve(workdir) : process.cwd(),
-        env: process.env,
+        env: {
+          ...baseEnv,
+          RUNX_RUST_CLI: "1",
+          RUNX_RUST_HARNESS: "1",
+        },
         maxBuffer: 50 * 1024 * 1024,
       },
     );
@@ -256,7 +297,7 @@ async function runRunx({ cliBin, receiptDir, runArgs, workdir }) {
   }
 }
 
-async function resolveCognitiveWork({
+async function resolveAgentAct({
   provider,
   model,
   reasoningEffort,
@@ -269,11 +310,11 @@ async function resolveCognitiveWork({
   }
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
-    throw new Error("OPENAI_API_KEY is required for runx cognitive work.");
+    throw new Error("OPENAI_API_KEY is required for runx agent act resolution.");
   }
 
   const requestId = sanitizeTraceName(request.id);
-  const expectedOutputs = request.work.envelope.expected_outputs ?? {};
+  const expectedOutputs = request.invocation.envelope.output ?? {};
   let previousFailure;
   let lastTransportError;
   const maxAttempts = Number(process.env.RUNX_CALLER_MAX_ATTEMPTS ?? "2");
@@ -621,10 +662,10 @@ export function buildInputMessages(request, expectedOutputs, previousFailure, co
       content: JSON.stringify(
         {
           request_id: request.id,
-          source_type: request.work.source_type,
-          agent: request.work.agent,
-          task: request.work.task,
-          envelope: request.work.envelope,
+          source_type: request.invocation.source_type,
+          agent: request.invocation.agent,
+          task: request.invocation.task,
+          envelope: request.invocation.envelope,
         },
         null,
         2,

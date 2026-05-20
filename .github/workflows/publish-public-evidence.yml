@@ -141,9 +141,9 @@ jobs:
               if workflow == "issue-triage":
                   return f"Issue-triage finished with {status}; workflow artifacts carry the public issue or PR comment, routing decisions, and receipt trail."
               if workflow == "docs-pr":
-                  return f"Docs-pr finished with {status}; workflow artifacts carry the bounded docs draft PR, verification report, and receipt trail."
+                  return f"Docs-pr finished with {status}; workflow artifacts carry the bounded docs draft PR, verification proof, and receipt trail."
               if workflow == "fix-pr":
-                  return f"Fix-pr finished with {status}; workflow artifacts carry the bounded bugfix draft PR, verification report, and receipt trail."
+                  return f"Fix-pr finished with {status}; workflow artifacts carry the bounded bugfix draft PR, verification proof, and receipt trail."
               if workflow == "skill-lab":
                   return f"Skill-lab finished with {status}; workflow artifacts carry the proposal draft and supporting receipts."
               if workflow == "skill-upstream":

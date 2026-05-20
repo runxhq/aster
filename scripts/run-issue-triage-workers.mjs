@@ -119,7 +119,7 @@ async function runWorker({ options, workerRequest, index, verificationCatalog })
       reuse_reason: "existing_generated_pr",
       verification_profile: verificationPlan.profile_id,
       bootstrap_commands: verificationPlan.bootstrap_commands,
-      validation_commands: verificationPlan.commands,
+      verification_commands: verificationPlan.commands,
       publish: {
         status: "reused",
         pr_number: existingPr.number,
@@ -237,8 +237,8 @@ async function runWorker({ options, workerRequest, index, verificationCatalog })
           error: null,
         }
       : runCommandPhase(verificationPlan.commands, { cwd: workDir });
-    const verificationReport = buildVerificationReport({
-      reportId: `verification-${taskId}`,
+    const verificationProof = buildVerificationProof({
+      proofId: `verification-${taskId}`,
       targetRepo,
       verificationProfile: verificationPlan.profile_id,
       status: bootstrapCommands.error ? "fail" : verificationCommands.status,
@@ -246,8 +246,8 @@ async function runWorker({ options, workerRequest, index, verificationCatalog })
       commands: verificationCommands.commands,
     });
     await writeFile(
-      path.join(artifactDir, "verification-report.json"),
-      `${JSON.stringify(verificationReport, null, 2)}\n`,
+      path.join(artifactDir, "verification-proof.json"),
+      `${JSON.stringify(verificationProof, null, 2)}\n`,
     );
     if (bootstrapCommands.error) {
       throw bootstrapCommands.error;
@@ -294,7 +294,7 @@ async function runWorker({ options, workerRequest, index, verificationCatalog })
     const prEval = evaluateGeneratedPr({
       publish,
       body: await readFile(prBodyPath, "utf8"),
-      validation: JSON.parse(await readFile(path.join(artifactDir, "verification-report.json"), "utf8")),
+      validation: JSON.parse(await readFile(path.join(artifactDir, "verification-proof.json"), "utf8")),
     });
     await writeFile(path.join(artifactDir, "pr-eval.json"), `${JSON.stringify(prEval, null, 2)}\n`);
 
@@ -318,7 +318,7 @@ async function runWorker({ options, workerRequest, index, verificationCatalog })
       status: "completed",
       verification_profile: verificationPlan.profile_id,
       bootstrap_commands: bootstrapCommandList,
-      validation_commands: validationCommands,
+      verification_commands: validationCommands,
       publish,
     };
   } finally {
@@ -805,43 +805,50 @@ export function isRetryableBridgeFailure(error) {
   return /(ECONNRESET|ETIMEDOUT|UND_ERR_HEADERS_TIMEOUT|UND_ERR_BODY_TIMEOUT|UND_ERR_CONNECT_TIMEOUT|ECONNREFUSED)/.test(text);
 }
 
-export function buildVerificationReport({
-  reportId,
+export function buildVerificationProof({
+  proofId,
   targetRepo,
   verificationProfile,
   status,
   bootstrapCommands,
   commands,
-  executedAt = new Date().toISOString(),
+  verifiedAt = new Date().toISOString(),
   receiptId,
 }) {
   const normalizedStatus = normalizeVerificationStatus(status, bootstrapCommands, commands);
-  const report = {
-    report_id: reportId,
+  const checks = [
+    ...bootstrapCommands.map((command, index) => buildVerificationCheck("bootstrap", command, index)),
+    ...commands.map((command, index) => buildVerificationCheck("verification", command, index)),
+  ];
+  const proof = {
+    proof_id: proofId,
     target_repo: targetRepo,
     verification_profile: verificationProfile,
     status: normalizedStatus,
-    bootstrap_commands: bootstrapCommands.map((command) => ({
-      command: command.command,
-      status: command.status,
-      exit_code: command.exit_code ?? null,
-      summary: command.summary,
-    })),
-    commands: commands.map((command) => ({
-      command: command.command,
-      status: command.status,
-      exit_code: command.exit_code ?? null,
-      summary: command.summary,
-    })),
+    checks,
     summary: summarizeVerificationOutcome(normalizedStatus, bootstrapCommands, commands),
-    executed_at: executedAt,
+    verified_at: verifiedAt,
   };
   if (receiptId) {
-    report.receipt_id = receiptId;
+    proof.harness_receipt_refs = [{
+      kind: "harness_receipt",
+      locator: receiptId,
+    }];
   }
-  return assertMatchesRunxControlSchema("verification_report", report, {
-    label: "verification_report",
+  return assertMatchesRunxControlSchema("verification_proof", proof, {
+    label: "verification_proof",
   });
+}
+
+function buildVerificationCheck(phase, command, index) {
+  return {
+    check_id: `${phase}-${index + 1}`,
+    phase,
+    command: command.command,
+    status: command.status,
+    exit_code: command.exit_code ?? null,
+    summary: command.summary,
+  };
 }
 
 export function runCommandPhase(commands, options = {}) {

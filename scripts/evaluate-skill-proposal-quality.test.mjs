@@ -218,7 +218,7 @@ test("evaluateSkillProposalQuality allows approval mechanics inside harness-only
             skill_name: "decision-brief",
             summary: "Read one bounded work issue thread and return one concise maintainer decision packet.",
             required_inputs: [{ name: "thread", type: "object" }],
-            output_contract: { name: "decision_packet", type: "object" },
+            output: { name: "decision_packet", type: "object" },
           },
           pain_points: ["Maintainers need one next-step packet instead of replaying a whole issue thread."],
           catalog_fit: {

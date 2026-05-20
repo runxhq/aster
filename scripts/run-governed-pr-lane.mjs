@@ -13,7 +13,7 @@ import {
   buildInlineRepoSnapshot,
   buildRepoContextSummary,
   buildRepoSnapshot,
-  buildVerificationReport,
+  buildVerificationProof,
   normalizeTaskId,
   prepareWorkspace,
   resolveRunxSkillPath,
@@ -189,8 +189,8 @@ export async function runGovernedPrLane(options) {
           error: null,
         }
       : runCommandPhase(verificationPlan.commands, { cwd: workDir });
-    const verificationReport = buildVerificationReport({
-      reportId: `verification-${taskId}`,
+    const verificationProof = buildVerificationProof({
+      proofId: `verification-${taskId}`,
       targetRepo,
       verificationProfile: verificationPlan.profile_id,
       status: bootstrapCommands.error ? "fail" : verificationCommands.status,
@@ -198,8 +198,8 @@ export async function runGovernedPrLane(options) {
       commands: verificationCommands.commands,
     });
     await writeFile(
-      path.join(artifactRoot, "verification-report.json"),
-      `${JSON.stringify(verificationReport, null, 2)}\n`,
+      path.join(artifactRoot, "verification-proof.json"),
+      `${JSON.stringify(verificationProof, null, 2)}\n`,
     );
     if (bootstrapCommands.error) {
       throw bootstrapCommands.error;
@@ -259,7 +259,7 @@ export async function runGovernedPrLane(options) {
       prEval = evaluateGeneratedPr({
         publish,
         body: prBody,
-        validation: verificationReport,
+        validation: verificationProof,
       });
       await writeFile(path.join(artifactRoot, "pr-eval.json"), `${JSON.stringify(prEval, null, 2)}\n`);
     }
