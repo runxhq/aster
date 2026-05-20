@@ -56,7 +56,7 @@ The governing philosophy is:
 `aster` now has seven concrete live lanes:
 
 - `issue-triage`: covers both issue intake and PR review. Issues run through
-  `intake`, can open `work-plan` when planning is approved,
+  `issue-intake`, can open `work-plan` when planning is approved,
   and only then start one or more repo-scoped `issue-to-pr` workers when build
   is approved. The work issue is the living ledger: trusted maintainer replies
   retrigger the lane, the rolling triage comment updates in place, and PR
@@ -106,7 +106,7 @@ the merge decision remains with the human reviewer.
 - `OPENAI_API_KEY`: external caller for `runx` `agent_act` boundaries
 - `RUNX_CALLER_MODEL` (optional): pinned model override for the hosted bridge
 - `RUNX_REF` (repo variable): optional `runx` branch or tag for hosted
-  checkouts; defaults to `cb44ad7`
+  checkouts; defaults to `main`
 - `RUNX_REPOSITORY_PAT` (optional): GitHub token for private `runx` checkout
   and other cross-repo automation. The repo-scoped `github.token` is enough
   for same-repo workers; fanout into other repos needs broader access.
@@ -177,7 +177,7 @@ the draft-first observability lanes continue to run.
   caller wrapper for Rust-native `runx` commands; it accepts only the current
   Rust bridge contract
 - [scripts/prepare-issue-triage-decision.mjs](./scripts/prepare-issue-triage-decision.mjs):
-  converts an `intake` result into one explicit triage decision plus
+  converts an `issue-intake` result into one explicit triage decision plus
   optional planning and worker requests
 - [scripts/run-issue-triage-plan.mjs](./scripts/run-issue-triage-plan.mjs):
   runs `work-plan` when the triage approves planning and appends a

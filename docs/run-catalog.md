@@ -15,12 +15,12 @@ lanes against real repo work.
   `[upstream]` work issues, trusted maintainer issue comments on those work
   issues, plus PR `opened`, `reopened`, `ready_for_review`, and `synchronize`
 - runx skills and chains:
-  1. `intake`
+  1. `issue-intake`
   2. `issue-triage`
   3. optional `work-plan`
   4. optional `issue-to-pr` worker fanout
   5. draft PR publication per worker
-- PR command: `runx skill <runx>/skills/issue-triage --runner respond`
+- PR command: `runx skill <runx>/skills/issue-triage`
 - purpose: make issue and PR routing public before mutation, start bounded
   workers only after thread teaching authorizes build, keep PR review legible,
   treat the work issue as the living ledger for amendments and machine updates,

@@ -3,6 +3,12 @@ import assert from "node:assert/strict";
 
 import { buildSkillLabComment, SKILL_LAB_MARKER } from "./post-skill-lab-comment.mjs";
 
+const sealedRun = (payload) => ({
+  schema: "runx.skill_run.v1",
+  status: "sealed",
+  payload,
+});
+
 test("buildSkillLabComment renders the rolling issue status comment", () => {
   const comment = buildSkillLabComment({
     objective: "Add an issue-ledger distillation skill",
@@ -14,19 +20,15 @@ test("buildSkillLabComment renders the rolling issue status comment", () => {
       pr_number: 111,
       pr_url: "https://github.com/runxhq/aster/pull/111",
     },
-    result: {
-      execution: {
-        stdout: JSON.stringify({
-          skill_spec: {
-            skill_name: "issue-ledger-followup",
-            kind: "composite-skill",
-            status: "proposed",
-            summary: "Turn one living work issue ledger into the next high-signal machine update or maintainer handoff packet.",
-          },
-          acceptance_checks: [{ id: "ac-1" }, { id: "ac-2" }],
-        }),
-      },
-    },
+    result: sealedRun({
+        skill_spec: {
+          skill_name: "issue-ledger-followup",
+          kind: "skill",
+          status: "proposed",
+          summary: "Turn one living work issue ledger into the next high-signal machine update or maintainer handoff packet.",
+        },
+        acceptance_checks: [{ id: "ac-1" }, { id: "ac-2" }],
+    }),
   });
 
   assert.match(comment, new RegExp(SKILL_LAB_MARKER.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
@@ -55,17 +57,13 @@ test("buildSkillLabComment surfaces proposal quality review gaps", () => {
       status: "not_requested",
       reason: "skill proposal quality needs review before publication",
     },
-    result: {
-      execution: {
-        stdout: JSON.stringify({
-          skill_spec: {
-            skill_name: "decision-brief",
-            summary: "Read one work ledger and return one decision packet.",
-          },
-          acceptance_checks: [{ id: "ac-1" }],
-        }),
-      },
-    },
+    result: sealedRun({
+        skill_spec: {
+          skill_name: "decision-brief",
+          summary: "Read one work ledger and return one decision packet.",
+        },
+        acceptance_checks: [{ id: "ac-1" }],
+    }),
   });
 
   assert.match(comment, /Status: `proposal_quality_needs_review`/);
@@ -91,20 +89,33 @@ test("buildSkillLabComment reports proposal_refreshed when publish is not reques
     publish: {
       status: "not_requested",
     },
-    result: {
-      execution: {
-        stdout: JSON.stringify({
-          skill_spec: {
-            skill_name: "issue-ledger-followup",
-            summary: "Turn one living work issue ledger into the next high-signal machine update or maintainer handoff packet.",
-          },
-          acceptance_checks: [{ id: "ac-1" }],
-        }),
-      },
-    },
+    result: sealedRun({
+        skill_spec: {
+          skill_name: "issue-ledger-followup",
+          summary: "Turn one living work issue ledger into the next high-signal machine update or maintainer handoff packet.",
+        },
+        acceptance_checks: [{ id: "ac-1" }],
+    }),
   });
 
   assert.match(comment, /Status: `proposal_refreshed`/);
   assert.match(comment, /Publication remains gated until a trusted reply on this work issue authorizes `skill-lab\.publish`/);
   assert.match(comment, /`Applies To:` \+ `Decision:` lines or a full thread-teaching record/);
+});
+
+test("buildSkillLabComment does not surface raw skill proposal aliases", () => {
+  const comment = buildSkillLabComment({
+    objective: "Add an issue-ledger distillation skill",
+    workflowStatus: "success",
+    result: {
+      skill_spec: {
+        skill_name: "raw-alias",
+        summary: "This should not be accepted outside a sealed payload.",
+      },
+      acceptance_checks: [{ id: "ac-1" }],
+    },
+  });
+
+  assert.doesNotMatch(comment, /Proposal: `raw-alias`/);
+  assert.doesNotMatch(comment, /This should not be accepted outside a sealed payload/);
 });

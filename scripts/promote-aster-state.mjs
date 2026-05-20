@@ -127,13 +127,13 @@ function formatHarnessReceiptRef(ref) {
 
 export function extractRunSignal(runResult) {
   const parsed = extractExecutionPayload(runResult);
-  const triage = asRecord(parsed?.triage_report);
+  const intake = asRecord(parsed?.intake_report);
   const skillSpec = asRecord(parsed?.skill_spec);
   const changeSet = asRecord(parsed?.change_set);
   const workspaceChangePlan = asRecord(parsed?.workspace_change_plan);
 
   const summary =
-    firstString(triage?.summary)
+    firstString(intake?.summary)
     || firstString(skillSpec?.summary)
     || firstString(skillSpec?.description)
     || firstString(parsed?.objective_summary)
@@ -145,8 +145,8 @@ export function extractRunSignal(runResult) {
 
   return {
     summary,
-    recommended_lane: firstString(triage?.recommended_lane) || null,
-    suggested_reply: firstString(triage?.suggested_reply) || null,
+    recommended_lane: firstString(intake?.recommended_lane) || null,
+    suggested_reply: firstString(intake?.suggested_reply) || null,
     objective_summary: firstString(parsed?.objective_summary) || firstString(skillSpec?.objective) || null,
   };
 }
@@ -441,16 +441,7 @@ function appendProposalLines(lines, proposal) {
 }
 
 function extractExecutionPayload(runResult) {
-  const stdout = firstString(runResult?.execution?.stdout);
-  return tryParseJson(stdout);
-}
-
-function tryParseJson(value) {
-  try {
-    return value ? JSON.parse(value) : {};
-  } catch {
-    return {};
-  }
+  return asRecord(runResult?.payload) ?? {};
 }
 
 function asRecord(value) {

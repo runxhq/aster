@@ -6,8 +6,7 @@ import { evaluateSkillProposalQuality } from "./evaluate-skill-proposal-quality.
 test("evaluateSkillProposalQuality passes a crisp first-party proposal", () => {
   const evaluation = evaluateSkillProposalQuality({
     report: {
-      execution: {
-        stdout: JSON.stringify({
+      payload: {
           skill_spec: {
             skill_name: "decision-brief",
             summary: "Read one bounded issue thread and return one concise maintainer decision brief.",
@@ -38,7 +37,6 @@ test("evaluateSkillProposalQuality passes a crisp first-party proposal", () => {
               expected: "Returns one decision packet with recommendation, rationale, and next action.",
             },
           ],
-        }),
       },
     },
     catalogEntries: ["issue-triage", "skill-lab", "issue-to-pr"],
@@ -54,8 +52,7 @@ test("evaluateSkillProposalQuality passes a crisp first-party proposal", () => {
 test("evaluateSkillProposalQuality accepts purpose as the proposal summary field", () => {
   const evaluation = evaluateSkillProposalQuality({
     report: {
-      execution: {
-        stdout: JSON.stringify({
+      payload: {
           skill_spec: {
             skill_name: "decision-brief",
             purpose: "Turn one living work ledger into one bounded maintainer decision packet.",
@@ -71,7 +68,6 @@ test("evaluateSkillProposalQuality accepts purpose as the proposal summary field
           findings: [{ claim: "The source issue asks for a decision handoff." }],
           acceptance_checks: [{ id: "ac-1" }, { id: "ac-2" }, { id: "ac-3" }],
           harness_fixture: [{ name: "success" }],
-        }),
       },
     },
     catalogEntries: ["issue-triage"],
@@ -85,8 +81,7 @@ test("evaluateSkillProposalQuality accepts purpose as the proposal summary field
 test("evaluateSkillProposalQuality ignores natural-language placeholder mentions", () => {
   const evaluation = evaluateSkillProposalQuality({
     report: {
-      execution: {
-        stdout: JSON.stringify({
+      payload: {
           skill_spec: {
             skill_name: "decision-brief",
             summary: "Return one concise decision packet from one bounded work issue thread.",
@@ -117,7 +112,6 @@ test("evaluateSkillProposalQuality ignores natural-language placeholder mentions
               },
             },
           ],
-        }),
       },
     },
     catalogEntries: ["issue-triage"],
@@ -130,8 +124,7 @@ test("evaluateSkillProposalQuality ignores natural-language placeholder mentions
 test("evaluateSkillProposalQuality rejects transcript-shaped public proposals", () => {
   const evaluation = evaluateSkillProposalQuality({
     report: {
-      execution: {
-        stdout: JSON.stringify({
+      payload: {
           skill_spec: {
             skill_name: "decision-brief",
             summary: "Generated skill proposal.",
@@ -151,7 +144,6 @@ test("evaluateSkillProposalQuality rejects transcript-shaped public proposals", 
               claim: "## Work Ledger\n## Maintainer Amendments\nstructured_teaching: publish_authorization",
             },
           ],
-        }),
       },
     },
     issuePacket: {
@@ -173,8 +165,7 @@ test("evaluateSkillProposalQuality rejects transcript-shaped public proposals", 
 test("evaluateSkillProposalQuality accepts adjacent capabilities with a conclusion boundary", () => {
   const evaluation = evaluateSkillProposalQuality({
     report: {
-      execution: {
-        stdout: JSON.stringify({
+      payload: {
           skill_spec: {
             skill_name: "decision-brief",
             summary: "Read one bounded work issue thread and return one concise maintainer decision packet.",
@@ -199,7 +190,6 @@ test("evaluateSkillProposalQuality accepts adjacent capabilities with a conclusi
           findings: [{ claim: "The source issue requests one bounded decision packet." }],
           acceptance_checks: [{ id: "ac-1" }, { id: "ac-2" }, { id: "ac-3" }],
           harness_fixture: [{ name: "success", expected: "Returns one decision packet." }],
-        }),
       },
     },
     catalogEntries: ["issue-triage", "skill-lab"],
@@ -212,8 +202,7 @@ test("evaluateSkillProposalQuality accepts adjacent capabilities with a conclusi
 test("evaluateSkillProposalQuality allows approval mechanics inside harness-only boundary fixtures", () => {
   const evaluation = evaluateSkillProposalQuality({
     report: {
-      execution: {
-        stdout: JSON.stringify({
+      payload: {
           skill_spec: {
             skill_name: "decision-brief",
             summary: "Read one bounded work issue thread and return one concise maintainer decision packet.",
@@ -239,7 +228,6 @@ test("evaluateSkillProposalQuality allows approval mechanics inside harness-only
               yaml: "body: structured teaching: publish_authorization must still stop at review",
             },
           ],
-        }),
       },
     },
     catalogEntries: ["issue-triage", "skill-lab"],
@@ -253,8 +241,7 @@ test("evaluateSkillProposalQuality allows approval mechanics inside harness-only
 test("evaluateSkillProposalQuality accepts catalog fit with adjacent entries and boundary language", () => {
   const evaluation = evaluateSkillProposalQuality({
     report: {
-      execution: {
-        stdout: JSON.stringify({
+      payload: {
           skill_spec: {
             skill_name: "decision-brief",
             summary: "Read one bounded work issue thread and return one concise maintainer decision packet.",
@@ -273,7 +260,6 @@ test("evaluateSkillProposalQuality accepts catalog fit with adjacent entries and
           findings: [{ claim: "The source issue requests one bounded decision packet." }],
           acceptance_checks: [{ id: "ac-1" }, { id: "ac-2" }, { id: "ac-3" }],
           harness_fixture: [{ name: "success", expected: "Returns one decision packet." }],
-        }),
       },
     },
     catalogEntries: ["issue-triage", "skill-lab"],
@@ -286,8 +272,7 @@ test("evaluateSkillProposalQuality accepts catalog fit with adjacent entries and
 test("evaluateSkillProposalQuality rejects supplied catalog and work-plan framing", () => {
   const evaluation = evaluateSkillProposalQuality({
     report: {
-      execution: {
-        stdout: JSON.stringify({
+      payload: {
           skill_spec: {
             skill_name: "decision-brief",
             summary: "Read one bounded thread and return one concise maintainer decision packet.",
@@ -306,7 +291,6 @@ test("evaluateSkillProposalQuality rejects supplied catalog and work-plan framin
           findings: [{ claim: "The source issue asks for one decision handoff." }],
           acceptance_checks: [{ id: "ac-1" }, { id: "ac-2" }, { id: "ac-3" }],
           harness_fixture: [{ name: "success" }],
-        }),
       },
     },
     catalogEntries: ["issue-triage"],
@@ -320,8 +304,7 @@ test("evaluateSkillProposalQuality rejects supplied catalog and work-plan framin
 test("evaluateSkillProposalQuality allows ordinary supplied-as-provided contract wording", () => {
   const evaluation = evaluateSkillProposalQuality({
     report: {
-      execution: {
-        stdout: JSON.stringify({
+      payload: {
           skill_spec: {
             skill_name: "decision-brief",
             summary: "Read one bounded thread and return one concise maintainer decision packet.",
@@ -343,7 +326,6 @@ test("evaluateSkillProposalQuality allows ordinary supplied-as-provided contract
           findings: [{ claim: "The source issue asks for one decision handoff." }],
           acceptance_checks: [{ id: "ac-1" }, { id: "ac-2" }, { id: "ac-3" }],
           harness_fixture: [{ name: "success" }],
-        }),
       },
     },
     catalogEntries: ["issue-triage"],
@@ -356,8 +338,7 @@ test("evaluateSkillProposalQuality allows ordinary supplied-as-provided contract
 test("evaluateSkillProposalQuality rejects builder envelope framing", () => {
   const evaluation = evaluateSkillProposalQuality({
     report: {
-      execution: {
-        stdout: JSON.stringify({
+      payload: {
           skill_spec: {
             skill_name: "decision-brief",
             summary: "Read one bounded thread and return one concise maintainer decision packet.",
@@ -375,7 +356,6 @@ test("evaluateSkillProposalQuality rejects builder envelope framing", () => {
           findings: [{ claim: "The source issue asks for one decision handoff." }],
           acceptance_checks: [{ id: "ac-1" }, { id: "ac-2" }, { id: "ac-3" }],
           harness_fixture: [{ name: "success" }],
-        }),
       },
     },
     catalogEntries: ["issue-triage"],
@@ -389,8 +369,7 @@ test("evaluateSkillProposalQuality rejects builder envelope framing", () => {
 test("evaluateSkillProposalQuality rejects provided catalog evidence framing", () => {
   const evaluation = evaluateSkillProposalQuality({
     report: {
-      execution: {
-        stdout: JSON.stringify({
+      payload: {
           skill_spec: {
             skill_name: "decision-brief",
             summary: "Read one bounded thread and return one concise maintainer decision packet.",
@@ -408,7 +387,6 @@ test("evaluateSkillProposalQuality rejects provided catalog evidence framing", (
           findings: [{ claim: "The source issue asks for one decision handoff." }],
           acceptance_checks: [{ id: "ac-1" }, { id: "ac-2" }, { id: "ac-3" }],
           harness_fixture: [{ name: "success" }],
-        }),
       },
     },
     catalogEntries: ["issue-triage"],
@@ -422,8 +400,7 @@ test("evaluateSkillProposalQuality rejects provided catalog evidence framing", (
 test("evaluateSkillProposalQuality rejects machine-framed proposal prose", () => {
   const evaluation = evaluateSkillProposalQuality({
     report: {
-      execution: {
-        stdout: JSON.stringify({
+      payload: {
           skill_spec: {
             skill_name: "decision-brief",
             summary: "The machine should return one concise maintainer decision packet.",
@@ -441,7 +418,6 @@ test("evaluateSkillProposalQuality rejects machine-framed proposal prose", () =>
           findings: [{ claim: "The source issue asks for one decision handoff." }],
           acceptance_checks: [{ id: "ac-1" }, { id: "ac-2" }, { id: "ac-3" }],
           harness_fixture: [{ name: "success" }],
-        }),
       },
     },
     catalogEntries: ["issue-triage"],
@@ -456,8 +432,7 @@ test("evaluateSkillProposalQuality rejects machine-framed proposal prose", () =>
 test("evaluateSkillProposalQuality flags builder residue and missing catalog fit", () => {
   const evaluation = evaluateSkillProposalQuality({
     report: {
-      execution: {
-        stdout: JSON.stringify({
+      payload: {
           skill_spec: {
             name: "decision-brief",
             summary: "Use the supplied decomposition to design the current issue #115 skill.",
@@ -471,7 +446,6 @@ test("evaluateSkillProposalQuality flags builder residue and missing catalog fit
           execution_plan: {
             open_questions_left_out_of_scope: ["What artifact form should hold the proposal?"],
           },
-        }),
       },
     },
     catalogEntries: ["issue-triage", "skill-lab", "issue-to-pr"],

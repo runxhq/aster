@@ -4,7 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { isPrereleaseEligibleTargetRepo } from "./aster-v1-contracts.mjs";
-import { extractHarnessReceiptId } from "./run-issue-triage-workers.mjs";
+import { extractHarnessReceiptId, resolveRunxSkillPath } from "./run-issue-triage-workers.mjs";
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(scriptDir, "..");
@@ -63,7 +63,7 @@ async function main(argv = process.argv.slice(2)) {
     bridgeOutput,
     "--",
     "skill",
-    path.join(runxRoot, "skills", "work-plan"),
+    resolveRunxSkillPath(runxRoot, "work-plan"),
     "--objective",
     requireString(firstString(planRequest.objective), "workspace_change_plan_request.objective"),
     "--project_context",
@@ -137,11 +137,11 @@ function buildPlanComment(result) {
 }
 
 function parseExecutionPayload(result) {
-  const stdout = firstString(result?.execution?.stdout);
-  if (!stdout) {
-    throw new Error("runx result did not include execution stdout.");
+  const payload = asRecord(result?.payload);
+  if (!payload) {
+    throw new Error("runx result did not include a sealed payload.");
   }
-  return JSON.parse(stdout);
+  return payload;
 }
 
 async function writeJson(outputPath, value) {

@@ -20,7 +20,7 @@ export async function main(argv = process.argv.slice(2)) {
 }
 
 export function prepareIssueTriageDecision(report, options = {}) {
-  const triage = extractTriageReport(report);
+  const triage = extractIntakeReport(report);
   const changeSet = extractChangeSet(report);
   const defaultRepo = firstString(options.defaultRepo);
   const verificationCatalog = loadVerificationProfileCatalogSync(options.repoRoot);
@@ -91,7 +91,7 @@ export function prepareIssueTriageDecision(report, options = {}) {
 
   return {
     mode: workerRequests.length > 0 ? "issue-to-pr" : shouldStartPlanner ? "plan" : "comment",
-    triage_report: triage,
+    intake_report: triage,
     change_set: changeSet,
     workspace_change_plan_request: workspaceChangePlanRequest,
     issue_to_pr_request: workerRequests[0]?.issue_to_pr_request,
@@ -185,38 +185,24 @@ export function buildTriageComment({
   return lines.join("\n").trim();
 }
 
-function extractTriageReport(report) {
-  if (asRecord(report)?.triage_report) {
-    return asRecord(report.triage_report) ?? {};
-  }
-  const payload = extractExecutionPayload(report);
-  if (payload && payload.triage_report) {
-    return asRecord(payload.triage_report) ?? {};
-  }
-  return {};
+function extractIntakeReport(report) {
+  return asRecord(extractRunxSkillPayload(report).intake_report) ?? {};
 }
 
 function extractChangeSet(report) {
-  if (asRecord(report)?.change_set) {
-    return asRecord(report.change_set);
-  }
-  const payload = extractExecutionPayload(report);
-  if (payload && payload.change_set) {
-    return asRecord(payload.change_set);
-  }
-  return undefined;
+  const payload = extractRunxSkillPayload(report);
+  return asRecord(payload.change_set);
 }
 
-function extractExecutionPayload(report) {
-  const stdout = firstString(asRecord(report)?.execution?.stdout);
-  if (!stdout) {
-    return undefined;
+function extractRunxSkillPayload(report) {
+  if (
+    asRecord(report)?.schema !== "runx.skill_run.v1"
+    || report.status !== "sealed"
+    || !asRecord(report.payload)
+  ) {
+    throw new Error("runx result must be a sealed runx.skill_run.v1 report with a payload object.");
   }
-  try {
-    return asRecord(JSON.parse(stdout));
-  } catch {
-    return undefined;
-  }
+  return asRecord(report.payload);
 }
 
 function defaultActionDecision({ commenceDecision, recommendedLane }) {
@@ -365,23 +351,7 @@ function collectWorkspaceChangePlanRequest(triage, changeSet) {
   if (explicit) {
     return coerceWorkspaceChangePlanRequest(explicit, changeSet);
   }
-
-  const compatibility = asRecord(triage.objective_request);
-  if (!compatibility) {
-    return undefined;
-  }
-
-  return coerceWorkspaceChangePlanRequest(
-    {
-      change_set_id: firstString(changeSet?.change_set_id),
-      objective: firstString(compatibility.objective),
-      project_context: firstString(compatibility.project_context),
-      target_surfaces: Array.isArray(changeSet?.target_surfaces) ? changeSet.target_surfaces : undefined,
-      shared_invariants: Array.isArray(changeSet?.shared_invariants) ? changeSet.shared_invariants : undefined,
-      success_criteria: Array.isArray(changeSet?.success_criteria) ? changeSet.success_criteria : undefined,
-    },
-    changeSet,
-  );
+  return undefined;
 }
 
 function coerceWorkspaceChangePlanRequest(value, changeSet) {
@@ -421,12 +391,6 @@ function normalizeWorkerRequest(value) {
     return {
       worker: firstString(record.worker) ?? "issue-to-pr",
       issue_to_pr_request: issueToPrRequest,
-    };
-  }
-  if (firstString(record.worker) === "issue-to-pr" && asRecord(record.request)) {
-    return {
-      worker: "issue-to-pr",
-      issue_to_pr_request: asRecord(record.request),
     };
   }
   return undefined;

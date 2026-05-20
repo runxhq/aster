@@ -6,16 +6,15 @@ import {
   extractRunSignal,
 } from "./promote-aster-state.mjs";
 
-test("extractRunSignal prefers triage summaries from execution stdout", () => {
+test("extractRunSignal prefers intake summaries from sealed payloads", () => {
   const signal = extractRunSignal({
-    status: "completed",
-    execution: {
-      stdout: JSON.stringify({
-        triage_report: {
-          summary: "README command drift",
-          recommended_lane: "issue-to-pr",
-        },
-      }),
+    schema: "runx.skill_run.v1",
+    status: "sealed",
+    payload: {
+      intake_report: {
+        summary: "README command drift",
+        recommended_lane: "issue-to-pr",
+      },
     },
   });
 
@@ -25,15 +24,14 @@ test("extractRunSignal prefers triage summaries from execution stdout", () => {
 
 test("extractRunSignal falls back to skill proposal summary when triage data is absent", () => {
   const signal = extractRunSignal({
-    status: "success",
-    execution: {
-      stdout: JSON.stringify({
-        skill_spec: {
-          name: "issue-ledger-followup",
-          summary: "Emit one bounded next-action packet from the living issue ledger.",
-          objective: "Keep the issue as the living ledger.",
-        },
-      }),
+    schema: "runx.skill_run.v1",
+    status: "sealed",
+    payload: {
+      skill_spec: {
+        name: "issue-ledger-followup",
+        summary: "Emit one bounded next-action packet from the living issue ledger.",
+        objective: "Keep the issue as the living ledger.",
+      },
     },
   });
 
@@ -73,40 +71,38 @@ test("buildPromotionDrafts creates reflection and history drafts", () => {
       schema: "runx.skill_run.v1",
       status: "sealed",
       receipt_id: "hrn_rcpt_123",
-      execution: {
-        stdout: JSON.stringify({
-          skill_spec: {
-            name: "issue-ledger-followup",
-            kind: "composite_skill",
-            status: "proposed",
-            summary: "Emit one bounded next-action packet from the living issue ledger.",
-            objective: "Keep the issue as the living ledger.",
+      payload: {
+        skill_spec: {
+          name: "issue-ledger-followup",
+          kind: "skill",
+          status: "proposed",
+          summary: "Emit one bounded next-action packet from the living issue ledger.",
+          objective: "Keep the issue as the living ledger.",
+        },
+        findings: [
+          {
+            claim: "The issue thread is canonical.",
           },
-          findings: [
-            {
-              claim: "The issue thread is canonical.",
-            },
-          ],
-          recommended_flow: [
-            {
-              step: "Read the issue thread first.",
-            },
-          ],
-          acceptance_checks: [
-            {
-              id: "ac-one-packet",
-              assertion: "emit one packet",
-            },
-          ],
-          risks: [
-            {
-              risk: "Thin stub output",
-            },
-          ],
-          triage_report: {
-            summary: "README command drift",
+        ],
+        recommended_flow: [
+          {
+            step: "Read the issue thread first.",
           },
-        }),
+        ],
+        acceptance_checks: [
+          {
+            id: "ac-one-packet",
+            assertion: "emit one packet",
+          },
+        ],
+        risks: [
+          {
+            risk: "Thin stub output",
+          },
+        ],
+        intake_report: {
+          summary: "README command drift",
+        },
       },
     },
   });

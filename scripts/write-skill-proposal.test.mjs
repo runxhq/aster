@@ -6,6 +6,12 @@ import {
   extractSkillProposalPayload,
 } from "./write-skill-proposal.mjs";
 
+const sealedRun = (payload) => ({
+  schema: "runx.skill_run.v1",
+  status: "sealed",
+  payload,
+});
+
 test("buildSkillProposalMarkdown renders a reader-facing proposal without transcript residue", () => {
   const markdown = buildSkillProposalMarkdown({
     title: "Add an issue-ledger recap skill",
@@ -16,7 +22,7 @@ test("buildSkillProposalMarkdown renders a reader-facing proposal without transc
         skill_name: "issue-ledger-recap",
         summary: "Summarize approval issue threads into a reusable packet.",
         objective: "Distill a bounded collaboration subject into a rebuildable approval packet.",
-        kind: "composite_skill",
+        kind: "skill",
         status: "proposed",
         governance: {
           mutating: false,
@@ -56,7 +62,7 @@ test("buildSkillProposalMarkdown renders a reader-facing proposal without transc
         },
       ],
       execution_plan: {
-        runner: "chain",
+        runner: "graph",
       },
       findings: [
         {
@@ -149,6 +155,7 @@ test("buildSkillProposalMarkdown renders a reader-facing proposal without transc
   assert.match(markdown, /## Why This Matters/);
   assert.match(markdown, /Issue review should train the operator\./);
   assert.match(markdown, /## Contract/);
+  assert.match(markdown, /- kind: `skill`/);
   assert.match(markdown, /## Governance/);
   assert.match(markdown, /mutating: false/);
   assert.match(markdown, /## Findings/);
@@ -176,22 +183,29 @@ test("buildSkillProposalMarkdown renders a reader-facing proposal without transc
   assert.match(markdown, /description: "Summarize approval issue threads into a reusable packet\."/);
 });
 
-test("extractSkillProposalPayload reads nested execution stdout payloads", () => {
-  const payload = extractSkillProposalPayload({
-    execution: {
-      stdout: JSON.stringify({
-        skill_spec: {
-          name: "issue-ledger-followup",
-        },
-        execution_plan: {
-          runner: "chain",
-        },
-      }),
-    },
-  });
+test("extractSkillProposalPayload reads sealed runx skill payloads", () => {
+  const payload = extractSkillProposalPayload(sealedRun({
+      skill_spec: {
+        name: "issue-ledger-followup",
+      },
+      execution_plan: {
+        runner: "graph",
+      },
+  }));
 
   assert.equal(payload.skill_spec?.name, "issue-ledger-followup");
-  assert.equal(payload.execution_plan?.runner, "chain");
+  assert.equal(payload.execution_plan?.runner, "graph");
+});
+
+test("extractSkillProposalPayload rejects raw payload aliases", () => {
+  assert.throws(
+    () => extractSkillProposalPayload({
+      skill_spec: {
+        name: "issue-ledger-followup",
+      },
+    }),
+    /Sealed runx skill proposal payload not found/,
+  );
 });
 
 test("buildSkillProposalMarkdown uses purpose when summary is absent", () => {
@@ -220,7 +234,7 @@ test("buildSkillProposalMarkdown uses purpose when summary is absent", () => {
           options: [
             {
               option: "add_new_skill",
-              effect: "Create the reusable handoff primitive.",
+              impact: "Create the reusable handoff primitive.",
             },
           ],
         },

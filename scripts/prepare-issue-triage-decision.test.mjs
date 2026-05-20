@@ -6,12 +6,15 @@ import { fileURLToPath } from "node:url";
 import { prepareIssueTriageDecision } from "./prepare-issue-triage-decision.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const sealedRun = (payload) => ({
+  schema: "runx.skill_run.v1",
+  status: "sealed",
+  payload,
+});
 
 test("prepareIssueTriageDecision starts an issue-to-pr worker only after triage approves build", () => {
-  const decision = prepareIssueTriageDecision({
-    execution: {
-      stdout: JSON.stringify({
-        triage_report: {
+  const decision = prepareIssueTriageDecision(sealedRun({
+      intake_report: {
           category: "bug",
           severity: "medium",
           summary: "README command drift",
@@ -32,10 +35,8 @@ test("prepareIssueTriageDecision starts an issue-to-pr worker only after triage 
             size: "small",
             risk: "low",
           },
-        },
-      }),
     },
-  }, { defaultRepo: "runxhq/aster", repoRoot });
+  }), { defaultRepo: "runxhq/aster", repoRoot });
 
   assert.equal(decision.mode, "issue-to-pr");
   assert.equal(decision.triage_decision.should_start_worker, true);
@@ -48,10 +49,8 @@ test("prepareIssueTriageDecision starts an issue-to-pr worker only after triage 
 });
 
 test("prepareIssueTriageDecision derives a single worker request when triage omits issue_to_pr_request", () => {
-  const decision = prepareIssueTriageDecision({
-    execution: {
-      stdout: JSON.stringify({
-        triage_report: {
+  const decision = prepareIssueTriageDecision(sealedRun({
+      intake_report: {
           category: "bug",
           severity: "medium",
           summary: "README command drift",
@@ -62,8 +61,8 @@ test("prepareIssueTriageDecision derives a single worker request when triage omi
           commence_decision: "approve",
           action_decision: "proceed_to_build",
           operator_notes: [],
-        },
-        change_set: {
+      },
+      change_set: {
           change_set_id: "change-set-101",
           source: {
             type: "github_issue",
@@ -71,10 +70,8 @@ test("prepareIssueTriageDecision derives a single worker request when triage omi
             url: "https://github.com/example/repo/issues/101",
           },
           summary: "README still references bug-to-pr",
-        },
-      }),
-    },
-  }, { defaultRepo: "runxhq/aster", repoRoot });
+      },
+  }), { defaultRepo: "runxhq/aster", repoRoot });
 
   assert.equal(decision.mode, "issue-to-pr");
   assert.equal(decision.triage_decision.should_start_worker, true);
@@ -86,11 +83,9 @@ test("prepareIssueTriageDecision derives a single worker request when triage omi
   assert.equal(decision.issue_to_pr_request.verification_profile, "aster.site-ci");
 });
 
-test("prepareIssueTriageDecision accepts current intake thread_change_request output", () => {
-  const decision = prepareIssueTriageDecision({
-    execution: {
-      stdout: JSON.stringify({
-        triage_report: {
+test("prepareIssueTriageDecision accepts current issue-intake thread_change_request output", () => {
+  const decision = prepareIssueTriageDecision(sealedRun({
+      intake_report: {
           category: "bug",
           severity: "medium",
           summary: "README command drift",
@@ -110,15 +105,13 @@ test("prepareIssueTriageDecision accepts current intake thread_change_request ou
             size: "small",
             risk: "low",
           },
-        },
-        change_set: {
+      },
+      change_set: {
           change_set_id: "change-set-101",
           thread_locator: "github://runxhq/aster/issues/101",
           summary: "README still references bug-to-pr",
-        },
-      }),
-    },
-  }, { defaultRepo: "runxhq/aster", repoRoot });
+      },
+  }), { defaultRepo: "runxhq/aster", repoRoot });
 
   assert.equal(decision.mode, "issue-to-pr");
   assert.equal(decision.triage_decision.should_start_worker, true);
@@ -130,10 +123,8 @@ test("prepareIssueTriageDecision accepts current intake thread_change_request ou
 });
 
 test("prepareIssueTriageDecision holds at a review comment when mutation should not start yet", () => {
-  const decision = prepareIssueTriageDecision({
-    execution: {
-      stdout: JSON.stringify({
-        triage_report: {
+  const decision = prepareIssueTriageDecision(sealedRun({
+      intake_report: {
           category: "feature_request",
           severity: "medium",
           summary: "Cross-repo abandoned cart recovery",
@@ -146,14 +137,8 @@ test("prepareIssueTriageDecision holds at a review comment when mutation should 
           review_target: "issue",
           review_comment: "runx is holding mutation until the scope is decomposed.",
           operator_notes: ["Confirm the first target repo before any worker starts."],
-          objective_request: {
-            objective: "Add abandoned cart recovery",
-            project_context: "Workspace repo",
-          },
-        },
-      }),
-    },
-  }, { defaultRepo: "runxhq/aster", repoRoot });
+      },
+  }), { defaultRepo: "runxhq/aster", repoRoot });
 
   assert.equal(decision.mode, "comment");
   assert.equal(decision.triage_decision.should_start_worker, false);
@@ -164,10 +149,8 @@ test("prepareIssueTriageDecision holds at a review comment when mutation should 
 });
 
 test("prepareIssueTriageDecision falls back to an issue comment when draft PR review is requested before publish", () => {
-  const decision = prepareIssueTriageDecision({
-    execution: {
-      stdout: JSON.stringify({
-        triage_report: {
+  const decision = prepareIssueTriageDecision(sealedRun({
+      intake_report: {
           category: "docs",
           severity: "medium",
           summary: "Need maintainer confirmation before opening a worker.",
@@ -180,10 +163,8 @@ test("prepareIssueTriageDecision falls back to an issue comment when draft PR re
           review_target: "draft_pr",
           review_comment: "Please confirm the exact repo before runx opens a worker.",
           operator_notes: [],
-        },
-      }),
-    },
-  }, { defaultRepo: "runxhq/aster", repoRoot });
+      },
+  }), { defaultRepo: "runxhq/aster", repoRoot });
 
   assert.equal(decision.triage_decision.review_target, "draft_pr");
   assert.equal(decision.triage_decision.comment_target, "issue");
@@ -192,10 +173,8 @@ test("prepareIssueTriageDecision falls back to an issue comment when draft PR re
 });
 
 test("prepareIssueTriageDecision starts a planning lane for work-plan before any worker starts", () => {
-  const decision = prepareIssueTriageDecision({
-    execution: {
-      stdout: JSON.stringify({
-        triage_report: {
+  const decision = prepareIssueTriageDecision(sealedRun({
+      intake_report: {
           category: "feature_request",
           severity: "high",
           summary: "Abandoned cart recovery spans api and app.",
@@ -217,8 +196,8 @@ test("prepareIssueTriageDecision starts a planning lane for work-plan before any
             shared_invariants: ["Keep the rollout approval-gated."],
             success_criteria: ["One phased plan exists before mutation begins."],
           },
-        },
-        change_set: {
+      },
+      change_set: {
           change_set_id: "change-set-204",
           source: { type: "github_issue", id: "204" },
           summary: "Roll out abandoned cart recovery.",
@@ -233,10 +212,8 @@ test("prepareIssueTriageDecision starts a planning lane for work-plan before any
           ],
           shared_invariants: ["Keep the rollout approval-gated."],
           success_criteria: ["One phased plan exists before mutation begins."],
-        },
-      }),
-    },
-  }, { defaultRepo: "runxhq/aster", repoRoot });
+      },
+  }), { defaultRepo: "runxhq/aster", repoRoot });
 
   assert.equal(decision.mode, "plan");
   assert.equal(decision.triage_decision.should_start_planner, true);
@@ -246,10 +223,8 @@ test("prepareIssueTriageDecision starts a planning lane for work-plan before any
 });
 
 test("prepareIssueTriageDecision stops non-mutating reply-only requests without inventing a worker", () => {
-  const decision = prepareIssueTriageDecision({
-    execution: {
-      stdout: JSON.stringify({
-        triage_report: {
+  const decision = prepareIssueTriageDecision(sealedRun({
+      intake_report: {
           category: "question",
           severity: "low",
           summary: "Operator guidance only",
@@ -257,10 +232,8 @@ test("prepareIssueTriageDecision stops non-mutating reply-only requests without 
           recommended_lane: "reply-only",
           rationale: "No code change is required.",
           needs_human: false,
-        },
-      }),
-    },
-  }, { defaultRepo: "runxhq/aster", repoRoot });
+      },
+  }), { defaultRepo: "runxhq/aster", repoRoot });
 
   assert.equal(decision.mode, "comment");
   assert.equal(decision.triage_decision.action_decision, "stop");
@@ -269,8 +242,8 @@ test("prepareIssueTriageDecision stops non-mutating reply-only requests without 
 });
 
 test("prepareIssueTriageDecision blocks out-of-scope worker fanout during prerelease v1", () => {
-  const decision = prepareIssueTriageDecision({
-    triage_report: {
+  const decision = prepareIssueTriageDecision(sealedRun({
+    intake_report: {
       category: "bug",
       severity: "high",
       summary: "Cross-repo drift",
@@ -304,11 +277,22 @@ test("prepareIssueTriageDecision blocks out-of-scope worker fanout during prerel
         },
       ],
     },
-  }, { defaultRepo: "runxhq/aster", repoRoot });
+  }), { defaultRepo: "runxhq/aster", repoRoot });
 
   assert.equal(decision.mode, "comment");
   assert.equal(decision.triage_decision.should_start_worker, false);
   assert.equal(decision.triage_decision.worker_requests.length, 0);
   assert.match(decision.comment_body, /Boundary notes:/);
   assert.match(decision.comment_body, /outside prerelease v1 scope/);
+});
+
+test("prepareIssueTriageDecision rejects raw top-level intake reports", () => {
+  assert.throws(
+    () => prepareIssueTriageDecision({
+      intake_report: {
+        summary: "Raw report alias",
+      },
+    }, { defaultRepo: "runxhq/aster", repoRoot }),
+    /sealed runx\.skill_run\.v1 report with a payload object/,
+  );
 });

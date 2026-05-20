@@ -100,7 +100,7 @@ jobs:
         uses: actions/checkout@v6
         with:
           repository: ${{ vars.RUNX_REPOSITORY || 'runxhq/runx' }}
-          ref: ${{ vars.RUNX_REF || 'cb44ad7' }}
+          ref: ${{ vars.RUNX_REF || 'main' }}
           path: .runx/runx
           token: ${{ secrets.RUNX_REPOSITORY_PAT || github.token }}
 
@@ -238,8 +238,8 @@ jobs:
           ISSUE_BODY: ${{ steps.issue_ledger.outputs.ledger_body }}
         run: |
           RUNX_SKILL_ROOT="${{ steps.runx.outputs.skills_root }}"
-          if [ ! -d "$RUNX_SKILL_ROOT/intake" ]; then
-            echo "runx intake skill not found in checked-out runx ref." >&2
+          if [ ! -d "$RUNX_SKILL_ROOT/issue-intake" ]; then
+            echo "runx issue-intake skill not found in checked-out runx ref." >&2
             exit 1
           fi
           node scripts/aster-core.mjs \
@@ -260,12 +260,12 @@ jobs:
             --trace-dir "$GITHUB_WORKSPACE/.artifacts/issue-triage/issue/triage-provider-trace" \
             --output "$GITHUB_WORKSPACE/.artifacts/issue-triage/issue/triage-result.json" \
             -- \
-            skill "$RUNX_SKILL_ROOT/intake" \
+            skill "$RUNX_SKILL_ROOT/issue-intake" \
             --thread_title "$ISSUE_TITLE" \
             --thread_body "$ISSUE_BODY" \
             --thread_locator "github://${{ steps.issue.outputs.target_repo }}/issues/${{ steps.issue.outputs.number }}" \
             --product_context "aster public proving-ground repository" \
-            --operator_context "Act as the intake gate. Always draft a user-facing triage comment. Approve issue-to-pr only when the work is bounded to one repo-scoped governed PR. Use action_decision=proceed_to_plan when work-plan should freeze a shared plan before mutation. Use action_decision=request_review when the issue needs discussion before planning or mutation."
+            --operator_context "Act as the issue-intake gate. Always draft a user-facing triage comment. Approve issue-to-pr only when the work is bounded to one repo-scoped governed PR. Use action_decision=proceed_to_plan when work-plan should freeze a shared plan before mutation. Use action_decision=request_review when the issue needs discussion before planning or mutation."
           node scripts/prepare-issue-triage-decision.mjs \
             --input "$GITHUB_WORKSPACE/.artifacts/issue-triage/issue/triage-result.json" \
             --repo-root "$GITHUB_WORKSPACE" \
@@ -471,7 +471,7 @@ jobs:
         uses: actions/checkout@v6
         with:
           repository: ${{ vars.RUNX_REPOSITORY || 'runxhq/runx' }}
-          ref: ${{ vars.RUNX_REF || 'cb44ad7' }}
+          ref: ${{ vars.RUNX_REF || 'main' }}
           path: .runx/runx
           token: ${{ secrets.RUNX_REPOSITORY_PAT || github.token }}
 
@@ -606,7 +606,6 @@ jobs:
             --output "$GITHUB_WORKSPACE/.artifacts/issue-triage/pr/result.json" \
             -- \
             skill "$RUNX_SKILL_ROOT/issue-triage" \
-            --runner respond \
             --objective "Draft the next high-signal maintainer comment for this pull request" \
             --issue_snapshot "$(cat "$GITHUB_WORKSPACE/.artifacts/issue-triage/pr/pr-snapshot.json")" \
             --maintainer_context "Comment as the aster operator only when there is one concrete missing validation, reproduction gap, scope mismatch, or next unblock that is not already obvious in the thread. If the highest-value action is no public comment, keep it internal and do not invent a reply. This is a pull request thread, not a user support issue."

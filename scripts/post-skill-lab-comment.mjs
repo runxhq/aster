@@ -283,15 +283,15 @@ function buildRefreshSummary({ publish, proposal, quality, workflowStatus }) {
 }
 
 function extractSkillProposalPayload(result) {
-  if (!isRecord(result)) {
-    return null;
+  if (
+    isRecord(result)
+    && result.schema === "runx.skill_run.v1"
+    && result.status === "sealed"
+    && looksLikeSkillProposalPayload(result.payload)
+  ) {
+    return result.payload;
   }
-  if (looksLikeSkillProposalPayload(result)) {
-    return result;
-  }
-  const stdout = firstNonEmptyString(result.execution?.stdout);
-  const parsed = tryParseJson(stdout);
-  return looksLikeSkillProposalPayload(parsed) ? parsed : null;
+  return null;
 }
 
 function looksLikeSkillProposalPayload(value) {
@@ -304,14 +304,6 @@ function looksLikeSkillProposalPayload(value) {
       || value.acceptance_checks
     ),
   );
-}
-
-function tryParseJson(value) {
-  try {
-    return value ? JSON.parse(value) : null;
-  } catch {
-    return null;
-  }
 }
 
 function isRecord(value) {

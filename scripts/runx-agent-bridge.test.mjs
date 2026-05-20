@@ -108,13 +108,10 @@ test("buildLiveTraceState renders a stable live trace snapshot", () => {
 test("assertRustNativeRunxCommand rejects non-native bridge commands", () => {
   assert.doesNotThrow(() => assertRustNativeRunxCommand(["harness", "/tmp/fixture.yaml"]));
   assert.doesNotThrow(() => assertRustNativeRunxCommand(["history", "--json"]));
-  assert.doesNotThrow(() => assertRustNativeRunxCommand(["skill", "/runx/skills/intake"]));
-  assert.doesNotThrow(() =>
-    assertRustNativeRunxCommand(["skill", "/runx/skills/issue-triage", "--runner", "respond"]),
-  );
+  assert.doesNotThrow(() => assertRustNativeRunxCommand(["skill", "/runx/skills/issue-intake"]));
   assert.throws(() => assertRustNativeRunxCommand(["skill"]), /not accepted by the Rust-native Aster bridge/);
   assert.throws(
-    () => assertRustNativeRunxCommand(["skill", "run", "/runx/skills/intake"]),
+    () => assertRustNativeRunxCommand(["skill", "run", "/runx/skills/issue-intake"]),
     /Deprecated skill subcommands are not accepted/,
   );
   assert.throws(
@@ -130,12 +127,16 @@ test("assertRustNativeRunxCommand rejects non-native bridge commands", () => {
     /not accepted by the Rust-native Aster bridge/,
   );
   assert.throws(
-    () => assertRustNativeRunxCommand(["skill", "/runx/skills/intake", "--receipt", "rx_1"]),
+    () => assertRustNativeRunxCommand(["skill", "/runx/skills/issue-intake", "--receipt", "rx_1"]),
     /Deprecated receipt flags are not accepted/,
   );
   assert.throws(
-    () => assertRustNativeRunxCommand(["skill", "/runx/skills/intake", "--receiptDir", "/tmp/old"]),
+    () => assertRustNativeRunxCommand(["skill", "/runx/skills/issue-intake", "--receiptDir", "/tmp/old"]),
     /Deprecated receipt flags are not accepted/,
+  );
+  assert.throws(
+    () => assertRustNativeRunxCommand(["skill", "/runx/skills/issue-triage", "--runner", "respond"]),
+    /Deprecated runner selection is not accepted/,
   );
 });
 
@@ -178,10 +179,51 @@ test("assertCanonicalBridgeReport accepts sealed Rust skill reports backed by se
     closure: {
       disposition: "completed",
     },
+    payload: {
+      intake_report: {
+        summary: "Run completed.",
+      },
+    },
   }, {
     runArgs: ["skill", "/runx/skills/issue-to-pr"],
     receiptDir,
   }));
+});
+
+test("assertCanonicalBridgeReport requires sealed skill reports to include payload", async () => {
+  await assert.rejects(() => assertCanonicalBridgeReport({
+    schema: "runx.skill_run.v1",
+    status: "sealed",
+    run_id: "run-1",
+    receipt_id: "hrn_rcpt_run_1",
+    closure: {
+      disposition: "completed",
+    },
+  }, {
+    runArgs: ["skill", "/runx/skills/issue-to-pr"],
+  }), /must include a payload object/);
+});
+
+test("assertCanonicalBridgeReport rejects retired execution stdout terminal reports", async () => {
+  await assert.rejects(() => assertCanonicalBridgeReport({
+    schema: "runx.skill_run.v1",
+    status: "sealed",
+    run_id: "run-1",
+    receipt_id: "hrn_rcpt_run_1",
+    closure: {
+      disposition: "completed",
+    },
+    execution: {
+      stdout: "{\"legacy\":true}",
+    },
+    payload: {
+      intake_report: {
+        summary: "Run completed.",
+      },
+    },
+  }, {
+    runArgs: ["skill", "/runx/skills/issue-to-pr"],
+  }), /retired field report\.execution\.stdout/);
 });
 
 test("assertCanonicalBridgeReport rejects retired terminal bridge fields", async () => {
@@ -201,15 +243,15 @@ test("assertCanonicalBridgeReport rejects retired terminal bridge fields", async
 test("buildSkillResumeRunArgs reruns the same skill command with run id and answers", () => {
   assert.deepEqual(
     buildSkillResumeRunArgs(
-      ["skill", "/runx/skills/issue-triage", "--runner", "respond"],
+      ["skill", "/runx/skills/issue-triage", "--objective", "Draft a maintainer response"],
       "run-1",
       "/tmp/a.json",
     ),
     [
       "skill",
       "/runx/skills/issue-triage",
-      "--runner",
-      "respond",
+      "--objective",
+      "Draft a maintainer response",
       "--run-id",
       "run-1",
       "--answers",
@@ -224,8 +266,8 @@ test("buildSkillResumeRunArgs removes stale resume flags before appending fresh 
       [
         "skill",
         "/runx/skills/issue-triage",
-        "--runner",
-        "respond",
+        "--objective",
+        "Draft a maintainer response",
         "--run-id",
         "old-run",
         "--answers=/tmp/old.json",
@@ -236,8 +278,8 @@ test("buildSkillResumeRunArgs removes stale resume flags before appending fresh 
     [
       "skill",
       "/runx/skills/issue-triage",
-      "--runner",
-      "respond",
+      "--objective",
+      "Draft a maintainer response",
       "--run-id",
       "run-2",
       "--answers",

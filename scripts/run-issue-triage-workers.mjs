@@ -572,11 +572,11 @@ async function buildPrBody({
     runxRoot,
     packet: {
       title: `[runx] issue-triage worker for issue #${issueNumber} (${workerNumber})`,
-      summary: "Aster opened this draft PR from the issue intake lane after intake approved one governed issue-to-pr worker.",
+      summary: "Aster opened this draft PR from the issue-intake lane after issue-intake approved one governed issue-to-pr worker.",
       sourceContext: [
         `Work issue: #${issueNumber}`,
         `Worker: ${workerNumber}`,
-        `Lane: intake -> issue-to-pr worker`,
+        `Lane: issue-intake -> issue-to-pr worker`,
         `scafld task: ${taskId}`,
       ],
       source: issueUrl ? {
@@ -590,7 +590,7 @@ async function buildPrBody({
       targetRepo,
       status: "draft",
       scope: [
-        "Keep the change to one bounded repo-scoped remediation request approved by intake.",
+        "Keep the change to one bounded repo-scoped remediation request approved by issue-intake.",
         "Do not widen into unrelated cleanup, feature work, or broad refactors.",
       ],
       checks: [
@@ -614,7 +614,7 @@ async function buildPrBody({
       ],
       risks: [
         "The generated change should stay bounded to the approved issue-to-pr worker request.",
-        "A human reviewer must reject or amend the source thread if the diff exceeds the intake decision.",
+        "A human reviewer must reject or amend the source thread if the diff exceeds the issue-intake decision.",
       ],
       rollback: "Close or revert this runx/* branch and rerun the same issue after amending the source ledger.",
       handoffReference: taskId,

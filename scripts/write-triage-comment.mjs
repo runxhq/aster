@@ -67,14 +67,15 @@ function requireValue(argv, index, flag) {
 }
 
 function parsePayload(report) {
-  if (isRecord(report) && isRecord(report.response_draft)) {
-    return report;
+  if (
+    isRecord(report)
+    && report.schema === "runx.skill_run.v1"
+    && report.status === "sealed"
+    && isRecord(report.payload)
+  ) {
+    return report.payload;
   }
-  const stdout = report?.execution?.stdout;
-  if (typeof stdout !== "string" || !stdout.trim()) {
-    throw new Error("Could not find execution.stdout in the run output.");
-  }
-  return JSON.parse(stdout);
+  throw new Error("Could not find a sealed runx.skill_run.v1 payload in the run output.");
 }
 
 function isNoPublicComment(payload) {

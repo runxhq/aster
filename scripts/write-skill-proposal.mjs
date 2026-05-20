@@ -141,17 +141,16 @@ export function buildSkillProposalMarkdown({ payload, title, issueUrl, issuePack
 }
 
 export function extractSkillProposalPayload(report) {
-  if (isSkillProposalPayload(report)) {
-    return report;
+  if (
+    isRecord(report)
+    && report.schema === "runx.skill_run.v1"
+    && report.status === "sealed"
+    && isSkillProposalPayload(report.payload)
+  ) {
+    return report.payload;
   }
 
-  const stdout = firstNonEmptyString(report?.execution?.stdout);
-  const parsed = tryParseJson(stdout);
-  if (isSkillProposalPayload(parsed)) {
-    return parsed;
-  }
-
-  throw new Error("Skill proposal payload not found in run result.");
+  throw new Error("Sealed runx skill proposal payload not found in run result.");
 }
 
 function parseArgs(argv) {
@@ -599,12 +598,8 @@ function normalizeWorkIssueNumber(value) {
   return null;
 }
 
-function tryParseJson(value) {
-  try {
-    return value ? JSON.parse(value) : null;
-  } catch {
-    return null;
-  }
+function isRecord(value) {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
 function isSkillProposalPayload(value) {
@@ -668,7 +663,7 @@ function formatObjectSummary(value) {
   const detail = cleanReaderFacingText(firstNonEmptyString(
     value.why,
     value.boundary,
-    value.effect,
+    value.impact,
     value.assertion,
     value.summary,
     value.description,

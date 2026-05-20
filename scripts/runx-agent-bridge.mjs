@@ -299,6 +299,9 @@ export async function assertCanonicalBridgeReport(report, { runArgs = [], receip
   if (report.status !== "sealed") {
     throw new Error("runx skill bridge terminal report must have status sealed.");
   }
+  if (!isPlainObject(report.payload)) {
+    throw new Error("runx sealed skill report must include a payload object.");
+  }
   const receiptId = requireNonEmptyString(report.receipt_id, "receipt_id");
   requireNonEmptyString(report.run_id, "run_id");
   if (!isPlainObject(report.closure)) {
@@ -366,6 +369,9 @@ function assertNoLegacyBridgeFields(value, pathLabel = "report") {
     ].includes(key)) {
       throw new Error(`runx bridge report contains retired field ${pathLabel}.${key}.`);
     }
+    if (pathLabel === "report.execution" && key === "stdout") {
+      throw new Error(`runx bridge report contains retired field ${pathLabel}.${key}.`);
+    }
     assertNoLegacyBridgeFields(value[key], `${pathLabel}.${key}`);
   }
 }
@@ -383,6 +389,9 @@ function assertNoDeprecatedRunxShape(runArgs) {
     }
     if (value === "--receiptDir" || value.startsWith("--receiptDir=")) {
       throw new Error("Deprecated receipt flags are not accepted by the Rust-native Aster bridge.");
+    }
+    if (value === "--runner" || value.startsWith("--runner=")) {
+      throw new Error("Deprecated runner selection is not accepted by the Rust-native Aster bridge.");
     }
   }
 }
