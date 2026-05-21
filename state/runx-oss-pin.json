@@ -1,8 +1,8 @@
 {
   "schema": "runx.aster_runx_oss_pin.v1",
   "repository": "runxhq/runx",
-  "ref": "1c9b3078f59ad73b1741c199870dfb472d097c00",
-  "expected_head": "1c9b3078f59ad73b1741c199870dfb472d097c00",
-  "parent_workspace_commit": "48bfe71",
+  "ref": "ce2f27178553aae50a0113c2fd0d596fb3c247dc",
+  "expected_head": "ce2f27178553aae50a0113c2fd0d596fb3c247dc",
+  "parent_workspace_commit": "6e8f31b",
   "note": "Clean Rust/harness-receipt cutover pin for Aster dogfood lanes."
 }
