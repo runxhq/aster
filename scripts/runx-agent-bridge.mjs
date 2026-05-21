@@ -369,9 +369,6 @@ function assertNoLegacyBridgeFields(value, pathLabel = "report") {
     ].includes(key)) {
       throw new Error(`runx bridge report contains retired field ${pathLabel}.${key}.`);
     }
-    if (pathLabel === "report.execution" && key === "stdout") {
-      throw new Error(`runx bridge report contains retired field ${pathLabel}.${key}.`);
-    }
     assertNoLegacyBridgeFields(value[key], `${pathLabel}.${key}`);
   }
 }

@@ -204,8 +204,8 @@ test("assertCanonicalBridgeReport requires sealed skill reports to include paylo
   }), /must include a payload object/);
 });
 
-test("assertCanonicalBridgeReport rejects retired execution stdout terminal reports", async () => {
-  await assert.rejects(() => assertCanonicalBridgeReport({
+test("assertCanonicalBridgeReport accepts current Rust skill execution diagnostics", async () => {
+  await assert.doesNotReject(() => assertCanonicalBridgeReport({
     schema: "runx.skill_run.v1",
     status: "sealed",
     run_id: "run-1",
@@ -215,6 +215,13 @@ test("assertCanonicalBridgeReport rejects retired execution stdout terminal repo
     },
     execution: {
       stdout: "{\"legacy\":true}",
+      stderr: "",
+      exit_code: 0,
+      structured_output: {
+        intake_report: {
+          summary: "Run completed.",
+        },
+      },
     },
     payload: {
       intake_report: {
@@ -223,7 +230,26 @@ test("assertCanonicalBridgeReport rejects retired execution stdout terminal repo
     },
   }, {
     runArgs: ["skill", "/runx/skills/issue-to-pr"],
-  }), /retired field report\.execution\.stdout/);
+  }));
+});
+
+test("assertCanonicalBridgeReport does not accept execution stdout as a payload alias", async () => {
+  await assert.rejects(() => assertCanonicalBridgeReport({
+    schema: "runx.skill_run.v1",
+    status: "sealed",
+    run_id: "run-1",
+    receipt_id: "hrn_rcpt_run_1",
+    closure: {
+      disposition: "completed",
+    },
+    execution: {
+      stdout: "{\"intake_report\":{\"summary\":\"Run completed.\"}}",
+      stderr: "",
+      exit_code: 0,
+    },
+  }, {
+    runArgs: ["skill", "/runx/skills/issue-to-pr"],
+  }), /must include a payload object/);
 });
 
 test("assertCanonicalBridgeReport rejects retired terminal bridge fields", async () => {
