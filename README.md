@@ -105,8 +105,11 @@ the merge decision remains with the human reviewer.
 
 - `OPENAI_API_KEY`: external caller for `runx` `agent_act` boundaries
 - `RUNX_CALLER_MODEL` (optional): pinned model override for the hosted bridge
-- `RUNX_REF` (repo variable): optional `runx` branch or tag for hosted
-  checkouts; defaults to `main`
+- `RUNX_REF` (optional repo variable): explicit commit-SHA override for the
+  hosted `runx` checkout. When unset, workflows use the checked-in pin at
+  [state/runx-oss-pin.json](./state/runx-oss-pin.json). The current dogfood pin
+  is OSS commit `1c9b3078f59ad73b1741c199870dfb472d097c00`; workflows assert
+  that the checked-out HEAD matches the pin before building the Rust binary.
 - `RUNX_REPOSITORY_PAT` (optional): GitHub token for private `runx` checkout
   and other cross-repo automation. The repo-scoped `github.token` is enough
   for same-repo workers; fanout into other repos needs broader access.
@@ -213,6 +216,7 @@ npm run docs:build
 Run the Rust harness proving-ground lane locally from this repo:
 
 ```bash
+node scripts/runx-checkout-pin.mjs resolve
 RUNX_ROOT=/home/kam/dev/runx/oss bash scripts/proving-ground.sh
 node scripts/summarize-proving-ground.mjs .artifacts/proving-ground
 ```

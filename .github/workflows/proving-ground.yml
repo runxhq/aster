@@ -18,13 +18,27 @@ jobs:
       - name: Check out aster
         uses: actions/checkout@v6
 
+      - name: Resolve runx checkout pin
+        id: runx_pin
+        env:
+          RUNX_REPOSITORY: ${{ vars.RUNX_REPOSITORY }}
+          RUNX_REF: ${{ vars.RUNX_REF }}
+        run: node scripts/runx-checkout-pin.mjs resolve
+
       - name: Check out runx OSS
         uses: actions/checkout@v6
         with:
-          repository: ${{ vars.RUNX_REPOSITORY || 'runxhq/runx' }}
-          ref: ${{ vars.RUNX_REF || 'main' }}
+          repository: ${{ steps.runx_pin.outputs.repository }}
+          ref: ${{ steps.runx_pin.outputs.ref }}
           path: runx
           token: ${{ secrets.RUNX_REPOSITORY_PAT || github.token }}
+
+      - name: Assert runx checkout pin
+        run: |
+          node scripts/runx-checkout-pin.mjs assert \
+            --checkout-path runx \
+            --expected-ref "${{ steps.runx_pin.outputs.ref }}" \
+            --expected-head "${{ steps.runx_pin.outputs.expected_head }}"
 
       - name: Set up Node.js
         uses: actions/setup-node@v6

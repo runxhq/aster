@@ -139,6 +139,8 @@ lanes against real repo work.
 - purpose: keep broader receipt and envelope visibility across the catalog even
   when live mutation lanes are unavailable
 - current runx profile:
+  - runx OSS checkout pinned by `state/runx-oss-pin.json` and asserted before
+    building the Rust binary
   - native Rust `runx harness` replay for `echo-skill`
   - native Rust `runx harness` replay for `sequential-graph`
   - optional native Rust `runx harness` replay for `payment-approval-graph`

@@ -1,10 +1,12 @@
 # Dogfood
 
-Aster's dogfood campaign. The current local proving-ground path runs the
-Rust `runx` binary against native harness fixtures and records sealed
-`runx.harness_receipt.v1` receipts. Historical rounds below describe earlier
-skill-runner dogfood and remain as evidence, not as the current invocation
-contract.
+Aster's dogfood campaign. Hosted dogfood lanes pin the runx OSS checkout in
+`state/runx-oss-pin.json`; the current clean Rust cutover pin is
+`1c9b3078f59ad73b1741c199870dfb472d097c00` from parent workspace commit
+`48bfe71`. The current local proving-ground path runs the Rust `runx` binary
+against native harness fixtures and records sealed `runx.harness_receipt.v1`
+receipts. Historical rounds below describe earlier skill-runner dogfood and
+remain as evidence, not as the current invocation contract.
 
 ## Cycle shape
 

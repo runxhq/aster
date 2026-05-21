@@ -19,6 +19,11 @@ description: Secrets, thread teaching, artifacts, and what still needs hardening
   timeout for external caller model invocations. Hosted workflows default to
   `300000` so stuck cognitive work fails boundedly instead of occupying a
   runner for twenty minutes
+- `RUNX_REF` (optional repo variable): explicit runx commit-SHA override for
+  dogfood lanes. Leave unset for the checked-in OSS pin at
+  `state/runx-oss-pin.json`, currently
+  `1c9b3078f59ad73b1741c199870dfb472d097c00`. Workflows assert the checked-out
+  HEAD before building the Rust binary.
 - `RUNX_REPOSITORY_PAT` (optional secret): GitHub token for private `runx`
   checkout and other cross-repo automation that cannot rely on the default
   workflow token
