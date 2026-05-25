@@ -22,7 +22,7 @@ description: Secrets, thread teaching, artifacts, and what still needs hardening
 - `RUNX_REF` (optional repo variable): explicit runx commit-SHA override for
   dogfood lanes. Leave unset for the checked-in OSS pin at
   `state/runx-oss-pin.json`, currently
-  `caa5af7c145d8355e4d44b36e26afc295fcd9cb3`. Workflows assert the checked-out
+  `7be2d4b020c29562b4643b3ec65c4c8998548d6c`. Workflows assert the checked-out
   HEAD before building the Rust binary.
 - `RUNX_REPOSITORY_PAT` (optional secret): GitHub token for private `runx`
   checkout and other cross-repo automation that cannot rely on the default
