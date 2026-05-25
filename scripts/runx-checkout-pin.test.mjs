@@ -12,7 +12,7 @@ import {
 
 const SHA_A = "0123456789abcdef0123456789abcdef01234567";
 const SHA_B = "89abcdef0123456789abcdef0123456789abcdef";
-const CUTOVER_SHA = "7be2d4b020c29562b4643b3ec65c4c8998548d6c";
+const CUTOVER_SHA = "03ff65fd9a6b009ee27d39beb2c76f3581d426cc";
 
 test("default checked-in pin resolves to the clean Rust cutover SHA", async () => {
   const resolved = await resolveRunxCheckout({ env: {} });

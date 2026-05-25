@@ -108,7 +108,7 @@ the merge decision remains with the human reviewer.
 - `RUNX_REF` (optional repo variable): explicit commit-SHA override for the
   hosted `runx` checkout. When unset, workflows use the checked-in pin at
   [state/runx-oss-pin.json](./state/runx-oss-pin.json). The current dogfood pin
-  is OSS commit `7be2d4b020c29562b4643b3ec65c4c8998548d6c`; workflows assert
+  is OSS commit `03ff65fd9a6b009ee27d39beb2c76f3581d426cc`; workflows assert
   that the checked-out HEAD matches the pin before building the Rust binary.
 - `RUNX_REPOSITORY_PAT` (optional): GitHub token for private `runx` checkout
   and other cross-repo automation. The repo-scoped `github.token` is enough
