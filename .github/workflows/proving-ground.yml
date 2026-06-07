@@ -55,6 +55,9 @@ jobs:
           ARTIFACT_DIR: ${{ github.workspace }}/aster-artifacts
           ASTER_ROOT: ${{ github.workspace }}
           PROVING_GROUND_PROFILE: minimal
+          RUNX_RECEIPT_SIGN_KID: ${{ vars.RUNX_RECEIPT_SIGN_KID || 'runx-demo-key' }}
+          RUNX_RECEIPT_SIGN_ED25519_SEED_BASE64: ${{ secrets.RUNX_RECEIPT_SIGN_ED25519_SEED_BASE64 || 'QkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkI=' }}
+          RUNX_RECEIPT_SIGN_ISSUER_TYPE: ${{ vars.RUNX_RECEIPT_SIGN_ISSUER_TYPE || 'hosted' }}
         run: |
           chmod +x scripts/proving-ground.sh
           bash scripts/proving-ground.sh
