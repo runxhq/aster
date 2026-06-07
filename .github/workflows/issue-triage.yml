@@ -95,41 +95,15 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Resolve runx checkout pin
-        if: ${{ steps.preflight.outputs.enabled == 'true' }}
-        id: runx_pin
-        env:
-          RUNX_REPOSITORY: ${{ vars.RUNX_REPOSITORY }}
-          RUNX_REF: ${{ vars.RUNX_REF }}
-        run: node scripts/runx-checkout-pin.mjs resolve
-
-      - name: Check out runx
-        if: ${{ steps.preflight.outputs.enabled == 'true' }}
-        uses: actions/checkout@v6
-        with:
-          repository: ${{ steps.runx_pin.outputs.repository }}
-          ref: ${{ steps.runx_pin.outputs.ref }}
-          path: .runx/runx
-          token: ${{ secrets.RUNX_REPOSITORY_PAT || github.token }}
-
-      - name: Assert runx checkout pin
-        if: ${{ steps.preflight.outputs.enabled == 'true' }}
-        run: |
-          node scripts/runx-checkout-pin.mjs assert \
-            --checkout-path .runx/runx \
-            --expected-ref "${{ steps.runx_pin.outputs.ref }}" \
-            --expected-head "${{ steps.runx_pin.outputs.expected_head }}"
-
-      - name: Set up Node.js
-        if: ${{ steps.preflight.outputs.enabled == 'true' }}
-        uses: actions/setup-node@v6
-        with:
-          node-version: 24
-
-      - name: Install and build runx
+      - name: Bootstrap runx
         id: runx
         if: ${{ steps.preflight.outputs.enabled == 'true' }}
-        run: bash scripts/install-runx-workspace.sh .runx/runx
+        uses: ./.github/actions/runx-bootstrap
+        with:
+          token: ${{ secrets.RUNX_REPOSITORY_PAT || github.token }}
+          receipt-sign-kid: ${{ vars.RUNX_RECEIPT_SIGN_KID }}
+          receipt-sign-seed-base64: ${{ secrets.RUNX_RECEIPT_SIGN_ED25519_SEED_BASE64 }}
+          receipt-sign-issuer-type: ${{ vars.RUNX_RECEIPT_SIGN_ISSUER_TYPE }}
 
       - name: Install scafld
         if: ${{ steps.preflight.outputs.enabled == 'true' }}
@@ -482,47 +456,21 @@ jobs:
         if: ${{ steps.preflight.outputs.enabled == 'true' }}
         uses: actions/checkout@v6
 
-      - name: Resolve runx checkout pin
+      - name: Bootstrap runx
+        id: runx
         if: ${{ steps.preflight.outputs.enabled == 'true' }}
-        id: runx_pin
-        env:
-          RUNX_REPOSITORY: ${{ vars.RUNX_REPOSITORY }}
-          RUNX_REF: ${{ vars.RUNX_REF }}
-        run: node scripts/runx-checkout-pin.mjs resolve
-
-      - name: Check out runx
-        if: ${{ steps.preflight.outputs.enabled == 'true' }}
-        uses: actions/checkout@v6
+        uses: ./.github/actions/runx-bootstrap
         with:
-          repository: ${{ steps.runx_pin.outputs.repository }}
-          ref: ${{ steps.runx_pin.outputs.ref }}
-          path: .runx/runx
           token: ${{ secrets.RUNX_REPOSITORY_PAT || github.token }}
-
-      - name: Assert runx checkout pin
-        if: ${{ steps.preflight.outputs.enabled == 'true' }}
-        run: |
-          node scripts/runx-checkout-pin.mjs assert \
-            --checkout-path .runx/runx \
-            --expected-ref "${{ steps.runx_pin.outputs.ref }}" \
-            --expected-head "${{ steps.runx_pin.outputs.expected_head }}"
-
-      - name: Set up Node.js
-        if: ${{ steps.preflight.outputs.enabled == 'true' }}
-        uses: actions/setup-node@v6
-        with:
-          node-version: 24
+          receipt-sign-kid: ${{ vars.RUNX_RECEIPT_SIGN_KID }}
+          receipt-sign-seed-base64: ${{ secrets.RUNX_RECEIPT_SIGN_ED25519_SEED_BASE64 }}
+          receipt-sign-issuer-type: ${{ vars.RUNX_RECEIPT_SIGN_ISSUER_TYPE }}
 
       - name: Configure git author
         if: ${{ steps.preflight.outputs.enabled == 'true' }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
-      - name: Install and build runx
-        id: runx
-        if: ${{ steps.preflight.outputs.enabled == 'true' }}
-        run: bash scripts/install-runx-workspace.sh .runx/runx
 
       - name: Build PR snapshot
         if: ${{ steps.preflight.outputs.enabled == 'true' }}
