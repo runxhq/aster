@@ -1,0 +1,97 @@
+name: runx-bootstrap
+description: >-
+  Resolve the runx pin, check out and build runx, and export receipt-signing
+  env for downstream steps. One place for the cross-repo runtime setup.
+
+inputs:
+  checkout-path:
+    description: Path to check out the runx repo into.
+    required: false
+    default: .runx/runx
+  token:
+    description: Token for checking out the runx repo.
+    required: false
+    default: ${{ github.token }}
+  node-version:
+    description: Node.js version for the runx build.
+    required: false
+    default: "24"
+  receipt-sign-kid:
+    description: Receipt-signing key id. Falls back to the public demo key when empty.
+    required: false
+    default: ""
+  receipt-sign-seed-base64:
+    description: Ed25519 signing seed (base64). Falls back to the public demo seed when empty.
+    required: false
+    default: ""
+  receipt-sign-issuer-type:
+    description: Receipt-signing issuer type. Falls back to "hosted" when empty.
+    required: false
+    default: ""
+
+outputs:
+  install_dir:
+    description: Directory runx was built into.
+    value: ${{ steps.build.outputs.install_dir }}
+  repo_root:
+    description: Path to the built runx repo root.
+    value: ${{ steps.build.outputs.repo_root }}
+  skills_root:
+    description: Path to the runx skills directory.
+    value: ${{ steps.build.outputs.skills_root }}
+  catalog_file:
+    description: Path to the official-skills lock file.
+    value: ${{ steps.build.outputs.catalog_file }}
+  cli_bin:
+    description: Path to the built runx CLI binary.
+    value: ${{ steps.build.outputs.cli_bin }}
+  runx_bin:
+    description: Path to the built runx CLI binary.
+    value: ${{ steps.build.outputs.runx_bin }}
+
+runs:
+  using: composite
+  steps:
+    - name: Resolve runx checkout pin
+      id: pin
+      shell: bash
+      run: node "$GITHUB_WORKSPACE/scripts/runx-checkout-pin.mjs" resolve
+
+    - name: Check out runx
+      uses: actions/checkout@v6
+      with:
+        repository: ${{ steps.pin.outputs.repository }}
+        ref: ${{ steps.pin.outputs.ref }}
+        path: ${{ inputs.checkout-path }}
+        token: ${{ inputs.token }}
+
+    - name: Assert runx checkout pin
+      shell: bash
+      run: |
+        node "$GITHUB_WORKSPACE/scripts/runx-checkout-pin.mjs" assert \
+          --checkout-path "${{ inputs.checkout-path }}" \
+          --expected-ref "${{ steps.pin.outputs.ref }}" \
+          --expected-head "${{ steps.pin.outputs.expected_head }}"
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v6
+      with:
+        node-version: ${{ inputs.node-version }}
+
+    - name: Install and build runx
+      id: build
+      shell: bash
+      run: bash "$GITHUB_WORKSPACE/scripts/install-runx-workspace.sh" "${{ inputs.checkout-path }}"
+
+    - name: Export receipt-signing env
+      shell: bash
+      env:
+        IN_KID: ${{ inputs.receipt-sign-kid }}
+        IN_SEED: ${{ inputs.receipt-sign-seed-base64 }}
+        IN_ISSUER: ${{ inputs.receipt-sign-issuer-type }}
+      run: |
+        {
+          echo "RUNX_RECEIPT_SIGN_KID=${IN_KID:-runx-demo-key}"
+          echo "RUNX_RECEIPT_SIGN_ED25519_SEED_BASE64=${IN_SEED:-QkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkI=}"
+          echo "RUNX_RECEIPT_SIGN_ISSUER_TYPE=${IN_ISSUER:-hosted}"
+        } >> "$GITHUB_ENV"

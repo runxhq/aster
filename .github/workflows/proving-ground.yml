@@ -16,36 +16,15 @@ jobs:
       - name: Check out aster
         uses: actions/checkout@v6
 
-      - name: Resolve runx checkout pin
-        id: runx_pin
-        env:
-          RUNX_REPOSITORY: ${{ vars.RUNX_REPOSITORY }}
-          RUNX_REF: ${{ vars.RUNX_REF }}
-        run: node scripts/runx-checkout-pin.mjs resolve
-
-      - name: Check out runx OSS
-        uses: actions/checkout@v6
-        with:
-          repository: ${{ steps.runx_pin.outputs.repository }}
-          ref: ${{ steps.runx_pin.outputs.ref }}
-          path: runx
-          token: ${{ secrets.RUNX_REPOSITORY_PAT || github.token }}
-
-      - name: Assert runx checkout pin
-        run: |
-          node scripts/runx-checkout-pin.mjs assert \
-            --checkout-path runx \
-            --expected-ref "${{ steps.runx_pin.outputs.ref }}" \
-            --expected-head "${{ steps.runx_pin.outputs.expected_head }}"
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: 24
-
-      - name: Install and build runx
+      - name: Bootstrap runx
         id: runx
-        run: bash scripts/install-runx-workspace.sh runx
+        uses: ./.github/actions/runx-bootstrap
+        with:
+          checkout-path: runx
+          token: ${{ secrets.RUNX_REPOSITORY_PAT || github.token }}
+          receipt-sign-kid: ${{ vars.RUNX_RECEIPT_SIGN_KID }}
+          receipt-sign-seed-base64: ${{ secrets.RUNX_RECEIPT_SIGN_ED25519_SEED_BASE64 }}
+          receipt-sign-issuer-type: ${{ vars.RUNX_RECEIPT_SIGN_ISSUER_TYPE }}
 
       - name: Run proving-ground catalog
         env:
@@ -53,9 +32,6 @@ jobs:
           ARTIFACT_DIR: ${{ github.workspace }}/aster-artifacts
           ASTER_ROOT: ${{ github.workspace }}
           PROVING_GROUND_PROFILE: minimal
-          RUNX_RECEIPT_SIGN_KID: ${{ vars.RUNX_RECEIPT_SIGN_KID || 'runx-demo-key' }}
-          RUNX_RECEIPT_SIGN_ED25519_SEED_BASE64: ${{ secrets.RUNX_RECEIPT_SIGN_ED25519_SEED_BASE64 || 'QkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkI=' }}
-          RUNX_RECEIPT_SIGN_ISSUER_TYPE: ${{ vars.RUNX_RECEIPT_SIGN_ISSUER_TYPE || 'hosted' }}
         run: |
           chmod +x scripts/proving-ground.sh
           bash scripts/proving-ground.sh
