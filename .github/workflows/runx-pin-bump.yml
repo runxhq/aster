@@ -1,0 +1,81 @@
+name: runx-pin-bump
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+on:
+  schedule:
+    - cron: "0 7 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: runx-pin-bump
+  cancel-in-progress: false
+
+jobs:
+  pin-bump:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.ASTER_GH_TOKEN != '' && secrets.ASTER_GH_TOKEN || secrets.RUNX_REPOSITORY_PAT || github.token }}
+    steps:
+      - name: Check out aster
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Resolve candidate runx SHA (latest green ci.yml on main)
+        id: candidate
+        run: |
+          set -euo pipefail
+          CANDIDATE=$(gh run list --repo runxhq/runx --workflow ci.yml --branch main --status success --limit 1 --json headSha --jq '.[0].headSha')
+          if [ -z "$CANDIDATE" ] || [ "$CANDIDATE" = "null" ]; then
+            echo "could not resolve a green runx ci.yml SHA on main" >&2
+            exit 1
+          fi
+          echo "sha=$CANDIDATE" >> "$GITHUB_OUTPUT"
+          echo "candidate runx SHA: $CANDIDATE"
+
+      - name: Update pin file
+        id: bump
+        run: node scripts/runx-pin-bump.mjs "${{ steps.candidate.outputs.sha }}"
+
+      - name: Pre-bump smoke (build runx at candidate)
+        if: ${{ steps.bump.outputs.changed == 'true' }}
+        id: runx
+        uses: ./.github/actions/runx-bootstrap
+        with:
+          token: ${{ secrets.RUNX_REPOSITORY_PAT || github.token }}
+          receipt-sign-kid: ${{ vars.RUNX_RECEIPT_SIGN_KID }}
+          receipt-sign-seed-base64: ${{ secrets.RUNX_RECEIPT_SIGN_ED25519_SEED_BASE64 }}
+          receipt-sign-issuer-type: ${{ vars.RUNX_RECEIPT_SIGN_ISSUER_TYPE }}
+
+      - name: Verify the candidate runtime runs
+        if: ${{ steps.bump.outputs.changed == 'true' }}
+        run: |
+          "${{ steps.runx.outputs.cli_bin }}" --version
+
+      - name: Open pin-bump PR
+        if: ${{ steps.bump.outputs.changed == 'true' }}
+        run: |
+          set -euo pipefail
+          SHORT=$(printf '%s' "${{ steps.candidate.outputs.sha }}" | cut -c1-12)
+          BRANCH="runx-pin-bump/${SHORT}"
+          EXISTING=$(gh pr list --repo "${{ github.repository }}" --head "$BRANCH" --state open --json number --jq '.[0].number // empty')
+          if [ -n "$EXISTING" ]; then
+            echo "PR #$EXISTING already open for $BRANCH; nothing to do"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$BRANCH"
+          git add state/runx-oss-pin.json
+          git commit -m "chore(ci): bump runx oss pin to ${SHORT}"
+          git push origin "$BRANCH"
+          gh pr create --repo "${{ github.repository }}" \
+            --head "$BRANCH" --base main \
+            --title "chore(ci): bump runx oss pin to ${SHORT}" \
+            --body "Automated bump of the runx OSS pin to the latest green \`runxhq/runx\` main commit (\`${{ steps.candidate.outputs.sha }}\`). Pre-bump smoke built the runtime at the candidate SHA and confirmed \`runx --version\`."
