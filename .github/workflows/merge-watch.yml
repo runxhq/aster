@@ -9,12 +9,10 @@ on:
       target_repo:
         description: External repo with an upstream SKILL.md contribution PR
         required: true
-        default: nilstate/icey-cli
         type: string
       pr_number:
         description: Contribution PR number
         required: true
-        default: "2"
         type: string
       candidate_path:
         description: Portable skill file path in the target repo
@@ -24,17 +22,14 @@ on:
       registry_owner:
         description: runx registry owner namespace to request after merge
         required: true
-        default: nilstate
         type: string
-  schedule:
-    - cron: "37 4 * * *"
 
 permissions:
   contents: read
   pull-requests: read
 
 concurrency:
-  group: merge-watch-${{ github.event_name == 'workflow_dispatch' && inputs.target_repo || 'nilstate/icey-cli' }}-${{ github.event_name == 'workflow_dispatch' && inputs.pr_number || '2' }}
+  group: merge-watch-${{ inputs.target_repo }}-${{ inputs.pr_number }}
   cancel-in-progress: false
 
 jobs:
@@ -42,10 +37,10 @@ jobs:
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ secrets.UPSTREAM_CONTRIBUTION_TOKEN || secrets.RUNX_REPOSITORY_PAT || github.token }}
-      TARGET_REPO: ${{ github.event_name == 'workflow_dispatch' && inputs.target_repo || 'nilstate/icey-cli' }}
-      PR_NUMBER: ${{ github.event_name == 'workflow_dispatch' && inputs.pr_number || '2' }}
-      CANDIDATE_PATH: ${{ github.event_name == 'workflow_dispatch' && inputs.candidate_path || 'SKILL.md' }}
-      REGISTRY_OWNER: ${{ github.event_name == 'workflow_dispatch' && inputs.registry_owner || 'nilstate' }}
+      TARGET_REPO: ${{ inputs.target_repo }}
+      PR_NUMBER: ${{ inputs.pr_number }}
+      CANDIDATE_PATH: ${{ inputs.candidate_path }}
+      REGISTRY_OWNER: ${{ inputs.registry_owner }}
     steps:
       - name: Check out aster
         uses: actions/checkout@v6
