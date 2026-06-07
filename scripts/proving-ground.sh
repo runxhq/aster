@@ -25,6 +25,7 @@ else
 fi
 
 HARNESS_ROOT="$RUNX_REPO_ROOT/fixtures/harness"
+CLI_PARITY_ROOT="$RUNX_REPO_ROOT/fixtures/cli-parity/harness"
 
 mkdir -p "$ARTIFACT_DIR"
 
@@ -51,11 +52,17 @@ run_harness() {
   fi
 }
 
-run_harness echo-skill "$HARNESS_ROOT/echo-skill.yaml"
-run_harness sequential-graph "$HARNESS_ROOT/sequential-graph.yaml"
+# Under production receipt signing the runtime embeds a hosted issuer in the
+# receipt body, so the local-development oracle fixtures in fixtures/harness pin
+# a body_digest that a production-signed CLI replay cannot reproduce. Run the
+# cli-parity fixtures instead: they assert structure and the runtime verifies
+# the signature internally, without the local-issuer known-answer digest.
+# Only echo-skill has a cli-parity fixture upstream today; broader coverage
+# tracks new ones landing in runxhq/runx fixtures/cli-parity/harness.
+run_harness echo-skill "$CLI_PARITY_ROOT/echo-skill.yaml"
 
 if [[ "$PROVING_GROUND_PROFILE" != "minimal" ]]; then
-  run_harness payment-approval-graph "$HARNESS_ROOT/payment-approval-graph.yaml"
+  echo "note: sequential-graph and payment-approval-graph have no cli-parity fixture yet; skipped under production signing" >&2
 fi
 
 echo "proving-ground artifacts written to $ARTIFACT_DIR"
