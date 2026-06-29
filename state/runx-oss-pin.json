@@ -1,8 +1,8 @@
 {
   "schema": "runx.aster_runx_oss_pin.v1",
   "repository": "runxhq/runx",
-  "ref": "f5c7f8192605f4b1ec49437ab2df331ca0d0b9cc",
-  "expected_head": "f5c7f8192605f4b1ec49437ab2df331ca0d0b9cc",
+  "ref": "17b6e9156881766e91ac725604fe9fb40555816d",
+  "expected_head": "17b6e9156881766e91ac725604fe9fb40555816d",
   "parent_workspace_commit": "80e76ffdf8de9d619c17b18e9cfc73f94aad9369",
-  "note": "Advanced to runxhq/runx main HEAD (green ci.yml, 2026-06-05) so the pinned runtime matches latest scafld for the dogfood lanes. parent_workspace_commit retained from the prior cutover baseline."
+  "note": "Auto-bumped to runxhq/runx main HEAD 17b6e9156881766e91ac725604fe9fb40555816d (latest green ci.yml)."
 }
