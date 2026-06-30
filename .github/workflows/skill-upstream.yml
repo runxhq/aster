@@ -54,7 +54,7 @@ jobs:
       GH_TOKEN: ${{ secrets.UPSTREAM_CONTRIBUTION_TOKEN || secrets.RUNX_REPOSITORY_PAT || github.token }}
     steps:
       - name: Check out aster
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -108,7 +108,7 @@ jobs:
           echo "issue_url=$(jq -r '.source_issue.url // ""' .artifacts/skill-upstream/work-issue-request.json)" >> "$GITHUB_OUTPUT"
 
       - name: Check out target repo
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: ${{ steps.request.outputs.target_repo }}
           ref: ${{ steps.request.outputs.target_ref }}

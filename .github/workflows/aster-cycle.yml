@@ -25,7 +25,7 @@ jobs:
       GH_TOKEN: ${{ secrets.MATON_GH_TOKEN != '' && secrets.MATON_GH_TOKEN || github.token }}
     steps:
       - name: Check out aster
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 

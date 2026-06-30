@@ -91,7 +91,7 @@ jobs:
 
       - name: Check out aster
         if: ${{ steps.preflight.outputs.enabled == 'true' }}
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -454,7 +454,7 @@ jobs:
 
       - name: Check out aster
         if: ${{ steps.preflight.outputs.enabled == 'true' }}
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Bootstrap runx
         id: runx
