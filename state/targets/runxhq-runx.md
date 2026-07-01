@@ -1,6 +1,6 @@
 ---
 title: Target Dossier — runxhq/runx
-updated: 2026-04-17
+updated: 2026-06-20
 visibility: public
 subject_kind: github_repository
 subject_locator: runxhq/runx
@@ -32,3 +32,7 @@ runtime.
 - operator-specific nouns are not
 - public receipts and generic evidence links are the right interface back into
   the aster face
+
+## Recent Outcomes
+
+- 2026-06-20 · `issue-triage` · `needs_agent` · lane finished with needs_agent
