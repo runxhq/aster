@@ -1,0 +1,197 @@
+{
+  "skill_spec": {
+    "name": "decision-brief",
+    "kind": "skill",
+    "summary": "Read one living work ledger plus trusted amendments and return one bounded maintainer decision packet.",
+    "maintainer_pain": "Removes fragmented decision handoff when one unit of work is meant to stay in one living issue, but the next human decision would otherwise be scattered across separate proposal threads or hidden memory.",
+    "contract": {
+      "inputs": [
+        {
+          "name": "thread_locator",
+          "required": true,
+          "description": "Portable locator for the living work ledger."
+        },
+        {
+          "name": "thread",
+          "required": true,
+          "description": "Portable subject-memory snapshot for that ledger, with the current issue body and available comments."
+        },
+        {
+          "name": "trusted_amendment_comment_ids",
+          "required": true,
+          "description": "Comment ids inside the thread that should be treated as trusted amendments when forming the next decision packet."
+        }
+      ],
+      "output": {
+        "name": "decision_packet",
+        "description": "Exactly one bounded packet for the next human step.",
+        "fields": [
+          {
+            "name": "kind",
+            "required": true,
+            "allowed_values": [
+              "approval_ask",
+              "blocker_summary",
+              "open_question_bundle",
+              "maintainer_handoff"
+            ]
+          },
+          {
+            "name": "summary",
+            "required": true,
+            "description": "Compact statement of the next decision."
+          },
+          {
+            "name": "evidence_refs",
+            "required": true,
+            "description": "References back to the ledger and trusted amendments instead of copying the full thread into hidden memory."
+          },
+          {
+            "name": "handoff_boundary",
+            "required": true,
+            "description": "Explicit stop at review and handoff."
+          }
+        ]
+      }
+    },
+    "behavior": [
+      "Uses one living ledger as the source of truth.",
+      "Uses trusted amendment comments to sharpen the next decision instead of restating the whole thread.",
+      "Preserves receipt and thread references so the issue remains the human-visible ledger.",
+      "Returns one decision packet only."
+    ],
+    "boundaries": {
+      "does": [
+        "Read the current ledger and trusted amendments.",
+        "Choose one packet shape for the next human step.",
+        "Return a review-ready decision packet."
+      ],
+      "does_not": [
+        "Route or dedupe issues the way `issue-triage` does.",
+        "Shape new skill proposals the way `skill-lab` does.",
+        "Silently publish.",
+        "Mutate the repo.",
+        "Post back to the thread."
+      ]
+    }
+  },
+  "pain_points": [
+    "A maintainer can lose the next decision in thread sprawl when one work issue is supposed to remain the single living ledger for that unit of work.",
+    "Without an explicit packet boundary, summaries can drift into hidden-memory behavior instead of preserving references to the issue and trusted amendment comments.",
+    "The current catalog has proposal-shaping and triage capabilities, but not a narrow runtime contract that turns one living ledger into one bounded maintainer handoff."
+  ],
+  "catalog_fit": {
+    "adjacent_capabilities": [
+      {
+        "name": "issue-triage",
+        "boundary": "Compared with `issue-triage`, this skill does not route, dedupe, or classify issue work. It assumes one living work ledger already exists and packages the next maintainer decision from that ledger."
+      },
+      {
+        "name": "skill-lab",
+        "boundary": "Compared with `skill-lab`, this is not a proposal-authoring lane. `skill-lab` can shape and review the catalog proposal, but the proposed runtime contract here is narrower: one living ledger in, one decision packet out."
+      },
+      {
+        "name": "review-skill",
+        "boundary": "Compared with `review-skill`, this skill generates the decision packet. `review-skill` remains the quality gate for the resulting proposal or packet."
+      }
+    ],
+    "why_new_capability": "The gap named in issue #115 is a narrow subject-memory-to-decision-packet contract. The request and research both reuse existing skills for synthesis and review, which argues against duplicating those roles. A new first-party capability is justified only for the one-ledger-to-one-packet runtime boundary."
+  },
+  "maintainer_decisions": [
+    {
+      "id": "catalog-decision-brief",
+      "question": "Should `decision-brief` enter the runx catalog as a new first-party skill with a review-only, no-publish contract, or should this stay inside `skill-lab`?",
+      "options": [
+        "Adopt `decision-brief` as a new first-party skill.",
+        "Reject the new skill and keep this job inside `skill-lab`."
+      ],
+      "recommended_option": "Adopt `decision-brief` as a new first-party skill.",
+      "why": "The request requires an explicit boundary showing why `issue-triage` and `skill-lab` do not already cover the one-ledger-to-one-decision-packet contract."
+    }
+  ],
+  "execution_plan": {
+    "composite": false,
+    "profile": "single read-only skill",
+    "rationale": "The provided work plan reuses `skill-lab` and `review-skill` to develop the proposal itself. The proposed catalog entry should stay smaller than that planning flow: a single read-only skill with a hard stop at review and handoff.",
+    "scopes": [
+      "read:thread",
+      "read:repo"
+    ],
+    "phases": [
+      {
+        "id": "read-ledger",
+        "description": "Read the living work ledger identified by `thread_locator` from the provided `thread` snapshot."
+      },
+      {
+        "id": "apply-trusted-amendments",
+        "description": "Use only the listed `trusted_amendment_comment_ids` to sharpen the next decision."
+      },
+      {
+        "id": "select-packet-kind",
+        "description": "Choose exactly one packet kind: `approval_ask`, `blocker_summary`, `open_question_bundle`, or `maintainer_handoff`."
+      },
+      {
+        "id": "emit-packet",
+        "description": "Return one bounded decision packet with evidence references and an explicit handoff boundary."
+      },
+      {
+        "id": "stop-at-review",
+        "description": "End without publish, repo mutation, or thread posting."
+      }
+    ],
+    "policy": [
+      "Require `thread_locator`, `thread`, and `trusted_amendment_comment_ids`.",
+      "Preserve references to the ledger and trusted amendments.",
+      "Emit one packet only.",
+      "Treat publish or mutation asks as out of scope and return `needs_resolution`."
+    ]
+  },
+  "harness_fixture": [
+    {
+      "name": "decision-brief-happy-path",
+      "yaml": "name: decision-brief-happy-path\nkind: skill\ntarget: ../decision-brief\ninputs:\n  thread_locator: nilstate/aster#issue/115\n  thread_title: \"[skill] Propose decision-brief for one living work issue ledger\"\n  thread_body: |\n    Objective: Propose a portable decision-brief skill that reads one living work issue ledger and produces the next high-signal maintainer decision packet.\n    Desired Contract:\n    - Input is portable subject memory, with a GitHub issue thread as one adapter surface.\n    - The skill reads the work issue ledger plus trusted amendment comments.\n    - It emits one bounded decision packet for the next human step: approval ask, blocker summary, open-question bundle, or maintainer handoff.\n    - It preserves receipts and keeps the issue thread as the human-visible ledger.\n    - It stops at an explicit handoff boundary and does not silently publish.\n  thread:\n    kind: github_issue\n    state: open\n    comments:\n      - id: \"4297396554\"\n        author_association: MEMBER\n        body: |\n          Required:\n          - Name the exact maintainer pain this removes.\n          - Explain why `issue-triage` and `skill-lab` do not already cover it.\n          - Keep the contract narrow: one living work ledger in, one bounded decision packet out.\n          - Stop at review. No publish, no repo mutation, no thread posting.\n          - Replace open questions with one explicit maintainer decision.\n      - id: \"4301346210\"\n        author_association: MEMBER\n        body: |\n          Required for publish quality:\n          - Write from the maintainer's viewpoint.\n          - In catalog fit, name adjacent skills directly.\n          - Keep the proposal reader-facing.\n  trusted_amendment_comment_ids:\n    - \"4297396554\"\n    - \"4301346210\"\nexpect:\n  status: success\n  receipt:\n    kind: skill_execution\n    status: success\n    skill_name: decision-brief\n    source_type: agent-step\n  outputs:\n    decision_packet:\n      kind: approval_ask\n      handoff_boundary: review_only\n    contains:\n      - fragmented decision handoff\n      - Compared with `issue-triage`\n      - Compared with `skill-lab`\n      - no publish\n"
+    },
+    {
+      "name": "decision-brief-missing-thread",
+      "yaml": "name: decision-brief-missing-thread\nkind: skill\ntarget: ../decision-brief\ninputs:\n  thread_locator: nilstate/aster#issue/115\n  trusted_amendment_comment_ids:\n    - \"4297396554\"\nexpect:\n  status: needs_resolution\n  receipt:\n    kind: skill_execution\n    status: needs_resolution\n    skill_name: decision-brief\n    source_type: agent-step\n  outputs:\n    missing_inputs:\n      - thread\n"
+    },
+    {
+      "name": "decision-brief-refuses-publish-request",
+      "yaml": "name: decision-brief-refuses-publish-request\nkind: skill\ntarget: ../decision-brief\ninputs:\n  thread_locator: nilstate/aster#issue/115\n  thread_title: \"[skill] Propose decision-brief for one living work issue ledger\"\n  thread_body: |\n    Desired Contract:\n    - It emits one bounded decision packet for the next human step.\n    - It stops at an explicit handoff boundary and does not silently publish.\n  thread:\n    kind: github_issue\n    state: open\n    comments:\n      - id: \"4297396554\"\n        author_association: MEMBER\n        body: |\n          Stop at review. No publish, no repo mutation, no thread posting.\n  trusted_amendment_comment_ids:\n    - \"4297396554\"\n  outbox_entry:\n    action: thread_post\n    body: \"Post the decision packet back to the issue.\"\nexpect:\n  status: needs_resolution\n  receipt:\n    kind: skill_execution\n    status: needs_resolution\n    skill_name: decision-brief\n    source_type: agent-step\n  outputs:\n    resolution_reason: publish_not_permitted\n"
+    }
+  ],
+  "acceptance_checks": [
+    {
+      "id": "one-ledger-in-one-packet-out",
+      "assertion": "With `thread_locator`, `thread`, and `trusted_amendment_comment_ids` present, the skill succeeds and returns exactly one `decision_packet`."
+    },
+    {
+      "id": "packet-kind-is-bounded",
+      "assertion": "The returned packet kind is exactly one of `approval_ask`, `blocker_summary`, `open_question_bundle`, or `maintainer_handoff`."
+    },
+    {
+      "id": "maintainer-pain-is-explicit",
+      "assertion": "For issue #115-style inputs, the packet names the concrete pain as fragmented decision handoff rather than generic summarization."
+    },
+    {
+      "id": "catalog-boundaries-are-explicit",
+      "assertion": "For this proposal use case, the output distinguishes the new contract from `issue-triage` and `skill-lab` directly."
+    },
+    {
+      "id": "ledger-remains-visible",
+      "assertion": "The packet preserves references to the living issue ledger and trusted amendments instead of copying the whole thread into hidden memory."
+    },
+    {
+      "id": "review-only-stop-boundary",
+      "assertion": "The output includes an explicit handoff boundary stating review only, with no publish, repo mutation, or thread posting."
+    },
+    {
+      "id": "missing-required-input-needs-resolution",
+      "assertion": "If `thread` is missing, the skill returns `needs_resolution` and names the missing input."
+    },
+    {
+      "id": "publish-request-is-rejected",
+      "assertion": "If a caller supplies an `outbox_entry` that asks for thread posting or publish behavior, the skill returns `needs_resolution` instead of producing publish instructions."
+    }
+  ]
+}
