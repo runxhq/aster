@@ -28,7 +28,7 @@ test("buildWorkIssueLaneComment uses proposal_refreshed for non-published upstre
   const comment = buildWorkIssueLaneComment({
     lane: "skill-upstream",
     requestTitle: "Add a portable SKILL.md",
-    targetRepo: "nilstate/icey-cli",
+    targetRepo: "auscaster/icey-server",
     publish: {
       status: "not_requested",
     },

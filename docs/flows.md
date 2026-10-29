@@ -110,7 +110,7 @@ the same work issue. If that thread authorizes `skill-upstream.publish`, the
 workflow also opens or refreshes one draft PR against the target repo;
 otherwise it remains proposal-only until the same issue is amended and rerun.
 
-The first proving-ground target is `nilstate/icey-cli`.
+The first proving-ground target is `auscaster/icey-server`.
 
 ## `merge-watch`
 

@@ -88,7 +88,7 @@ The hosted workflow is `.github/workflows/merge-watch.yml`.
 
 ## Proving-Ground Target
 
-The first target is `nilstate/icey-cli` because it has a concrete operator
+The first target is `auscaster/icey-server` because it has a concrete operator
 surface:
 
 - C++ server build
@@ -97,7 +97,7 @@ surface:
 - Docker demo
 - release artifacts
 - package-manager publication
-- pinned `nilstate/icey` dependency through `ICEY_VERSION`
+- pinned `auscaster/icey` dependency through `ICEY_VERSION`
 
 That makes it a strong first proof for a portable upstream `SKILL.md`: the
 file can describe real workflows without needing runx-specific execution
@@ -146,7 +146,7 @@ From the `aster` repo:
 ```bash
 node scripts/prepare-skill-upstream.mjs \
   --target-repo-dir /home/kam/dev/icey-cli \
-  --target-repo nilstate/icey-cli \
+  --target-repo auscaster/icey-server \
   --output-dir .artifacts/skill-upstream/icey-cli \
   --workflow operator-bringup \
   --mode requested
@@ -160,10 +160,10 @@ Watch the merged upstream PR and produce the binding handoff:
 
 ```bash
 node scripts/merge-watch.mjs \
-  --repo nilstate/icey-cli \
+  --repo auscaster/icey-server \
   --pr 2 \
   --candidate-path SKILL.md \
-  --registry-owner nilstate \
+  --registry-owner auscaster \
   --artifacts-dir .artifacts/merge-watch/icey-cli
 ```
 
@@ -173,7 +173,7 @@ Publish only after reviewing the generated `SKILL.md` and PR body:
 (
   cd /home/kam/dev/icey-cli
   node /home/kam/dev/aster/scripts/publish-runx-pr.mjs \
-    --repo nilstate/icey-cli \
+    --repo auscaster/icey-server \
     --branch runx/add-skill-md \
     --title "Add portable SKILL.md" \
     --commit-message "docs: add portable SKILL.md" \
