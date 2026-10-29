@@ -59,7 +59,7 @@ test("prepareWorkIssueRequest exposes upstream-specific optional fields", () => 
       number: 18,
       title: "[upstream] Add SKILL.md to icey-cli",
       body: [
-        "Target Repo: nilstate/icey-cli",
+        "Target Repo: auscaster/icey-server",
         "Target Ref: main",
         "Workflow: operator-bringup",
         "Mode: auto",
@@ -69,7 +69,7 @@ test("prepareWorkIssueRequest exposes upstream-specific optional fields", () => 
     },
   }, { lane: "skill-upstream" });
 
-  assert.equal(prepared.target_repo, "nilstate/icey-cli");
+  assert.equal(prepared.target_repo, "auscaster/icey-server");
   assert.equal(prepared.workflow, "operator-bringup");
   assert.equal(prepared.mode, "auto");
   assert.equal(prepared.candidate_path, "SKILL.md");

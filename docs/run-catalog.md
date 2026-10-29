@@ -110,7 +110,7 @@ lanes against real repo work.
   runx-specific binding files while keeping the proposal and publish state on
   one work issue ledger
 - gate: the same work issue thread authorizes `skill-upstream.publish`
-- first target: `nilstate/icey-cli`
+- first target: `auscaster/icey-server`
 - output: target `SKILL.md`, contribution artifact packet, PR body, rolling
   work-issue status comment, optional draft PR, public evidence row
 
@@ -120,7 +120,7 @@ lanes against real repo work.
 - command: `node scripts/merge-watch.mjs`
 - purpose: observe upstream PR state after a portable `SKILL.md` contribution
   and hand accepted skills to runx registry binding
-- first target: `nilstate/icey-cli#2`
+- first target: `auscaster/icey-server#2`
 - output: `skill_upstream_state.json`, proof-wall event, and
   `registry_binding_request.json` after upstream merge
 

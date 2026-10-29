@@ -108,7 +108,7 @@ async function collectEvidenceFiles(root) {
 }
 
 function buildSkill(context, options) {
-  if (context.repo === "nilstate/icey-cli" || context.name === "icey-cli") {
+  if (context.repo === "auscaster/icey-server" || context.name === "icey-server") {
     return {
       name: "icey-server-operator",
       title: "icey-server Operator Workflow",
@@ -116,7 +116,7 @@ function buildSkill(context, options) {
       markdown: buildIceyCliSkill(context),
     };
   }
-  if (context.repo === "nilstate/icey" || context.name === "icey") {
+  if (context.repo === "auscaster/icey" || context.name === "icey") {
     return {
       name: "icey-core-maintainer",
       title: "icey Core Maintainer Workflow",
@@ -145,7 +145,7 @@ function buildIceyCliSkill(context) {
     "",
     "# icey-server Operator Workflow",
     "",
-    "This is a portable skill document for agents working in `nilstate/icey-cli`.",
+    "This is a portable skill document for agents working in `auscaster/icey-server`.",
     "Use it to preserve the repo's build, validation, packaging, and operator bring-up conventions.",
     "",
     "The file is useful as plain project documentation. Tools that understand `SKILL.md`, including runx, can optionally pair it with execution, verification, and receipts.",
@@ -164,7 +164,7 @@ function buildIceyCliSkill(context) {
     "- `.github/workflows/publish-package-managers.yml`: Homebrew, AUR, APT, and rendered manifest publication gates.",
     "- `packaging/README.md`: package-manager model, artifact names, generator scripts, and validation expectations.",
     "- `docker/README.md`: fastest demo path, host-networking assumptions, runtime overrides, and Compose source path.",
-    "- `VERSION` and `ICEY_VERSION`: release context for this repo and the pinned core `nilstate/icey` dependency.",
+    "- `VERSION` and `ICEY_VERSION`: release context for this repo and the pinned core `auscaster/icey` dependency.",
     "",
     versionLine,
     "",
@@ -174,12 +174,12 @@ function buildIceyCliSkill(context) {
     "",
     "- change `icey-server` C++ server behavior, CLI flags, config handling, operator endpoints, or install layout",
     "- update the bundled web UI or browser smoke expectations",
-    "- validate native builds against a sibling `nilstate/icey` checkout",
+    "- validate native builds against a sibling `auscaster/icey` checkout",
     "- modify Docker demo behavior or runtime environment variables",
     "- modify packaging, release metadata, package-manager manifests, or publication workflows",
     "- help an operator bring up `stream`, `record`, `relay`, TURN, RTSP, or TLS paths without mixing failure domains",
     "",
-    "Do not use this skill to change core media primitives in `nilstate/icey`; that belongs in the core repo. This repo consumes the pinned core release through `ICEY_VERSION`.",
+    "Do not use this skill to change core media primitives in `auscaster/icey`; that belongs in the core repo. This repo consumes the pinned core release through `ICEY_VERSION`.",
     "",
     "## Inputs To Inspect First",
     "",
@@ -198,11 +198,11 @@ function buildIceyCliSkill(context) {
     "",
     "## Safe Operating Rules",
     "",
-    "- Keep the express demo path simple: `docker run --rm --network host 0state/icey-server:latest`, then `http://localhost:4500`.",
+    "- Keep the express demo path simple: `docker run --rm --network host ghcr.io/auscaster/icey-server:latest`, then `http://localhost:4500`.",
     "- Do not claim Safari support from Linux Playwright WebKit results; the README explicitly withholds that claim until Apple-platform validation exists.",
     "- Keep runtime bring-up staged: local `stream` without TURN, then `record`, then `relay`, then TURN-enabled external or NAT testing.",
     "- Treat `--doctor` as the first machine-readable preflight for operator-facing runtime changes.",
-    "- Preserve the pinned `ICEY_VERSION` model. Do not silently float to `nilstate/icey` main in release or CI paths.",
+    "- Preserve the pinned `ICEY_VERSION` model. Do not silently float to `auscaster/icey` main in release or CI paths.",
     "- Keep package-manager output tied to real artifacts. Do not emit placeholder manifests for package managers without a matching archive and checksum.",
     "- Do not weaken CI coverage when changing C++, web UI, packaging, or release surfaces.",
     "- Do not add hosted service assumptions; the README positions the app as one binary plus local ports.",
@@ -217,7 +217,7 @@ function buildIceyCliSkill(context) {
     "- `web`: Vite UI, Symple client/player integration, browser smoke",
     "- `docker`: published image, Compose source path, host-networking demo",
     "- `packaging`: staged layout, tar/zip/deb/APT/package-manager manifests",
-    "- `release`: VERSION, ICEY_VERSION, changelog, GitHub release assets, Docker Hub",
+    "- `release`: VERSION, ICEY_VERSION, changelog, GitHub release assets, GHCR images",
     "- `docs`: README, docker README, packaging README, operator instructions",
     "",
     "If the change crosses surfaces, plan validation for each touched surface before editing.",
@@ -278,7 +278,7 @@ function buildIceyCliSkill(context) {
     "For the published-image demo contract, keep the public command stable:",
     "",
     "```bash",
-    "docker run --rm --network host 0state/icey-server:latest",
+    "docker run --rm --network host ghcr.io/auscaster/icey-server:latest",
     "```",
     "",
     "For local source-backed Docker validation:",

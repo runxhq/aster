@@ -1,0 +1,123 @@
+{
+  "body": {
+    "schema_version": 1,
+    "task_id": "auscaster-links",
+    "session_id": "auscaster-links",
+    "verdict": "pass",
+    "snapshot_mode": "base_delta",
+    "base_ref": "d55d43f1e36df365f6badbd14e10fe6de3f97686",
+    "base_commit": "d55d43f1e36df365f6badbd14e10fe6de3f97686",
+    "head_commit": "d55d43f1e36df365f6badbd14e10fe6de3f97686",
+    "scope": [
+      ".github/ISSUE_TEMPLATE/upstream-skill.yml",
+      "docs/flows.md",
+      "docs/run-catalog.md",
+      "docs/skill-upstream.md",
+      "scripts/post-work-issue-lane-comment.test.mjs",
+      "scripts/prepare-skill-upstream.mjs",
+      "scripts/prepare-skill-upstream.test.mjs",
+      "scripts/prepare-work-issue-request.test.mjs"
+    ],
+    "tree_sha": "e0dd71ab2c663a7e7b5651297617d37db10352c9",
+    "file_digests": {
+      ".github/ISSUE_TEMPLATE/upstream-skill.yml": "ec18e7645ed50f6445ceac42efacc49ca4e067b9afe6eeb4724b72d3c58e5a88",
+      "docs/flows.md": "2fb883ee2648ff340cc885c42ac00d816e0401d37a307674b12e829154700407",
+      "docs/run-catalog.md": "451263a5c499d0e9e180e365aa8d295ebc1800cedb25bd5b4429b45e413cc3be",
+      "docs/skill-upstream.md": "b4a32ae0e5173e3db0816a1827e9669e80eb5e2b1b02fa2fd303d48522cb5dc3",
+      "scripts/post-work-issue-lane-comment.test.mjs": "0db41f720b9c384106a3afb58f08e49de320d1fb3327c1468bfcf0b4fc0c7406",
+      "scripts/prepare-skill-upstream.mjs": "c9dbc5b465bf3703cfcfbb4af823d327fd19be9f10c602bee1516d2347943738",
+      "scripts/prepare-skill-upstream.test.mjs": "44f411e81e3874928afc3a5612e574dc38f89f8bed2b2f22d579a9a6ca335323",
+      "scripts/prepare-work-issue-request.test.mjs": "1ea00718cccac5f0c0fbe75fdc7d369bb78304b608742b62ff667f32cccc8081"
+    },
+    "ignored_unreviewed": [],
+    "reviewed_context_provenance": [
+      {
+        "kind": "evidence_file",
+        "path": ".github/ISSUE_TEMPLATE/upstream-skill.yml",
+        "sha256": "ec18e7645ed50f6445ceac42efacc49ca4e067b9afe6eeb4724b72d3c58e5a88"
+      },
+      {
+        "kind": "evidence_file",
+        "path": "docs/flows.md",
+        "sha256": "2fb883ee2648ff340cc885c42ac00d816e0401d37a307674b12e829154700407"
+      },
+      {
+        "kind": "evidence_file",
+        "path": "docs/run-catalog.md",
+        "sha256": "451263a5c499d0e9e180e365aa8d295ebc1800cedb25bd5b4429b45e413cc3be"
+      },
+      {
+        "kind": "evidence_file",
+        "path": "docs/skill-upstream.md",
+        "sha256": "b4a32ae0e5173e3db0816a1827e9669e80eb5e2b1b02fa2fd303d48522cb5dc3"
+      },
+      {
+        "kind": "evidence_file",
+        "path": "scripts/post-work-issue-lane-comment.test.mjs",
+        "sha256": "0db41f720b9c384106a3afb58f08e49de320d1fb3327c1468bfcf0b4fc0c7406"
+      },
+      {
+        "kind": "evidence_file",
+        "path": "scripts/prepare-skill-upstream.mjs",
+        "sha256": "c9dbc5b465bf3703cfcfbb4af823d327fd19be9f10c602bee1516d2347943738"
+      },
+      {
+        "kind": "evidence_file",
+        "path": "scripts/prepare-skill-upstream.test.mjs",
+        "sha256": "44f411e81e3874928afc3a5612e574dc38f89f8bed2b2f22d579a9a6ca335323"
+      },
+      {
+        "kind": "evidence_file",
+        "path": "scripts/prepare-work-issue-request.test.mjs",
+        "sha256": "1ea00718cccac5f0c0fbe75fdc7d369bb78304b608742b62ff667f32cccc8081"
+      }
+    ],
+    "reviewer": {
+      "provider": "claude",
+      "model": "claude-opus-5-5"
+    },
+    "host_under_review": {
+      "agent": "codex",
+      "session_id": "auscaster-links"
+    },
+    "independence": {
+      "level": "cross_vendor",
+      "distinct": true,
+      "reason": "cross_vendor: reviewer \"claude\" and host \"codex\" are different model vendors; this is multi-model review that reduces correlated blind spots but remains single-party local tooling"
+    },
+    "spec_fingerprint": "ab3f6ec5c6d66641990e84fc8a109f0d275df318a68a3d79c0790dfd26b3fe19",
+    "acceptance_declared": true,
+    "acceptance": [
+      {
+        "id": "ac1",
+        "command": "node --test scripts/prepare-skill-upstream.test.mjs scripts/prepare-work-issue-request.test.mjs scripts/post-work-issue-lane-comment.test.mjs",
+        "expected_kind": "exit_code_zero",
+        "status": "pass",
+        "reason": "exit code was 0",
+        "output_sha256": "1c855a9bcfbadaf04f694f0e7a2ead15c3adafa419f0f280f85d84259b18fbf8",
+        "diagnostic": "/Users/kam/dev/0state/.worktrees/aster-auscaster/.scafld/runs/auscaster-links/artifacts/commands/ac1-1793266495489072000.txt"
+      }
+    ],
+    "open_blockers": [],
+    "mutation_guard": {
+      "status": "clean",
+      "scope": [
+        ".github/ISSUE_TEMPLATE/upstream-skill.yml",
+        "docs/flows.md",
+        "docs/run-catalog.md",
+        "docs/skill-upstream.md",
+        "scripts/post-work-issue-lane-comment.test.mjs",
+        "scripts/prepare-skill-upstream.mjs",
+        "scripts/prepare-skill-upstream.test.mjs",
+        "scripts/prepare-work-issue-request.test.mjs"
+      ]
+    },
+    "ledger_head": "4035979aca4e9f658f4619526ec43b23dc5a8198c9722490a156d1c8b8786886",
+    "minted_at": "2026-10-29T09:34:54Z"
+  },
+  "signature": {
+    "alg": "ed25519",
+    "key_id": "ed25519:RGGe6gUQpsB6KGu0VcnMxGUL5IA1I1VDSKi3ecCzYOU",
+    "sig": "S58jXj7vOb5PHXb+tWJ1HROBnZlsI4Y45kyZmqY83/7NM5hkY3Px1LE6WDJrgaEEUvNK+P4z90DcuaeXA4W3Cw=="
+  }
+}
